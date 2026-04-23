@@ -206,11 +206,21 @@
     wrapper.innerHTML = MODAL_HTML;
     document.body.appendChild(wrapper);
 
-    // Botões trigger — adiciona listener em todos os elementos com data-vton
-    document.querySelectorAll('[data-vton]').forEach(bindTrigger);
-
-    // Botão trigger gerado pelo snippet Shopify (classe padrão)
-    document.querySelectorAll('.nksw-trigger-btn').forEach(bindTrigger);
+    // Se existir um elemento âncora (#vton-anchor), injeta o botão dentro dele
+    // Caso contrário, usa os botões que o lojista colocou manualmente (data-vton ou .nksw-trigger-btn)
+    const anchor = document.getElementById('vton-anchor');
+    if (anchor) {
+      const btn = document.createElement('button');
+      btn.className = 'nksw-trigger-btn';
+      btn.innerHTML = '👙 Experimentar agora';
+      anchor.appendChild(btn);
+      btn.addEventListener('click', openModal);
+    } else {
+      // Botões trigger — adiciona listener em todos os elementos com data-vton
+      document.querySelectorAll('[data-vton]').forEach(bindTrigger);
+      // Botão trigger gerado pelo snippet (classe padrão)
+      document.querySelectorAll('.nksw-trigger-btn').forEach(bindTrigger);
+    }
 
     bindModal();
   }
