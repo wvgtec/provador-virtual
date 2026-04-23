@@ -230,13 +230,23 @@
   let category      = 'auto';
 
   function openModal() {
-    // Lê a URL da imagem do produto e categoria a partir do elemento de produto
-    garmentUrl = document.querySelector('[data-vton-image]')?.dataset?.vtonImage
-      || document.querySelector('.product__media img')?.src
-      || document.querySelector('.product-featured-img')?.src
+    // Prioridade 1: variável global injetada pelo snippet da plataforma
+    // Prioridade 2: atributo data-vton-image em qualquer elemento
+    // Prioridade 3: seletores específicos por plataforma (fallback)
+    garmentUrl = window.VTON_GARMENT_URL
+      || document.querySelector('[data-vton-image]')?.dataset?.vtonImage
+      || document.querySelector('.product__media img')?.src           // Shopify
+      || document.querySelector('.product-featured-img')?.src         // Shopify legacy
+      || document.querySelector('.js-product-featured-image')?.src    // Nuvemshop
+      || document.querySelector('.woocommerce-product-gallery__image img')?.src // WooCommerce
+      || document.querySelector('.product-image img')?.src            // Loja Integrada
+      || document.querySelector('[class*="productImageTag"]')?.src    // VTEX IO
+      || document.querySelector('[class*="product-image"] img')?.src  // VTEX IO alternativo
       || '';
 
-    category = document.querySelector('[data-vton-category]')?.dataset?.vtonCategory || 'auto';
+    category = window.VTON_GARMENT_CATEGORY
+      || document.querySelector('[data-vton-category]')?.dataset?.vtonCategory
+      || 'auto';
 
     resetModal();
     document.getElementById('nksw-overlay').classList.add('active');
