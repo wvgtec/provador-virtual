@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
     // Envia para a fila QStash — ele vai chamar /api/process com os dados do job
     // O QStash garante entrega mesmo que o worker esteja ocupado
-    const callbackUrl = `${process.env.VERCEL_URL || process.env.APP_URL}/api/process`;
+    const callbackUrl = `${process.env.APP_URL}/api/process`;
 
     await qstash.publishJSON({
       url: callbackUrl,
