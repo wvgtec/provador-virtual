@@ -24,10 +24,25 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { personImage, garmentImage, category } = req.body;
+    const { personImage, garmentImage, category, clientKey } = req.body;
 
     if (!personImage || !garmentImage) {
       return res.status(400).json({ error: 'personImage e garmentImage são obrigatórios' });
+    }
+
+    // Valida a chave do cliente (exceto demo sem chave)
+    if (clientKey) {
+      const raw = await redis.get(`client:${clientKey}`);
+      if (!raw) {
+        return res.status(403).json({ error: 'Chave de cliente inválida.' });
+      }
+      const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!client.active) {
+        return res.status(403).json({ error: 'Acesso suspenso. Entre em contato com o suporte.' });
+      }
+      // Incrementa o contador de uso
+      client.usageCount = (client.usageCount || 0) + 1;
+      await redis.set(`client:${clientKey}`, JSON.stringify(client));
     }
 
     const jobId = randomUUID();
@@ -43,6 +58,7 @@ export default async function handler(req, res) {
         personImage,
         garmentImage,
         category: category || 'auto',
+        clientKey: clientKey || null,
       }),
       { ex: 3600 }
     );
