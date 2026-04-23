@@ -44,32 +44,36 @@
       background: none; border: none; font-size: 22px; cursor: pointer;
       color: #666; line-height: 1;
     }
-    #nksw-title { font-size: 20px; font-weight: 700; margin: 0 0 6px; color: #1a1a1a; }
-    #nksw-subtitle { font-size: 14px; color: #666; margin: 0 0 20px; }
+    #nksw-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; color: #1a1a1a; letter-spacing: .05em; display: flex; align-items: center; }
+    #nksw-subtitle { font-size: 13px; color: #888; margin: 0 0 16px; }
 
     /* Upload */
     #nksw-upload-area {
-      border: 2px dashed #d0d0d0; border-radius: 12px; padding: 32px 16px;
-      text-align: center; cursor: pointer; transition: border-color .2s;
+      border: 2px dashed #d0d0d0; border-radius: 16px; padding: 40px 16px;
+      text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
+      background: #fafafa;
     }
-    #nksw-upload-area:hover { border-color: #6C5CE7; }
+    #nksw-upload-area:hover { border-color: #1a1a1a; background: #f5f5f5; }
     #nksw-upload-area input { display: none; }
-    #nksw-upload-icon { font-size: 36px; margin-bottom: 8px; }
+    #nksw-upload-icon { font-size: 40px; margin-bottom: 12px; }
     #nksw-upload-label { font-size: 15px; font-weight: 600; color: #1a1a1a; }
-    #nksw-upload-hint { font-size: 12px; color: #999; margin-top: 4px; }
+    #nksw-upload-hint { font-size: 12px; color: #999; margin-top: 6px; line-height: 1.6; }
+    #nksw-privacy { font-size: 11px; color: #aaa; text-align: center; margin-top: 10px; line-height: 1.5; }
     #nksw-preview-img {
-      max-width: 100%; max-height: 180px; border-radius: 8px;
-      display: none; margin: 12px auto 0; display: block;
+      max-width: 100%; max-height: 200px; border-radius: 12px;
+      margin: 12px auto 0; display: block;
     }
 
     /* Botão principal */
     #nksw-btn-try {
-      width: 100%; padding: 14px; background: #6C5CE7; color: #fff;
-      border: none; border-radius: 10px; font-size: 16px; font-weight: 600;
+      width: 100%; padding: 16px; background: #1a1a1a; color: #fff;
+      border: none; border-radius: 50px; font-size: 13px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
       cursor: pointer; margin-top: 16px; transition: background .2s;
+      font-family: inherit;
     }
-    #nksw-btn-try:hover { background: #5a4bd1; }
-    #nksw-btn-try:disabled { background: #b0aae0; cursor: not-allowed; }
+    #nksw-btn-try:hover { background: #333; }
+    #nksw-btn-try:disabled { background: #ccc; cursor: not-allowed; }
 
     /* Status / loading */
     #nksw-status {
@@ -122,13 +126,17 @@
 
     /* Botão trigger */
     .nksw-trigger-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 12px 20px; background: #fff; color: #1a1a1a;
-      border: 2px solid #1a1a1a; border-radius: 8px;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: all .2s; margin-top: 10px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 15px 24px;
+      background: #fff; color: #1a1a1a;
+      border: 2px solid #1a1a1a; border-radius: 50px;
+      font-size: 14px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; cursor: pointer;
+      transition: all .2s; margin-top: 12px;
+      font-family: inherit;
     }
     .nksw-trigger-btn:hover { background: #1a1a1a; color: #fff; }
+    .nksw-trigger-btn svg { flex-shrink: 0; }
 
     /* Erro */
     #nksw-error {
@@ -145,19 +153,23 @@
       <div id="nksw-modal" role="dialog" aria-modal="true" aria-labelledby="nksw-title">
         <button id="nksw-close" aria-label="Fechar">&times;</button>
 
-        <h2 id="nksw-title">👙 Provador Virtual</h2>
-        <p id="nksw-subtitle">Veja como essa peça fica em você antes de comprar.</p>
+        <h2 id="nksw-title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          PROVADOR VIRTUAL
+        </h2>
+        <p id="nksw-subtitle">Clique ou arraste sua foto aqui</p>
 
         <!-- Upload -->
         <div id="nksw-upload-area" role="button" tabindex="0" aria-label="Selecionar foto">
           <input type="file" id="nksw-file" accept="image/*">
           <div id="nksw-upload-icon">📷</div>
-          <div id="nksw-upload-label">Selecione uma foto sua</div>
-          <div id="nksw-upload-hint">JPG ou PNG • frente • boa iluminação</div>
+          <div id="nksw-upload-label">Clique ou arraste sua foto aqui</div>
+          <div id="nksw-upload-hint">JPG, PNG ou WEBP &bull; foto de corpo inteiro &bull; boa iluminação</div>
         </div>
         <img id="nksw-preview-img" alt="Prévia da sua foto" style="display:none">
 
-        <button id="nksw-btn-try" disabled>Experimentar agora</button>
+        <button type="button" id="nksw-btn-try" disabled>EXPERIMENTAR VIRTUALMENTE</button>
+        <p id="nksw-privacy">🔒 Sua foto é processada em tempo real e não é armazenada em nenhum servidor.</p>
 
         <!-- Status / loading -->
         <div id="nksw-status">
@@ -211,8 +223,9 @@
     const anchor = document.getElementById('vton-anchor');
     if (anchor) {
       const btn = document.createElement('button');
+      btn.type = 'button'; // evita submit do form no Shopify/WooCommerce
       btn.className = 'nksw-trigger-btn';
-      btn.innerHTML = '👙 Experimentar agora';
+      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> Experimentar virtualmente`;
       anchor.appendChild(btn);
       btn.addEventListener('click', openModal);
     } else {
