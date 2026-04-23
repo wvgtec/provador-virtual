@@ -7,7 +7,7 @@ import { Client as QStashClient } from '@upstash/qstash';
 import { randomUUID } from 'crypto';
 
 // 🔧 ALTERAR: Project ID do Google Cloud
-const PROJECT_ID = 'meu-projeto-tryon';
+const PROJECT_ID = 'provador-virtual-494213';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
