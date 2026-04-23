@@ -53,6 +53,9 @@ export default async function handler(req, res) {
 
     await qstash.publishJSON({
       url: callbackUrl,
+      headers: {
+        'x-process-secret': process.env.PROCESS_SECRET,
+      },
       body: {
         jobId,
         personImage,   // base64 da foto da pessoa

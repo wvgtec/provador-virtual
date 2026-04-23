@@ -3,7 +3,6 @@
 // NUNCA deve ser chamado diretamente pelo browser — só pelo QStash.
 
 import { Redis } from '@upstash/redis';
-import { verifySignature } from '@upstash/qstash/nextjs';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
@@ -135,6 +134,12 @@ async function processHandler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Proteção simples: só aceita chamadas com o token secreto correto
+  const secret = req.headers['x-process-secret'];
+  if (secret !== process.env.PROCESS_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const { jobId, personImage, garmentImage, category, projectId } = req.body;
 
   if (!jobId) {
@@ -189,5 +194,4 @@ async function processHandler(req, res) {
   }
 }
 
-// Verifica assinatura do QStash antes de processar — segurança obrigatória
-export default verifySignature(processHandler);
+export default processHandler;
