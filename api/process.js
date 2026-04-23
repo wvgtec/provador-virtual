@@ -134,11 +134,6 @@ async function processHandler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Proteção simples: só aceita chamadas com o token secreto correto
-  const secret = req.headers['x-process-secret'];
-  if (secret !== process.env.PROCESS_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
 
   const { jobId, personImage, garmentImage, category, projectId } = req.body;
 
