@@ -3,7 +3,7 @@
 // NUNCA deve ser chamado diretamente pelo browser — só pelo QStash.
 
 import { Redis } from '@upstash/redis';
-import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
+import { verifySignature } from '@upstash/qstash/nextjs';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
@@ -190,4 +190,4 @@ async function processHandler(req, res) {
 }
 
 // Verifica assinatura do QStash antes de processar — segurança obrigatória
-export default verifySignatureAppRouter(processHandler);
+export default verifySignature(processHandler);
