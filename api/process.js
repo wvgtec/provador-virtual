@@ -86,35 +86,24 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
 
   const stripPrefix = (value) => value.replace(/^data:image\/\w+;base64,/, '');
 
-  // Vertex AI Virtual Try-On aceita base64 puro (sem o prefixo data:image/...)
   const personB64 = isUrl(personImage) ? null : stripPrefix(personImage);
   const productB64 = isUrl(garmentImage) ? null : stripPrefix(garmentImage);
 
-  // Log para debug
-  console.log('[Vertex] personImage tipo:', isUrl(personImage) ? 'URL' : 'base64');
-  console.log('[Vertex] productImage tipo:', isUrl(garmentImage) ? 'URL' : 'base64');
-  console.log('[Vertex] personImage bytesLen:', personB64?.length ?? 'URL');
-  console.log('[Vertex] productImage bytesLen:', productB64?.length ?? 'URL');
+  // Log detalhado para diagnosticar
+  console.log('[Vertex] personImage len:', personImage?.length, '| tipo:', typeof personImage);
+  console.log('[Vertex] garmentImage len:', garmentImage?.length, '| tipo:', typeof garmentImage);
+  console.log('[Vertex] personB64 len:', personB64?.length, '| inicio:', personB64?.substring(0, 30));
+  console.log('[Vertex] productB64 len:', productB64?.length, '| inicio:', productB64?.substring(0, 30));
   console.log('[Vertex] category:', category);
 
-  // Monta os objetos de imagem
-  const personImageObj = isUrl(personImage)
-    ? { gcs_uri: personImage }
-    : { bytes_base64_encoded: personB64 };
-
-  const productImageObj = isUrl(garmentImage)
-    ? { gcs_uri: garmentImage }
-    : { bytes_base64_encoded: productB64 };
-
+  // Formato: base64 puro direto no campo (sem objeto wrapper)
   const instance = {
-    person_image: personImageObj,
-    product_image: productImageObj,
+    personImage: personB64 ?? personImage,
+    productImage: productB64 ?? garmentImage,
   };
 
-  // Log da estrutura do instance (sem o base64 completo)
-  console.log('[Vertex] instance keys:', Object.keys(instance));
-  console.log('[Vertex] person_image keys:', Object.keys(personImageObj));
-  console.log('[Vertex] product_image keys:', Object.keys(productImageObj));
+  console.log('[Vertex] instance.personImage len:', instance.personImage?.length);
+  console.log('[Vertex] instance.productImage len:', instance.productImage?.length);
 
   const body = {
     instances: [instance],
