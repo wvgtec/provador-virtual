@@ -1,12 +1,11 @@
 // api/submit.js
-// Recebe a requisição do widget, cria um job na fila e retorna o jobId imediatamente.
+// Recebe a requisição do widget, salva as imagens no Redis e envia só o jobId para a fila.
 // O processamento real (Vertex AI) acontece em api/process.js chamado pelo QStash.
 
 import { Redis } from '@upstash/redis';
 import { Client as QStashClient } from '@upstash/qstash';
 import { randomUUID } from 'crypto';
 
-// 🔧 ALTERAR: Project ID do Google Cloud
 const PROJECT_ID = 'provador-virtual-494213';
 
 const redis = new Redis({
@@ -17,7 +16,6 @@ const redis = new Redis({
 const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
 
 export default async function handler(req, res) {
-  // CORS — permite chamadas do widget em qualquer domínio
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -32,42 +30,32 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'personImage e garmentImage são obrigatórios' });
     }
 
-    // Gera ID único para este job
     const jobId = randomUUID();
 
-    // Salva o job no Redis com status inicial "pending"
-    // TTL de 1 hora — jobs antigos são descartados automaticamente
+    // Salva as imagens no Redis — o QStash tem limite de 1MB por mensagem,
+    // então as imagens ficam aqui e o process.js as busca pelo jobId
     await redis.set(
       `job:${jobId}`,
       JSON.stringify({
         status: 'pending',
         createdAt: Date.now(),
         projectId: PROJECT_ID,
+        personImage,
+        garmentImage,
+        category: category || 'auto',
       }),
       { ex: 3600 }
     );
 
-    // Envia para a fila QStash — ele vai chamar /api/process com os dados do job
-    // O QStash garante entrega mesmo que o worker esteja ocupado
+    // Envia só o jobId para a fila — mensagem pequena, sem imagens
     const callbackUrl = `${process.env.APP_URL}/api/process`;
 
     await qstash.publishJSON({
       url: callbackUrl,
-      headers: {
-        'x-process-secret': process.env.PROCESS_SECRET,
-      },
-      body: {
-        jobId,
-        personImage,   // base64 da foto da pessoa
-        garmentImage,  // URL ou base64 da roupa
-        category: category || 'auto',
-        projectId: PROJECT_ID,
-      },
-      // Retry automático: tenta até 3x com backoff exponencial em caso de falha
+      body: { jobId },
       retries: 3,
     });
 
-    // Retorna o jobId imediatamente — o widget vai fazer polling em /api/result
     return res.status(202).json({
       jobId,
       status: 'pending',

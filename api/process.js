@@ -135,13 +135,21 @@ async function processHandler(req, res) {
   }
 
 
-  const { jobId, personImage, garmentImage, category, projectId } = req.body;
+  const { jobId } = req.body;
 
   if (!jobId) {
     return res.status(400).json({ error: 'jobId obrigatório' });
   }
 
-  // Marca o job como "processing" no Redis
+  // Busca os dados do job no Redis (incluindo as imagens)
+  const raw = await redis.get(`job:${jobId}`);
+  if (!raw) {
+    return res.status(404).json({ error: 'Job não encontrado ou expirado' });
+  }
+  const job = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  const { personImage, garmentImage, category, projectId } = job;
+
+  // Marca como "processing"
   await redis.set(
     `job:${jobId}`,
     JSON.stringify({ status: 'processing', startedAt: Date.now() }),
