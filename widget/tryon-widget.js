@@ -13,13 +13,17 @@
 
   // ─── Configuração ─────────────────────────────────────────────────────────
 
-  const API_URL = window.VTON_API_URL || '';
-  const POLL_INTERVAL_MS = 2000;   // verifica o resultado a cada 2s
-  const POLL_TIMEOUT_MS  = 90000;  // desiste após 90s
+  const API_URL    = window.VTON_API_URL || '';
+  const CLIENT_KEY = window.VTON_CLIENT_KEY || '';
+  const POLL_INTERVAL_MS = 2000;
+  const POLL_TIMEOUT_MS  = 90000;
 
   if (!API_URL) {
     console.warn('[Provador Virtual] window.VTON_API_URL não definido.');
     return;
+  }
+  if (!CLIENT_KEY) {
+    console.warn('[Provador Virtual] window.VTON_CLIENT_KEY não definido.');
   }
 
   // ─── Estilos ──────────────────────────────────────────────────────────────
@@ -336,6 +340,7 @@
           personImage: personBase64,
           garmentImage: garmentUrl,
           category,
+          clientKey: CLIENT_KEY,
         }),
       });
 
