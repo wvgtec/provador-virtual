@@ -81,13 +81,25 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
 
   const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${LOCATION}/publishers/google/models/${MODEL}:predict`;
 
-  // Determina se a imagem é URL ou base64
-  const isUrl = (s) => s.startsWith('http://') || s.startsWith('https://');
-
   const stripPrefix = (value) => value.includes(',') ? value.split(',')[1] : value;
 
-  const personB64  = stripPrefix(personImage);
-  const productB64 = stripPrefix(garmentImage);
+  // Converte para base64 — aceita base64 puro, data URI, URL http/https ou URL relativa ao protocolo (//)
+  const toBase64 = async (value) => {
+    if (!value) throw new Error('Imagem não informada');
+    // Já é base64 ou data URI
+    if (!value.startsWith('http') && !value.startsWith('//')) {
+      return stripPrefix(value);
+    }
+    // URL relativa ao protocolo → adiciona https:
+    const url = value.startsWith('//') ? 'https:' + value : value;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Falha ao buscar imagem: ${url} → ${res.status}`);
+    const buffer = await res.arrayBuffer();
+    return Buffer.from(buffer).toString('base64');
+  };
+
+  const personB64  = await toBase64(personImage);
+  const productB64 = await toBase64(garmentImage);
 
   console.log('[Vertex] personB64 len:', personB64?.length);
   console.log('[Vertex] productB64 len:', productB64?.length);
