@@ -94,7 +94,7 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
       {
         prompt: category !== 'auto' ? category : '',
         personImage: buildImageInstance(personImage),
-        garmentImage: buildImageInstance(garmentImage),
+        productImage: buildImageInstance(garmentImage),
       },
     ],
     parameters: {
