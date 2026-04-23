@@ -1,0 +1,30 @@
+{
+  "functions": {
+    "api/submit.js": {
+      "maxDuration": 10,
+      "memory": 256
+    },
+    "api/process.js": {
+      "maxDuration": 60,
+      "memory": 512
+    },
+    "api/result.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/lead.js": {
+      "maxDuration": 10,
+      "memory": 128
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Upstash-Signature" }
+      ]
+    }
+  ]
+}
