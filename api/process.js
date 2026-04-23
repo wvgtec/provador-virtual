@@ -84,30 +84,24 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
   // Determina se a imagem é URL ou base64
   const isUrl = (s) => s.startsWith('http://') || s.startsWith('https://');
 
-  const stripPrefix = (value) => value.replace(/^data:image\/\w+;base64,/, '');
+  const stripPrefix = (value) => value.includes(',') ? value.split(',')[1] : value;
 
-  const personB64 = isUrl(personImage) ? null : stripPrefix(personImage);
-  const productB64 = isUrl(garmentImage) ? null : stripPrefix(garmentImage);
+  const personB64  = stripPrefix(personImage);
+  const productB64 = stripPrefix(garmentImage);
 
-  // Log detalhado para diagnosticar
-  console.log('[Vertex] personImage len:', personImage?.length, '| tipo:', typeof personImage);
-  console.log('[Vertex] garmentImage len:', garmentImage?.length, '| tipo:', typeof garmentImage);
-  console.log('[Vertex] personB64 len:', personB64?.length, '| inicio:', personB64?.substring(0, 30));
-  console.log('[Vertex] productB64 len:', productB64?.length, '| inicio:', productB64?.substring(0, 30));
+  console.log('[Vertex] personB64 len:', personB64?.length);
+  console.log('[Vertex] productB64 len:', productB64?.length);
   console.log('[Vertex] category:', category);
 
-  // Formato: base64 puro direto no campo (sem objeto wrapper)
   const instance = {
-    personImage: personB64 ?? personImage,
-    productImage: productB64 ?? garmentImage,
+    personImage:   { image: { bytesBase64Encoded: personB64 } },
+    productImages: [{ image: { bytesBase64Encoded: productB64 } }],
   };
-
-  console.log('[Vertex] instance.personImage len:', instance.personImage?.length);
-  console.log('[Vertex] instance.productImage len:', instance.productImage?.length);
 
   const body = {
     instances: [instance],
     parameters: {
+      sampleCount: 1,
       safetySetting: 'block_few',
       personGeneration: 'allow_all',
     },
