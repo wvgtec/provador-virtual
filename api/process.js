@@ -89,19 +89,33 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
       ? { gcsUri: value }
       : { bytesBase64Encoded: value.replace(/^data:image\/\w+;base64,/, '') };
 
+  const personObj = buildImageInstance(personImage);
+  const productObj = buildImageInstance(garmentImage);
+
+  // Log para debug — mostra estrutura sem expor o base64 completo
+  console.log('[Vertex] personImage keys:', Object.keys(personObj));
+  console.log('[Vertex] productImage keys:', Object.keys(productObj));
+  console.log('[Vertex] personImage bytesLen:', personObj.bytesBase64Encoded?.length || 'URL');
+  console.log('[Vertex] productImage bytesLen:', productObj.bytesBase64Encoded?.length || 'URL');
+  console.log('[Vertex] category:', category);
+
+  const instance = {
+    personImage: personObj,
+    productImage: productObj,
+  };
+  if (category && category !== 'auto') {
+    instance.prompt = category;
+  }
+
   const body = {
-    instances: [
-      {
-        prompt: category !== 'auto' ? category : '',
-        personImage: buildImageInstance(personImage),
-        productImage: buildImageInstance(garmentImage),
-      },
-    ],
+    instances: [instance],
     parameters: {
       safetySetting: 'block_few',
       personGeneration: 'allow_all',
     },
   };
+
+  console.log('[Vertex] endpoint:', endpoint);
 
   const response = await fetch(endpoint, {
     method: 'POST',
