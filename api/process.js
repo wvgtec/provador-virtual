@@ -84,28 +84,37 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
   // Determina se a imagem é URL ou base64
   const isUrl = (s) => s.startsWith('http://') || s.startsWith('https://');
 
-  const buildImageInstance = (value) =>
-    isUrl(value)
-      ? { gcsUri: value }
-      : { bytesBase64Encoded: value.replace(/^data:image\/\w+;base64,/, '') };
+  const stripPrefix = (value) => value.replace(/^data:image\/\w+;base64,/, '');
 
-  const personObj = buildImageInstance(personImage);
-  const productObj = buildImageInstance(garmentImage);
+  // Vertex AI Virtual Try-On aceita base64 puro (sem o prefixo data:image/...)
+  const personB64 = isUrl(personImage) ? null : stripPrefix(personImage);
+  const productB64 = isUrl(garmentImage) ? null : stripPrefix(garmentImage);
 
-  // Log para debug — mostra estrutura sem expor o base64 completo
-  console.log('[Vertex] personImage keys:', Object.keys(personObj));
-  console.log('[Vertex] productImage keys:', Object.keys(productObj));
-  console.log('[Vertex] personImage bytesLen:', personObj.bytesBase64Encoded?.length || 'URL');
-  console.log('[Vertex] productImage bytesLen:', productObj.bytesBase64Encoded?.length || 'URL');
+  // Log para debug
+  console.log('[Vertex] personImage tipo:', isUrl(personImage) ? 'URL' : 'base64');
+  console.log('[Vertex] productImage tipo:', isUrl(garmentImage) ? 'URL' : 'base64');
+  console.log('[Vertex] personImage bytesLen:', personB64?.length ?? 'URL');
+  console.log('[Vertex] productImage bytesLen:', productB64?.length ?? 'URL');
   console.log('[Vertex] category:', category);
 
+  // Monta os objetos de imagem
+  const personImageObj = isUrl(personImage)
+    ? { gcs_uri: personImage }
+    : { bytes_base64_encoded: personB64 };
+
+  const productImageObj = isUrl(garmentImage)
+    ? { gcs_uri: garmentImage }
+    : { bytes_base64_encoded: productB64 };
+
   const instance = {
-    personImage: personObj,
-    productImage: productObj,
+    person_image: personImageObj,
+    product_image: productImageObj,
   };
-  if (category && category !== 'auto') {
-    instance.prompt = category;
-  }
+
+  // Log da estrutura do instance (sem o base64 completo)
+  console.log('[Vertex] instance keys:', Object.keys(instance));
+  console.log('[Vertex] person_image keys:', Object.keys(personImageObj));
+  console.log('[Vertex] product_image keys:', Object.keys(productImageObj));
 
   const body = {
     instances: [instance],
