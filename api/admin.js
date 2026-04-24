@@ -1,120 +1,86 @@
 // api/admin.js
-// Endpoints protegidos para gerenciar clientes do Provador Virtual.
-// Requer header: Authorization: Bearer {ADMIN_SECRET}
+// Gerencia clientes do Provador Virtual via Redis (Upstash).
+// CORS tratado globalmente pelo vercel.json — sem headers CORS aqui para evitar duplicatas.
 
 import { Redis } from '@upstash/redis';
 import { randomBytes } from 'crypto';
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
+  url:   process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-}
-
-function authorized(req) {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) return false;
-  const auth = req.headers['authorization'] || '';
-  return auth === `Bearer ${secret}`;
-}
-
 function generateKey() {
-  return 'pvk_' + randomBytes(12).toString('hex');
+  return 'pvk_' + randomBytes(16).toString('hex');
+}
+
+function getSecret(req) {
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ')) return auth.slice(7).trim();
+  return '';
 }
 
 export default async function handler(req, res) {
-  cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!authorized(req)) {
-    return res.status(401).json({ error: 'Não autorizado' });
+  const secret = getSecret(req);
+  if (!secret || secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Senha incorreta' });
   }
 
-  const { action } = req.method === 'GET' ? req.query : req.body;
+  const action = req.query.action || req.body?.action;
 
   try {
-    // ── Listar todos os clientes ──────────────────────────────────────────────
-    if (req.method === 'GET' && action === 'list') {
-      const raw = await redis.get('clients:index');
-      const keys = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
-
-      const clients = await Promise.all(
-        keys.map(async (key) => {
-          const data = await redis.get(`client:${key}`);
-          if (!data) return null;
-          const client = typeof data === 'string' ? JSON.parse(data) : data;
-          return { key, ...client };
-        })
-      );
-
-      return res.status(200).json({ clients: clients.filter(Boolean) });
+    // LIST
+    if (action === 'list') {
+      const keys = await redis.keys('client:*');
+      if (!keys.length) return res.json({ clients: [] });
+      const raws = await Promise.all(keys.map(k => redis.get(k)));
+      const clients = raws
+        .map(r => (typeof r === 'string' ? JSON.parse(r) : r))
+        .filter(Boolean)
+        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      return res.json({ clients });
     }
 
-    // ── Criar novo cliente ────────────────────────────────────────────────────
-    if (req.method === 'POST' && action === 'create') {
-      const { name, email, store, plan } = req.body;
-      if (!name || !email) {
-        return res.status(400).json({ error: 'name e email são obrigatórios' });
-      }
-
+    // CREATE
+    if (action === 'create') {
+      const { name, email, store, plan } = req.body || {};
+      if (!name || !email) return res.status(400).json({ error: 'name e email são obrigatórios' });
       const key = generateKey();
       const client = {
-        name,
-        email,
+        key, name, email,
         store: store || '',
         plan: plan || 'starter',
         active: true,
         usageCount: 0,
         createdAt: Date.now(),
       };
-
       await redis.set(`client:${key}`, JSON.stringify(client));
-
-      // Adiciona à lista de índice
-      const raw = await redis.get('clients:index');
-      const keys = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
-      keys.push(key);
-      await redis.set('clients:index', JSON.stringify(keys));
-
-      return res.status(201).json({ key, ...client });
+      return res.status(201).json({ ok: true, key, client });
     }
 
-    // ── Ativar / Desativar cliente ────────────────────────────────────────────
-    if (req.method === 'POST' && action === 'toggle') {
-      const { key } = req.body;
+    // TOGGLE
+    if (action === 'toggle') {
+      const { key } = req.body || {};
       if (!key) return res.status(400).json({ error: 'key é obrigatório' });
-
       const raw = await redis.get(`client:${key}`);
       if (!raw) return res.status(404).json({ error: 'Cliente não encontrado' });
-
       const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
       client.active = !client.active;
       await redis.set(`client:${key}`, JSON.stringify(client));
-
-      return res.status(200).json({ key, active: client.active });
+      return res.json({ ok: true, active: client.active });
     }
 
-    // ── Deletar cliente ───────────────────────────────────────────────────────
-    if (req.method === 'POST' && action === 'delete') {
-      const { key } = req.body;
+    // DELETE
+    if (action === 'delete') {
+      const { key } = req.body || {};
       if (!key) return res.status(400).json({ error: 'key é obrigatório' });
-
       await redis.del(`client:${key}`);
-
-      const raw = await redis.get('clients:index');
-      const keys = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
-      const updated = keys.filter((k) => k !== key);
-      await redis.set('clients:index', JSON.stringify(updated));
-
-      return res.status(200).json({ deleted: key });
+      return res.json({ ok: true });
     }
 
-    return res.status(400).json({ error: 'Ação inválida' });
+    return res.status(400).json({ error: 'Ação inválida: ' + action });
 
   } catch (err) {
     console.error('[admin] Erro:', err);
