@@ -33,11 +33,17 @@ export default async function handler(req, res) {
   try {
     // LIST
     if (action === 'list') {
-      const keys = await redis.keys('client:*');
-      if (!keys.length) return res.json({ clients: [] });
-      const raws = await Promise.all(keys.map(k => redis.get(k)));
+      const redisKeys = await redis.keys('client:*');
+      if (!redisKeys.length) return res.json({ clients: [] });
+      const raws = await Promise.all(redisKeys.map(k => redis.get(k)));
       const clients = raws
-        .map(r => (typeof r === 'string' ? JSON.parse(r) : r))
+        .map((r, i) => {
+          const obj = typeof r === 'string' ? JSON.parse(r) : r;
+          if (!obj) return null;
+          // Compatibilidade: injeta o key caso o objeto antigo não tenha
+          if (!obj.key) obj.key = redisKeys[i].replace('client:', '');
+          return obj;
+        })
         .filter(Boolean)
         .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       return res.json({ clients });
