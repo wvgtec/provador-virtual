@@ -1,11 +1,21 @@
 /**
  * Provador Virtual — Widget
- * Versão: 2.0 (modelo assíncrono com polling)
+ * Versão: 3.0
  *
- * Como usar:
- *   <script src="https://cdn.jsdelivr.net/gh/SEU-USER/SEU-REPO@v2.0/widget/tryon-widget.js" defer></script>
+ * Variáveis de configuração (defina antes de carregar o script):
  *
- * O script lê window.VTON_API_URL ou o atributo data-api do elemento de produto.
+ *   window.VTON_API_URL          = 'https://...';          // obrigatório
+ *   window.VTON_CLIENT_KEY       = 'pvk_...';              // obrigatório
+ *   window.VTON_GARMENT_URL      = '{{ image_url }}';      // URL da peça
+ *   window.VTON_GARMENT_CATEGORY = 'tops';                 // tops | bottoms | dresses | auto
+ *
+ *   // Personalização do botão trigger:
+ *   window.VTON_BTN_TEXT         = 'Experimentar';         // texto do botão
+ *   window.VTON_BTN_BG           = '#1a1a1a';              // cor de fundo
+ *   window.VTON_BTN_COLOR        = '#ffffff';              // cor do texto
+ *   window.VTON_BTN_WIDTH        = '100%';                 // largura (ex: '280px', '100%')
+ *   window.VTON_BTN_HEIGHT       = '52px';                 // altura (ex: '52px', 'auto')
+ *   window.VTON_BTN_RADIUS       = '50px';                 // border-radius
  */
 
 (function () {
@@ -13,17 +23,23 @@
 
   // ─── Configuração ─────────────────────────────────────────────────────────
 
-  const API_URL    = window.VTON_API_URL || '';
+  const API_URL    = window.VTON_API_URL    || '';
   const CLIENT_KEY = window.VTON_CLIENT_KEY || '';
+
+  // Personalização do botão
+  const BTN_TEXT   = window.VTON_BTN_TEXT   || 'Experimentar virtualmente';
+  const BTN_BG     = window.VTON_BTN_BG     || '#1a1a1a';
+  const BTN_COLOR  = window.VTON_BTN_COLOR  || '#ffffff';
+  const BTN_WIDTH  = window.VTON_BTN_WIDTH  || '100%';
+  const BTN_HEIGHT = window.VTON_BTN_HEIGHT || '52px';
+  const BTN_RADIUS = window.VTON_BTN_RADIUS || '50px';
+
   const POLL_INTERVAL_MS = 2000;
   const POLL_TIMEOUT_MS  = 90000;
 
   if (!API_URL) {
     console.warn('[Provador Virtual] window.VTON_API_URL não definido.');
     return;
-  }
-  if (!CLIENT_KEY) {
-    console.warn('[Provador Virtual] window.VTON_CLIENT_KEY não definido.');
   }
 
   // ─── Estilos ──────────────────────────────────────────────────────────────
@@ -110,35 +126,17 @@
     #nksw-btn-save { background: #6C5CE7; color: #fff; }
     #nksw-btn-retry { background: #f0f0f0; color: #333; }
 
-    /* Lead form */
-    #nksw-lead { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
-    #nksw-lead-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
-    #nksw-lead-sub { font-size: 13px; color: #666; margin: 0 0 14px; }
-    #nksw-lead input {
-      width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0;
-      border-radius: 8px; font-size: 14px; margin-bottom: 10px;
-      box-sizing: border-box; outline: none; transition: border-color .2s;
-    }
-    #nksw-lead input:focus { border-color: #6C5CE7; }
-    #nksw-lead-submit {
-      width: 100%; padding: 12px; background: #1a1a1a; color: #fff;
-      border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
-      cursor: pointer;
-    }
-    #nksw-lead-sent { text-align: center; font-size: 13px; color: #6C5CE7; padding: 8px 0; }
-
     /* Botão trigger */
     .nksw-trigger-btn {
       display: flex; align-items: center; justify-content: center; gap: 10px;
-      width: 100%; padding: 15px 24px;
-      background: #fff; color: #1a1a1a;
-      border: 2px solid #1a1a1a; border-radius: 50px;
+      padding: 0 24px;
+      border: 2px solid currentColor; border-radius: 50px;
       font-size: 14px; font-weight: 700; letter-spacing: .06em;
       text-transform: uppercase; cursor: pointer;
-      transition: all .2s; margin-top: 12px;
-      font-family: inherit;
+      transition: opacity .2s; margin-top: 12px;
+      font-family: inherit; box-sizing: border-box;
     }
-    .nksw-trigger-btn:hover { background: #1a1a1a; color: #fff; }
+    .nksw-trigger-btn:hover { opacity: .85; }
     .nksw-trigger-btn svg { flex-shrink: 0; }
 
     /* Erro */
@@ -172,7 +170,7 @@
         <img id="nksw-preview-img" alt="Prévia da sua foto" style="display:none">
 
         <button type="button" id="nksw-btn-try" disabled>EXPERIMENTAR VIRTUALMENTE</button>
-        <p id="nksw-privacy">🔒 Sua foto é processada em tempo real e não é armazenada em nenhum servidor.</p>
+        <p id="nksw-privacy">🔒 Sua foto é processada em tempo real e não é armazenada.</p>
 
         <!-- Status / loading -->
         <div id="nksw-status">
@@ -195,16 +193,6 @@
             <button id="nksw-btn-retry">Tentar novamente</button>
           </div>
         </div>
-
-        <!-- Captura de lead -->
-        <div id="nksw-lead" style="display:none">
-          <div id="nksw-lead-title">🌊 Gostou do resultado?</div>
-          <div id="nksw-lead-sub">Cadastre seu e-mail e receba novidades em primeira mão.</div>
-          <input type="text" id="nksw-lead-name" placeholder="Seu nome" autocomplete="name">
-          <input type="email" id="nksw-lead-email" placeholder="Seu e-mail" autocomplete="email">
-          <button id="nksw-lead-submit">Quero receber novidades</button>
-          <div id="nksw-lead-sent" style="display:none">✓ Cadastro feito! Obrigado.</div>
-        </div>
       </div>
     </div>
   `;
@@ -212,30 +200,32 @@
   // ─── Inicialização ────────────────────────────────────────────────────────
 
   function init() {
-    // Injeta CSS
     const style = document.createElement('style');
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    // Injeta modal
     const wrapper = document.createElement('div');
     wrapper.innerHTML = MODAL_HTML;
     document.body.appendChild(wrapper);
 
-    // Se existir um elemento âncora (#vton-anchor), injeta o botão dentro dele
-    // Caso contrário, usa os botões que o lojista colocou manualmente (data-vton ou .nksw-trigger-btn)
     const anchor = document.getElementById('vton-anchor');
     if (anchor) {
       const btn = document.createElement('button');
-      btn.type = 'button'; // evita submit do form no Shopify/WooCommerce
+      btn.type = 'button';
       btn.className = 'nksw-trigger-btn';
-      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> Experimentar virtualmente`;
+      btn.style.cssText = [
+        `background:${BTN_BG}`,
+        `color:${BTN_COLOR}`,
+        `width:${BTN_WIDTH}`,
+        `height:${BTN_HEIGHT}`,
+        `border-radius:${BTN_RADIUS}`,
+        `border-color:${BTN_BG}`,
+      ].join(';');
+      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> ${BTN_TEXT}`;
       anchor.appendChild(btn);
       btn.addEventListener('click', openModal);
     } else {
-      // Botões trigger — adiciona listener em todos os elementos com data-vton
       document.querySelectorAll('[data-vton]').forEach(bindTrigger);
-      // Botão trigger gerado pelo snippet (classe padrão)
       document.querySelectorAll('.nksw-trigger-btn').forEach(bindTrigger);
     }
 
@@ -257,18 +247,15 @@
   let category      = 'auto';
 
   function openModal() {
-    // Prioridade 1: variável global injetada pelo snippet da plataforma
-    // Prioridade 2: atributo data-vton-image em qualquer elemento
-    // Prioridade 3: seletores específicos por plataforma (fallback)
     garmentUrl = window.VTON_GARMENT_URL
       || document.querySelector('[data-vton-image]')?.dataset?.vtonImage
-      || document.querySelector('.product__media img')?.src           // Shopify
-      || document.querySelector('.product-featured-img')?.src         // Shopify legacy
-      || document.querySelector('.js-product-featured-image')?.src    // Nuvemshop
-      || document.querySelector('.woocommerce-product-gallery__image img')?.src // WooCommerce
-      || document.querySelector('.product-image img')?.src            // Loja Integrada
-      || document.querySelector('[class*="productImageTag"]')?.src    // VTEX IO
-      || document.querySelector('[class*="product-image"] img')?.src  // VTEX IO alternativo
+      || document.querySelector('.product__media img')?.src
+      || document.querySelector('.product-featured-img')?.src
+      || document.querySelector('.js-product-featured-image')?.src
+      || document.querySelector('.woocommerce-product-gallery__image img')?.src
+      || document.querySelector('.product-image img')?.src
+      || document.querySelector('[class*="productImageTag"]')?.src
+      || document.querySelector('[class*="product-image"] img')?.src
       || '';
 
     category = window.VTON_GARMENT_CATEGORY
@@ -294,7 +281,6 @@
     hide('nksw-status');
     hide('nksw-result');
     hide('nksw-error');
-    hide('nksw-lead');
     hide('nksw-preview-img');
     document.getElementById('nksw-btn-try').disabled = true;
     document.getElementById('nksw-file').value = '';
@@ -306,16 +292,16 @@
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
     document.getElementById('nksw-close').addEventListener('click', closeModal);
 
-    // Upload por clique ou teclado
     const uploadArea = document.getElementById('nksw-upload-area');
     uploadArea.addEventListener('click', () => document.getElementById('nksw-file').click());
-    uploadArea.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('nksw-file').click(); });
+    uploadArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') document.getElementById('nksw-file').click();
+    });
 
     document.getElementById('nksw-file').addEventListener('change', handleFileSelect);
     document.getElementById('nksw-btn-try').addEventListener('click', startTryOn);
     document.getElementById('nksw-btn-retry').addEventListener('click', resetModal);
     document.getElementById('nksw-btn-save').addEventListener('click', savePhoto);
-    document.getElementById('nksw-lead-submit').addEventListener('click', submitLead);
   }
 
   // ─── Upload e redimensionamento ───────────────────────────────────────────
@@ -323,14 +309,11 @@
   function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
-
     resizeImage(file, 1024, (base64) => {
       personBase64 = base64;
-
       const preview = document.getElementById('nksw-preview-img');
       preview.src = base64;
       preview.style.display = 'block';
-
       document.getElementById('nksw-upload-icon').style.display = 'none';
       document.getElementById('nksw-upload-label').textContent = file.name;
       document.getElementById('nksw-btn-try').disabled = false;
@@ -346,7 +329,7 @@
         let w = img.width, h = img.height;
         if (w > maxSize || h > maxSize) {
           if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-          else { w = Math.round(w * maxSize / h); h = maxSize; }
+          else       { w = Math.round(w * maxSize / h); h = maxSize; }
         }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
@@ -357,11 +340,10 @@
     reader.readAsDataURL(file);
   }
 
-  // ─── Try-on assíncrono ────────────────────────────────────────────────────
+  // ─── Try-on ───────────────────────────────────────────────────────────────
 
   async function startTryOn() {
     if (!personBase64) return;
-
     hide('nksw-upload-area');
     hide('nksw-preview-img');
     hide('nksw-error');
@@ -384,19 +366,16 @@
 
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Erro ao iniciar o processamento');
-      }
+      if (!res.ok) throw new Error(data.error || 'Erro ao iniciar o processamento');
 
-      // Resposta síncrona (Vertex AI): já traz o resultado direto
       if (data.output) {
         animateProgress(20, 100, 800);
         setTimeout(() => showResult(data.output), 900);
         return;
       }
 
-      // Resposta assíncrona: faz polling
       if (!data.jobId) throw new Error(data.error || 'Resposta inesperada da API');
+
       currentJobId = data.jobId;
       setStatusText('A IA está trabalhando...');
       setStatusSub('Pode levar até 30 segundos');
@@ -404,8 +383,8 @@
       startPolling(currentJobId);
 
     } catch (err) {
-      showError(err.message || 'Não foi possível conectar. Tente novamente em instantes.');
-      console.error('[Provador Virtual] Erro no submit:', err);
+      showError(err.message || 'Não foi possível conectar. Tente novamente.');
+      console.error('[Provador Virtual] Erro:', err);
     }
   }
 
@@ -421,7 +400,6 @@
       showError('O processamento demorou mais que o esperado. Tente novamente.');
       return;
     }
-
     try {
       const res  = await fetch(`${API_URL}/api/result?jobId=${jobId}`);
       const data = await res.json();
@@ -429,54 +407,40 @@
       if (data.status === 'done' || data.status === 'completed') {
         clearPolling();
         animateProgress(85, 100, 500);
-        const resultImg = data.output || data.resultImage;
-        setTimeout(() => showResult(resultImg), 600);
-
+        setTimeout(() => showResult(data.output || data.resultImage), 600);
       } else if (data.status === 'error' || data.status === 'failed') {
         clearPolling();
-        showError(data.error || 'A IA não conseguiu processar a imagem. Tente com outra foto.');
-
-      } else if (data.status === 'processing') {
-        setStatusText('A IA está trabalhando...');
-        setStatusSub('Pode levar até 30 segundos');
+        showError(data.error || 'Não foi possível processar. Tente com outra foto.');
       }
-      // status "pending" → continua aguardando
-
-    } catch (_) {
-      // Falha de rede temporária — continua o polling silenciosamente
-    }
+    } catch (_) { /* rede instável — continua o polling */ }
   }
 
   function clearPolling() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+    if (pollTimer)    { clearInterval(pollTimer);    pollTimer    = null; }
+    if (progressTimer){ clearInterval(progressTimer);progressTimer= null; }
   }
 
   // ─── Progresso visual ─────────────────────────────────────────────────────
 
   function animateProgress(from, to, durationMs) {
-    const bar   = document.getElementById('nksw-progress-bar');
+    const bar = document.getElementById('nksw-progress-bar');
     const steps = 30;
     const step  = (to - from) / steps;
-    let current = from;
-    let count   = 0;
+    let current = from, count = 0;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = setInterval(() => {
-      current += step;
-      count++;
+      current += step; count++;
       bar.style.width = Math.min(current, to) + '%';
       if (count >= steps) clearInterval(progressTimer);
     }, durationMs / steps);
   }
 
-  // ─── Exibição do resultado ────────────────────────────────────────────────
+  // ─── Resultado ────────────────────────────────────────────────────────────
 
   function showResult(imageDataUrl) {
     hide('nksw-status');
-    const img = document.getElementById('nksw-result-img');
-    img.src = imageDataUrl;
+    document.getElementById('nksw-result-img').src = imageDataUrl;
     show('nksw-result');
-    show('nksw-lead');
   }
 
   function savePhoto() {
@@ -488,37 +452,11 @@
     a.click();
   }
 
-  // ─── Lead ─────────────────────────────────────────────────────────────────
-
-  async function submitLead() {
-    const name  = document.getElementById('nksw-lead-name').value.trim();
-    const email = document.getElementById('nksw-lead-email').value.trim();
-
-    if (!email || !email.includes('@')) {
-      document.getElementById('nksw-lead-email').style.borderColor = '#e74c3c';
-      return;
-    }
-
-    try {
-      await fetch(`${API_URL}/api/lead`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email }),
-      });
-    } catch (_) { /* falha silenciosa — lead não bloqueia a experiência */ }
-
-    hide('nksw-lead-name');
-    hide('nksw-lead-email');
-    hide('nksw-lead-submit');
-    show('nksw-lead-sent');
-  }
-
   // ─── Helpers de UI ───────────────────────────────────────────────────────
 
   function show(id, displayType) {
     const el = document.getElementById(id);
-    if (!el) return;
-    el.style.display = displayType || 'block';
+    if (el) el.style.display = displayType || 'block';
   }
 
   function hide(id) {
@@ -526,26 +464,26 @@
     if (el) el.style.display = 'none';
   }
 
-  function setStatusText(text) {
+  function setStatusText(t) {
     const el = document.getElementById('nksw-status-text');
-    if (el) el.textContent = text;
+    if (el) el.textContent = t;
   }
 
-  function setStatusSub(text) {
+  function setStatusSub(t) {
     const el = document.getElementById('nksw-status-sub');
-    if (el) el.textContent = text;
+    if (el) el.textContent = t;
   }
 
   function showError(msg) {
     hide('nksw-status');
     show('nksw-upload-area');
-    const errEl = document.getElementById('nksw-error');
-    errEl.textContent = msg;
-    errEl.style.display = 'block';
+    const el = document.getElementById('nksw-error');
+    el.textContent = msg;
+    el.style.display = 'block';
     document.getElementById('nksw-btn-try').disabled = false;
   }
 
-  // ─── Aguarda DOM e inicializa ─────────────────────────────────────────────
+  // ─── Inicializa ───────────────────────────────────────────────────────────
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
