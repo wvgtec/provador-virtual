@@ -49,10 +49,12 @@
 
     /* Upload */
     #nksw-upload-area {
+      display: block !important;
       border: 2px dashed #d0d0d0; border-radius: 16px; padding: 40px 16px;
       text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
       background: #fafafa;
     }
+    #nksw-upload-area[style*="display: none"] { display: none !important; }
     #nksw-upload-area:hover { border-color: #1a1a1a; background: #f5f5f5; }
     #nksw-upload-area input { display: none; }
     #nksw-upload-icon { font-size: 40px; margin-bottom: 12px; }
@@ -513,9 +515,10 @@
 
   // ─── Helpers de UI ───────────────────────────────────────────────────────
 
-  function show(id) {
+  function show(id, displayType) {
     const el = document.getElementById(id);
-    if (el) el.style.display = '';
+    if (!el) return;
+    el.style.display = displayType || 'block';
   }
 
   function hide(id) {
