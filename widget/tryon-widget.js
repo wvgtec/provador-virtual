@@ -77,17 +77,18 @@
 
     /* Status / loading */
     #nksw-status {
-      display: none; text-align: center; padding: 20px 0;
+      display: none; text-align: center; padding: 36px 0 28px;
     }
     #nksw-spinner {
-      width: 40px; height: 40px; border: 4px solid #eee;
+      width: 64px; height: 64px; border: 5px solid #eee;
       border-top-color: #6C5CE7; border-radius: 50%;
-      animation: nksw-spin 0.8s linear infinite; margin: 0 auto 12px;
+      animation: nksw-spin 0.8s linear infinite; margin: 0 auto 20px;
     }
     @keyframes nksw-spin { to { transform: rotate(360deg); } }
-    #nksw-status-text { font-size: 14px; color: #555; }
+    #nksw-status-text { font-size: 17px; font-weight: 700; color: #1a1a1a; letter-spacing: -.01em; }
+    #nksw-status-sub { font-size: 13px; color: #999; margin-top: 8px; line-height: 1.5; }
     #nksw-progress-bar-wrap {
-      height: 4px; background: #eee; border-radius: 2px; margin-top: 12px; overflow: hidden;
+      height: 4px; background: #eee; border-radius: 2px; margin-top: 20px; overflow: hidden;
     }
     #nksw-progress-bar {
       height: 100%; background: #6C5CE7; width: 0%;
@@ -174,7 +175,8 @@
         <!-- Status / loading -->
         <div id="nksw-status">
           <div id="nksw-spinner"></div>
-          <div id="nksw-status-text">Preparando...</div>
+          <div id="nksw-status-text">Gerando seu look...</div>
+          <div id="nksw-status-sub">Aguarde alguns segundos</div>
           <div id="nksw-progress-bar-wrap">
             <div id="nksw-progress-bar"></div>
           </div>
@@ -362,16 +364,17 @@
     hide('nksw-preview-img');
     hide('nksw-error');
     show('nksw-status');
-    setStatusText('Enviando imagem...');
-    animateProgress(0, 15, 3000);
+    setStatusText('Gerando seu look...');
+    setStatusSub('Aguarde alguns segundos');
+    animateProgress(0, 20, 4000);
 
     try {
       const res = await fetch(`${API_URL}/api/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          personImage: personBase64,
-          garmentImage: garmentUrl,
+          model_image:   personBase64,
+          garment_image: garmentUrl,
           category,
           clientKey: CLIENT_KEY,
         }),
@@ -379,17 +382,27 @@
 
       const data = await res.json();
 
-      if (!res.ok || !data.jobId) {
+      if (!res.ok) {
         throw new Error(data.error || 'Erro ao iniciar o processamento');
       }
 
+      // Resposta síncrona (Vertex AI): já traz o resultado direto
+      if (data.output) {
+        animateProgress(20, 100, 800);
+        setTimeout(() => showResult(data.output), 900);
+        return;
+      }
+
+      // Resposta assíncrona: faz polling
+      if (!data.jobId) throw new Error(data.error || 'Resposta inesperada da API');
       currentJobId = data.jobId;
-      setStatusText('Processando com IA...');
-      animateProgress(15, 85, 30000);
+      setStatusText('A IA está trabalhando...');
+      setStatusSub('Pode levar até 30 segundos');
+      animateProgress(20, 85, 30000);
       startPolling(currentJobId);
 
     } catch (err) {
-      showError('Não foi possível conectar. Tente novamente em instantes.');
+      showError(err.message || 'Não foi possível conectar. Tente novamente em instantes.');
       console.error('[Provador Virtual] Erro no submit:', err);
     }
   }
@@ -411,17 +424,19 @@
       const res  = await fetch(`${API_URL}/api/result?jobId=${jobId}`);
       const data = await res.json();
 
-      if (data.status === 'done') {
+      if (data.status === 'done' || data.status === 'completed') {
         clearPolling();
         animateProgress(85, 100, 500);
-        setTimeout(() => showResult(data.resultImage), 600);
+        const resultImg = data.output || data.resultImage;
+        setTimeout(() => showResult(resultImg), 600);
 
-      } else if (data.status === 'error') {
+      } else if (data.status === 'error' || data.status === 'failed') {
         clearPolling();
-        showError('A IA não conseguiu processar a imagem. Tente com outra foto.');
+        showError(data.error || 'A IA não conseguiu processar a imagem. Tente com outra foto.');
 
       } else if (data.status === 'processing') {
         setStatusText('A IA está trabalhando...');
+        setStatusSub('Pode levar até 30 segundos');
       }
       // status "pending" → continua aguardando
 
@@ -510,6 +525,11 @@
 
   function setStatusText(text) {
     const el = document.getElementById('nksw-status-text');
+    if (el) el.textContent = text;
+  }
+
+  function setStatusSub(text) {
+    const el = document.getElementById('nksw-status-sub');
     if (el) el.textContent = text;
   }
 
