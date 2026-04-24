@@ -1,21 +1,9 @@
 {
   "functions": {
-    "api/submit.js": {
-      "maxDuration": 10,
-      "memory": 256
-    },
-    "api/process.js": {
-      "maxDuration": 60,
-      "memory": 512
-    },
-    "api/result.js": {
-      "maxDuration": 10,
-      "memory": 128
-    },
-    "api/lead.js": {
-      "maxDuration": 10,
-      "memory": 128
-    }
+    "api/submit.js": { "maxDuration": 10, "memory": 256 },
+    "api/process.js": { "maxDuration": 60, "memory": 512 },
+    "api/result.js": { "maxDuration": 10, "memory": 128 },
+    "api/lead.js": { "maxDuration": 10, "memory": 128 }
   },
   "headers": [
     {
@@ -23,7 +11,15 @@
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Upstash-Signature" }
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, Upstash-Signature" },
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/widget/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     }
   ]
