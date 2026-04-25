@@ -34,8 +34,7 @@
   const BTN_HEIGHT = window.VTON_BTN_HEIGHT || '52px';
   const BTN_RADIUS = window.VTON_BTN_RADIUS || '50px';
 
-  const POLL_INTERVAL_MS = 2000;
-  const POLL_TIMEOUT_MS  = 90000;
+  const SSE_TIMEOUT_MS = 60000; // fecha a conexão SSE se o servidor não responder em 60s
 
   if (!API_URL) {
     console.warn('[Provador Virtual] window.VTON_API_URL não definido.');
@@ -239,8 +238,8 @@
   // ─── Lógica do modal ──────────────────────────────────────────────────────
 
   let currentJobId  = null;
-  let pollTimer     = null;
-  let pollStartTime = null;
+  let sseSource     = null;
+  let sseTimeout    = null;
   let progressTimer = null;
   let personBase64  = null;
   let garmentUrl    = null;
@@ -270,13 +269,13 @@
   function closeModal() {
     document.getElementById('nksw-overlay').classList.remove('active');
     document.body.style.overflow = '';
-    clearPolling();
+    clearSSE();
   }
 
   function resetModal() {
     personBase64 = null;
     currentJobId = null;
-    clearPolling();
+    clearSSE();
     show('nksw-upload-area');
     hide('nksw-status');
     hide('nksw-result');
@@ -380,7 +379,7 @@
       setStatusText('A IA está trabalhando...');
       setStatusSub('Pode levar até 30 segundos');
       animateProgress(20, 85, 30000);
-      startPolling(currentJobId);
+      startSSE(currentJobId);
 
     } catch (err) {
       showError(err.message || 'Não foi possível conectar. Tente novamente.');
@@ -388,35 +387,42 @@
     }
   }
 
-  function startPolling(jobId) {
-    pollStartTime = Date.now();
-    clearPolling();
-    pollTimer = setInterval(() => pollResult(jobId), POLL_INTERVAL_MS);
-  }
+  function startSSE(jobId) {
+    clearSSE();
 
-  async function pollResult(jobId) {
-    if (Date.now() - pollStartTime > POLL_TIMEOUT_MS) {
-      clearPolling();
+    const es = new EventSource(`${API_URL}/api/result?jobId=${jobId}`);
+    sseSource = es;
+
+    // Timeout de segurança no lado do cliente
+    sseTimeout = setTimeout(() => {
+      clearSSE();
       showError('O processamento demorou mais que o esperado. Tente novamente.');
-      return;
-    }
-    try {
-      const res  = await fetch(`${API_URL}/api/result?jobId=${jobId}`);
-      const data = await res.json();
+    }, SSE_TIMEOUT_MS);
 
-      if (data.status === 'done' || data.status === 'completed') {
-        clearPolling();
+    es.onmessage = (e) => {
+      let data;
+      try { data = JSON.parse(e.data); } catch (_) { return; }
+
+      if (data.status === 'done') {
+        clearSSE();
         animateProgress(85, 100, 500);
-        setTimeout(() => showResult(data.output || data.resultImage), 600);
-      } else if (data.status === 'error' || data.status === 'failed') {
-        clearPolling();
+        setTimeout(() => showResult(data.resultImage), 600);
+      } else if (data.status === 'error') {
+        clearSSE();
         showError(data.error || 'Não foi possível processar. Tente com outra foto.');
       }
-    } catch (_) { /* rede instável — continua o polling */ }
+      // pending / processing: heartbeat — não faz nada, apenas mantém a barra animando
+    };
+
+    es.onerror = () => {
+      clearSSE();
+      showError('Conexão perdida. Verifique sua internet e tente novamente.');
+    };
   }
 
-  function clearPolling() {
-    if (pollTimer)    { clearInterval(pollTimer);    pollTimer    = null; }
+  function clearSSE() {
+    if (sseSource)    { sseSource.close();           sseSource    = null; }
+    if (sseTimeout)   { clearTimeout(sseTimeout);    sseTimeout   = null; }
     if (progressTimer){ clearInterval(progressTimer);progressTimer= null; }
   }
 

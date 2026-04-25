@@ -1,6 +1,6 @@
 // api/result.js
-// Consultado pelo widget via polling para verificar o status do job.
-// Retorna: pending | processing | done (+ resultImage) | error
+// SSE: mantém a conexão aberta, faz poll no Redis a cada 1.5s e empurra o resultado quando pronto.
+// Substitui o polling do widget — uma única conexão até o job terminar (max 55s).
 
 import { Redis } from '@upstash/redis';
 
@@ -16,6 +16,15 @@ async function isRateLimited(ip, prefix, maxRequests, windowSeconds) {
   return count > maxRequests;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const POLL_INTERVAL_MS = 1500;
+const MAX_DURATION_MS  = 55000; // 55s — margem antes do timeout do Vercel (60s)
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -25,9 +34,9 @@ export default async function handler(req, res) {
     req.socket?.remoteAddress ||
     'unknown';
 
-  // 30 polls por minuto por IP
-  if (await isRateLimited(ip, 'rl:result', 30, 60)) {
-    return res.status(429).json({ error: 'Polling muito frequente. Aguarde.' });
+  // 20 conexões SSE por minuto por IP (menor que antes pois cada uma dura até 55s)
+  if (await isRateLimited(ip, 'rl:result', 20, 60)) {
+    return res.status(429).json({ error: 'Muitas conexões. Aguarde.' });
   }
 
   const { jobId } = req.query;
@@ -36,30 +45,60 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'jobId obrigatório' });
   }
 
-  // Valida formato UUID para evitar enumeração
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(jobId)) {
+  if (!UUID_REGEX.test(jobId)) {
     return res.status(400).json({ error: 'jobId inválido.' });
   }
 
-  const raw = await redis.get(`job:${jobId}`);
+  // ─── Cabeçalhos SSE ────────────────────────────────────────────────────────
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // desativa buffer do nginx/Vercel
 
-  if (!raw) {
-    return res.status(404).json({ error: 'Job não encontrado ou expirado' });
-  }
-
-  const job = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-  // Retorna apenas os campos necessários — nunca devolve as imagens originais ou clientKey
-  const safePayload = {
-    status: job.status,
-    ...(job.status === 'done'       && { resultImage: job.resultImage, completedAt: job.completedAt }),
-    ...(job.status === 'processing' && { startedAt: job.startedAt }),
-    ...(job.status === 'error'      && { error: 'Erro ao processar imagem.' }),
-    ...(job.status === 'pending'    && { createdAt: job.createdAt }),
+  const send = (data) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  res.setHeader('Cache-Control', 'no-store');
+  // Detecta se o cliente fechou a conexão
+  let closed = false;
+  req.on('close', () => { closed = true; });
 
-  return res.status(200).json(safePayload);
+  const deadline = Date.now() + MAX_DURATION_MS;
+
+  // ─── Loop de polling interno ───────────────────────────────────────────────
+  while (!closed && Date.now() < deadline) {
+    const raw = await redis.get(`job:${jobId}`);
+
+    if (!raw) {
+      send({ status: 'error', error: 'Job não encontrado ou expirado.' });
+      return res.end();
+    }
+
+    const job = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+    if (job.status === 'done') {
+      send({
+        status: 'done',
+        resultImage: job.resultImage,
+        completedAt: job.completedAt,
+      });
+      return res.end();
+    }
+
+    if (job.status === 'error') {
+      send({ status: 'error', error: 'Erro ao processar imagem.' });
+      return res.end();
+    }
+
+    // pending ou processing: envia heartbeat e aguarda
+    send({ status: job.status });
+
+    await sleep(POLL_INTERVAL_MS);
+  }
+
+  // Timeout: cliente ficou esperando demais
+  if (!closed) {
+    send({ status: 'error', error: 'Timeout. Tente novamente.' });
+    res.end();
+  }
 }
