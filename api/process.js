@@ -3,6 +3,7 @@
 // NUNCA deve ser chamado diretamente pelo browser — só pelo QStash.
 
 import { Redis } from '@upstash/redis';
+import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
@@ -11,10 +12,6 @@ const redis = new Redis({
 
 // ─── Google Auth ─────────────────────────────────────────────────────────────
 
-/**
- * Gera um token de acesso OAuth2 usando a Service Account do Google.
- * Usa JWT assinado com RS256 — sem depender do SDK do Google (mais leve).
- */
 async function getGoogleAccessToken() {
   const sa = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
 
@@ -33,7 +30,6 @@ async function getGoogleAccessToken() {
 
   const unsignedToken = `${encode(header)}.${encode(payload)}`;
 
-  // Importa a chave privada RSA
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
     pemToBuffer(sa.private_key),
@@ -50,7 +46,6 @@ async function getGoogleAccessToken() {
 
   const jwt = `${unsignedToken}.${Buffer.from(signature).toString('base64url')}`;
 
-  // Troca o JWT por um access token
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -83,14 +78,11 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
 
   const stripPrefix = (value) => value.includes(',') ? value.split(',')[1] : value;
 
-  // Converte para base64 — aceita base64 puro, data URI, URL http/https ou URL relativa ao protocolo (//)
   const toBase64 = async (value) => {
     if (!value) throw new Error('Imagem não informada');
-    // Já é base64 ou data URI
     if (!value.startsWith('http') && !value.startsWith('//')) {
       return stripPrefix(value);
     }
-    // URL relativa ao protocolo → adiciona https:
     const url = value.startsWith('//') ? 'https:' + value : value;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Falha ao buscar imagem: ${url} → ${res.status}`);
@@ -152,14 +144,12 @@ async function processHandler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-
   const { jobId } = req.body;
 
   if (!jobId) {
     return res.status(400).json({ error: 'jobId obrigatório' });
   }
 
-  // Busca os dados do job no Redis (incluindo as imagens)
   const raw = await redis.get(`job:${jobId}`);
   if (!raw) {
     return res.status(404).json({ error: 'Job não encontrado ou expirado' });
@@ -167,7 +157,6 @@ async function processHandler(req, res) {
   const job = typeof raw === 'string' ? JSON.parse(raw) : raw;
   const { personImage, garmentImage, category, projectId } = job;
 
-  // Marca como "processing"
   await redis.set(
     `job:${jobId}`,
     JSON.stringify({ status: 'processing', startedAt: Date.now() }),
@@ -182,7 +171,6 @@ async function processHandler(req, res) {
       category,
     });
 
-    // Salva o resultado — o widget vai buscar via /api/result
     await redis.set(
       `job:${jobId}`,
       JSON.stringify({
@@ -198,7 +186,6 @@ async function processHandler(req, res) {
   } catch (err) {
     console.error(`[process] Erro no job ${jobId}:`, err);
 
-    // Salva o erro para o widget exibir mensagem adequada
     await redis.set(
       `job:${jobId}`,
       JSON.stringify({
@@ -209,10 +196,10 @@ async function processHandler(req, res) {
       { ex: 3600 }
     );
 
-    // Retorna 200 para o QStash não fazer retry desnecessário em erros de negócio
-    // (erros de infraestrutura lançam exceção e o QStash vai retenttar automaticamente)
     return res.status(200).json({ jobId, status: 'error', error: err.message });
   }
 }
 
-export default processHandler;
+// Valida que a chamada veio mesmo do QStash (assinatura HMAC)
+// Requests sem assinatura válida são rejeitados com 401 antes de executar qualquer lógica
+export default verifySignatureAppRouter(processHandler);

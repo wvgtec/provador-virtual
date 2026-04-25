@@ -3,6 +3,7 @@
 // O processamento real (Vertex AI) acontece em api/process.js chamado pelo QStash.
 
 import { Redis } from '@upstash/redis';
+import { Ratelimit } from '@upstash/ratelimit';
 import { Client as QStashClient } from '@upstash/qstash';
 import { randomUUID } from 'crypto';
 
@@ -13,15 +14,36 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
+// Rate limit: máximo 5 requests por IP a cada 60 segundos
+const ratelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '60 s'),
+  prefix: 'rl:submit',
+});
+
 const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // ─── Rate limiting por IP ────────────────────────────────────────────────────
+  const ip =
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    'unknown';
+
+  const { success, limit, remaining, reset } = await ratelimit.limit(ip);
+
+  res.setHeader('X-RateLimit-Limit', limit);
+  res.setHeader('X-RateLimit-Remaining', remaining);
+  res.setHeader('X-RateLimit-Reset', reset);
+
+  if (!success) {
+    return res.status(429).json({
+      error: 'Muitas requisições. Aguarde alguns segundos e tente novamente.',
+    });
+  }
 
   try {
     const { personImage, garmentImage, category, clientKey } = req.body;
@@ -30,7 +52,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'personImage e garmentImage são obrigatórios' });
     }
 
-    // Valida a chave do cliente (exceto demo sem chave)
+    // ─── Validação de clientKey (obrigatória fora do demo) ───────────────────
+    let clientDomain = null;
+
     if (clientKey) {
       const raw = await redis.get(`client:${clientKey}`);
       if (!raw) {
@@ -40,9 +64,30 @@ export default async function handler(req, res) {
       if (!client.active) {
         return res.status(403).json({ error: 'Acesso suspenso. Entre em contato com o suporte.' });
       }
-      // Incrementa o contador de uso
-      client.usageCount = (client.usageCount || 0) + 1;
-      await redis.set(`client:${clientKey}`, JSON.stringify(client));
+
+      // Valida o domínio de origem contra o domínio cadastrado no cliente
+      if (client.store) {
+        const origin = req.headers.origin || req.headers.referer || '';
+        const allowed = client.store.replace(/^https?:\/\//, '').replace(/\/$/, '');
+        const incoming = origin.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0];
+        if (incoming && allowed && !incoming.endsWith(allowed)) {
+          return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
+        }
+        clientDomain = allowed;
+      }
+
+      // Incremento atômico — sem race condition em alta concorrência
+      await redis.incr(`usage:${clientKey}`);
+
+      // Mantém usageCount sincronizado no objeto principal (leitura eventual)
+      const usageTotal = await redis.get(`usage:${clientKey}`);
+      await redis.set(
+        `client:${clientKey}`,
+        JSON.stringify({ ...client, usageCount: Number(usageTotal) || 0 })
+      );
+    } else if (process.env.NODE_ENV === 'production') {
+      // Em produção, exige clientKey — bloqueia uso sem chave
+      return res.status(403).json({ error: 'clientKey obrigatória.' });
     }
 
     const jobId = randomUUID();
