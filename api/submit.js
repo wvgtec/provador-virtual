@@ -3,7 +3,6 @@
 // O processamento real (Vertex AI) acontece em api/process.js chamado pelo QStash.
 
 import { Redis } from '@upstash/redis';
-import { Ratelimit } from '@upstash/ratelimit';
 import { Client as QStashClient } from '@upstash/qstash';
 import { randomUUID } from 'crypto';
 
@@ -14,36 +13,28 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-// Rate limit: máximo 5 requests por IP a cada 60 segundos
-const ratelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(5, '60 s'),
-  prefix: 'rl:submit',
-});
-
 const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
+
+// Rate limiting simples via Redis — sem dependência extra
+// Retorna true se o IP ultrapassou o limite
+async function isRateLimited(ip, prefix, maxRequests, windowSeconds) {
+  const key = `${prefix}:${ip}`;
+  const count = await redis.incr(key);
+  if (count === 1) {
+    // Primeira requisição na janela — define o TTL
+    await redis.expire(key, windowSeconds);
+  }
+  return count > maxRequests;
+}
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ─── Rate limiting por IP ────────────────────────────────────────────────────
   const ip =
     req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
     req.socket?.remoteAddress ||
     'unknown';
-
-  const { success, limit, remaining, reset } = await ratelimit.limit(ip);
-
-  res.setHeader('X-RateLimit-Limit', limit);
-  res.setHeader('X-RateLimit-Remaining', remaining);
-  res.setHeader('X-RateLimit-Reset', reset);
-
-  if (!success) {
-    return res.status(429).json({
-      error: 'Muitas requisições. Aguarde alguns segundos e tente novamente.',
-    });
-  }
 
   try {
     const { personImage, garmentImage, category, clientKey } = req.body;
@@ -52,10 +43,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'personImage e garmentImage são obrigatórios' });
     }
 
-    // ─── Validação de clientKey (obrigatória fora do demo) ───────────────────
-    let clientDomain = null;
-
+    // ─── Validação de clientKey ───────────────────────────────────────────────
     if (clientKey) {
+      // Cliente com chave: 20 requests por minuto por IP
+      if (await isRateLimited(ip, 'rl:client', 20, 60)) {
+        return res.status(429).json({ error: 'Muitas requisições. Aguarde alguns segundos.' });
+      }
+
       const raw = await redis.get(`client:${clientKey}`);
       if (!raw) {
         return res.status(403).json({ error: 'Chave de cliente inválida.' });
@@ -65,7 +59,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Acesso suspenso. Entre em contato com o suporte.' });
       }
 
-      // Valida o domínio de origem contra o domínio cadastrado no cliente
+      // Valida domínio de origem contra o store cadastrado
       if (client.store) {
         const origin = req.headers.origin || req.headers.referer || '';
         const allowed = client.store.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -73,35 +67,26 @@ export default async function handler(req, res) {
         if (incoming && allowed && !incoming.endsWith(allowed)) {
           return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
         }
-        clientDomain = allowed;
       }
 
-      // Incremento atômico — sem race condition em alta concorrência
+      // Incremento atômico do contador de uso
       await redis.incr(`usage:${clientKey}`);
-
-      // Mantém usageCount sincronizado no objeto principal (leitura eventual)
       const usageTotal = await redis.get(`usage:${clientKey}`);
+      const clientObj = typeof raw === 'string' ? JSON.parse(raw) : raw;
       await redis.set(
         `client:${clientKey}`,
-        JSON.stringify({ ...client, usageCount: Number(usageTotal) || 0 })
+        JSON.stringify({ ...clientObj, usageCount: Number(usageTotal) || 0 })
       );
+
     } else {
-      // Sem clientKey: modo demo — rate limit mais restrito (2 por minuto por IP)
-      const demoLimit = new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(2, '60 s'),
-        prefix: 'rl:demo',
-      });
-      const demoCheck = await demoLimit.limit(ip);
-      if (!demoCheck.success) {
-        return res.status(429).json({ error: 'Limite do modo demo atingido. Aguarde.' });
+      // Modo demo (sem chave): 2 requests por minuto por IP
+      if (await isRateLimited(ip, 'rl:demo', 2, 60)) {
+        return res.status(429).json({ error: 'Limite do modo demo atingido. Aguarde 1 minuto.' });
       }
     }
 
     const jobId = randomUUID();
 
-    // Salva as imagens no Redis — o QStash tem limite de 1MB por mensagem,
-    // então as imagens ficam aqui e o process.js as busca pelo jobId
     await redis.set(
       `job:${jobId}`,
       JSON.stringify({
@@ -116,7 +101,6 @@ export default async function handler(req, res) {
       { ex: 3600 }
     );
 
-    // Envia só o jobId para a fila — mensagem pequena, sem imagens
     const callbackUrl = `${process.env.APP_URL}/api/process`;
 
     await qstash.publishJSON({

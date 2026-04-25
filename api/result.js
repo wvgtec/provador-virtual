@@ -3,32 +3,30 @@
 // Retorna: pending | processing | done (+ imagem) | error
 
 import { Redis } from '@upstash/redis';
-import { Ratelimit } from '@upstash/ratelimit';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-// Rate limit: máximo 30 polls por IP por minuto (1 a cada 2s por até 5 jobs simultâneos)
-const ratelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(30, '60 s'),
-  prefix: 'rl:result',
-});
+async function isRateLimited(ip, prefix, maxRequests, windowSeconds) {
+  const key = `${prefix}:${ip}`;
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, windowSeconds);
+  return count > maxRequests;
+}
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ─── Rate limiting por IP ────────────────────────────────────────────────────
   const ip =
     req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
     req.socket?.remoteAddress ||
     'unknown';
 
-  const { success } = await ratelimit.limit(ip);
-  if (!success) {
+  // 30 polls por minuto por IP
+  if (await isRateLimited(ip, 'rl:result', 30, 60)) {
     return res.status(429).json({ error: 'Polling muito frequente. Aguarde.' });
   }
 
