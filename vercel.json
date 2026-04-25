@@ -1,9 +1,33 @@
 {
   "functions": {
-    "api/submit.js": { "maxDuration": 10, "memory": 256 },
-    "api/process.js": { "maxDuration": 60, "memory": 512 },
-    "api/result.js": { "maxDuration": 10, "memory": 128 },
-    "api/lead.js": { "maxDuration": 10, "memory": 128 }
+    "api/submit.js": {
+      "maxDuration": 10,
+      "memory": 256
+    },
+    "api/process.js": {
+      "maxDuration": 60,
+      "memory": 512
+    },
+    "api/result.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/upload-url.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/leads.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/lead.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/save-lead.js": {
+      "maxDuration": 10,
+      "memory": 128
+    }
   },
   "headers": [
     {
@@ -11,7 +35,7 @@
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, Upstash-Signature" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, Upstash-Signature, X-Client-Secret" },
         { "key": "Cache-Control", "value": "no-store" }
       ]
     },
