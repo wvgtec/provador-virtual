@@ -1,24 +1,15 @@
 // api/submit.js
-// Recebe a requisição do widget, salva as imagens no Redis e envia só o jobId para a fila.
-// O processamento real (Vertex AI) acontece em api/process.js chamado pelo QStash.
+// Recebe a requisição do widget, valida cliente, lead e cria job na fila.
+// Imagens chegam como URLs do GCS — nunca mais base64 no Redis.
 
 import { Redis } from '@upstash/redis';
 import { Client as QStashClient } from '@upstash/qstash';
 import { randomUUID } from 'crypto';
 
-const PROJECT_ID = 'provador-virtual-494213';
-
-// Tamanho máximo aceito para imagens em base64 (~2MB → ~1.5MB de imagem real)
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
-
-// Categorias permitidas
+const PROJECT_ID       = 'provador-virtual-494213';
 const VALID_CATEGORIES = ['tops', 'bottoms', 'one-pieces', 'auto'];
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
-
+const redis  = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
 const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
 
 async function isRateLimited(ip, prefix, maxRequests, windowSeconds) {
@@ -32,6 +23,16 @@ function isValidClientKey(key) {
   return typeof key === 'string' && /^pvk_[a-f0-9]{32}$/.test(key);
 }
 
+function isSafeUrl(value) {
+  try {
+    const url = new URL(value.startsWith('//') ? 'https:' + value : value);
+    if (!['http:', 'https:'].includes(url.protocol)) return false;
+    const host = url.hostname;
+    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1|fc00:|fd)/.test(host)) return false;
+    return true;
+  } catch { return false; }
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -41,115 +42,104 @@ export default async function handler(req, res) {
     req.socket?.remoteAddress ||
     'unknown';
 
-  try {
-    const { personImage, garmentImage, category, clientKey } = req.body;
+  const {
+    personImageUrl,  // URL do GCS — obrigatório
+    garmentImage,    // URL da peça (loja ou GCS)
+    garmentImageUrl, // alias para garmentImage
+    category,
+    clientKey,
+    lead,            // { name, email, whatsapp }
+    productUrl,      // URL da página do produto (analytics)
+  } = req.body || {};
 
-    // ─── Validação de campos obrigatórios ────────────────────────────────────
-    if (!personImage || !garmentImage) {
-      return res.status(400).json({ error: 'personImage e garmentImage são obrigatórios' });
-    }
-
-    // ─── Validação de tamanho de imagem ──────────────────────────────────────
-    if (personImage.length > MAX_IMAGE_SIZE) {
-      return res.status(413).json({ error: 'Foto da pessoa muito grande. Máximo 2MB.' });
-    }
-    if (garmentImage.length > MAX_IMAGE_SIZE) {
-      return res.status(413).json({ error: 'Foto da peça muito grande. Máximo 2MB.' });
-    }
-
-    // ─── Sanitização de category ─────────────────────────────────────────────
-    const safeCategory = VALID_CATEGORIES.includes(category) ? category : 'auto';
-
-    // ─── Validação de clientKey ───────────────────────────────────────────────
-    if (clientKey) {
-      if (!isValidClientKey(clientKey)) {
-        return res.status(400).json({ error: 'Formato de chave inválido.' });
-      }
-
-      // Cliente com chave: 20 requests por minuto por IP
-      if (await isRateLimited(ip, 'rl:client', 20, 60)) {
-        return res.status(429).json({ error: 'Muitas requisições. Aguarde alguns segundos.' });
-      }
-
-      const raw = await redis.get(`client:${clientKey}`);
-      if (!raw) {
-        return res.status(403).json({ error: 'Chave de cliente inválida.' });
-      }
-      const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      if (!client.active) {
-        return res.status(403).json({ error: 'Acesso suspenso. Entre em contato com o suporte.' });
-      }
-
-      // Valida domínio de origem contra o store cadastrado
-      // Remove www e subdomínios comuns para comparar só o domínio raiz
-      if (client.store) {
-        const origin = req.headers.origin || req.headers.referer || '';
-        if (origin) {
-          const normalize = (s) =>
-            s.replace(/^https?:\/\//, '')
-             .replace(/\/$/, '')
-             .split('/')[0]
-             .replace(/^www\./, '');
-          const allowed  = normalize(client.store);
-          const incoming = normalize(origin);
-          // Permite domínio exato ou qualquer subdomínio do domínio cadastrado
-          const isAllowed =
-            incoming === allowed ||
-            incoming.endsWith('.' + allowed);
-          if (allowed && !isAllowed) {
-            return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
-          }
-        }
-      }
-
-      // Incremento atômico do contador de uso
-      await redis.incr(`usage:${clientKey}`);
-      const usageTotal = await redis.get(`usage:${clientKey}`);
-      const clientObj = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      await redis.set(
-        `client:${clientKey}`,
-        JSON.stringify({ ...clientObj, usageCount: Number(usageTotal) || 0 })
-      );
-
-    } else {
-      // Modo demo (sem chave): 2 requests por minuto por IP
-      if (await isRateLimited(ip, 'rl:demo', 2, 60)) {
-        return res.status(429).json({ error: 'Limite do modo demo atingido. Aguarde 1 minuto.' });
-      }
-    }
-
-    const jobId = randomUUID();
-
-    await redis.set(
-      `job:${jobId}`,
-      JSON.stringify({
-        status: 'pending',
-        createdAt: Date.now(),
-        projectId: PROJECT_ID,
-        personImage,
-        garmentImage,
-        category: safeCategory,
-        clientKey: clientKey || null,
-      }),
-      { ex: 3600 }
-    );
-
-    const callbackUrl = `${process.env.APP_URL}/api/process`;
-
-    await qstash.publishJSON({
-      url: callbackUrl,
-      body: { jobId },
-      retries: 3,
-    });
-
-    return res.status(202).json({
-      jobId,
-      status: 'pending',
-      message: 'Job criado. Use /api/result?jobId=' + jobId + ' para acompanhar.',
-    });
-
-  } catch (err) {
-    console.error('[submit] Erro:', err);
-    return res.status(500).json({ error: 'Erro interno ao criar job.' });
+  // ─── clientKey obrigatório ────────────────────────────────────────────────
+  if (!clientKey || !isValidClientKey(clientKey)) {
+    return res.status(400).json({ error: 'clientKey obrigatório.' });
   }
+
+  if (await isRateLimited(ip, 'rl:client', 20, 60)) {
+    return res.status(429).json({ error: 'Muitas requisições. Aguarde alguns segundos.' });
+  }
+
+  const raw = await redis.get(`client:${clientKey}`);
+  if (!raw) return res.status(403).json({ error: 'Chave de cliente inválida.' });
+  const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  if (!client.active) return res.status(403).json({ error: 'Acesso suspenso. Entre em contato com o suporte.' });
+
+  // ─── Validação de domínio ─────────────────────────────────────────────────
+  if (client.store) {
+    const origin = req.headers.origin || req.headers.referer || '';
+    if (origin) {
+      const normalize = (s) =>
+        s.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0].replace(/^www\./, '');
+      const allowed  = normalize(client.store);
+      const incoming = normalize(origin);
+      const isAllowed = incoming === allowed || incoming.endsWith('.' + allowed);
+      if (allowed && !isAllowed) {
+        return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
+      }
+    }
+  }
+
+  // ─── Imagens ──────────────────────────────────────────────────────────────
+  const finalPersonUrl  = personImageUrl;
+  const finalGarmentUrl = garmentImageUrl || garmentImage;
+
+  if (!finalPersonUrl || !finalPersonUrl.startsWith('https://storage.googleapis.com/')) {
+    return res.status(400).json({ error: 'personImageUrl inválida. Use /api/upload-url primeiro.' });
+  }
+  if (!finalGarmentUrl) {
+    return res.status(400).json({ error: 'garmentImage obrigatório.' });
+  }
+  if (!isSafeUrl(finalGarmentUrl)) {
+    return res.status(400).json({ error: 'URL da peça não permitida.' });
+  }
+
+  // ─── Lead (opcional — pode ser enviado depois via /api/save-lead) ─────────
+  const leadName     = lead?.name?.trim()     || '';
+  const leadEmail    = lead?.email?.trim()    || '';
+  const leadWhatsapp = lead?.whatsapp?.trim() || '';
+  const hasLead      = !!(leadName && leadEmail && leadWhatsapp);
+
+  if (hasLead && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail)) {
+    return res.status(400).json({ error: 'Formato de email inválido.' });
+  }
+
+  const safeCategory    = VALID_CATEGORIES.includes(category) ? category : 'auto';
+  const finalProductUrl = productUrl || finalGarmentUrl;
+
+  // ─── Contagem de uso ──────────────────────────────────────────────────────
+  const newCount = await redis.incr(`usage:${clientKey}`);
+  await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, usageCount: Number(newCount) || 0 }));
+
+  // ─── Cria job — só metadados, sem imagens inline ──────────────────────────
+  const jobId = randomUUID();
+
+  await redis.set(
+    `job:${jobId}`,
+    JSON.stringify({
+      status:          'pending',
+      createdAt:       Date.now(),
+      projectId:       PROJECT_ID,
+      personImageUrl:  finalPersonUrl,
+      garmentImageUrl: finalGarmentUrl,
+      category:        safeCategory,
+      clientKey,
+      lead:            hasLead ? { name: leadName, email: leadEmail, whatsapp: leadWhatsapp } : null,
+      productUrl:      finalProductUrl,
+    }),
+    { ex: 3600 }
+  );
+
+  await qstash.publishJSON({
+    url:     `${process.env.APP_URL}/api/process`,
+    body:    { jobId },
+    retries: 3,
+  });
+
+  return res.status(202).json({
+    jobId,
+    status:  'pending',
+    message: 'Job criado. Use /api/result?jobId=' + jobId + ' para acompanhar.',
+  });
 }

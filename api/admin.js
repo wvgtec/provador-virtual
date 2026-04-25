@@ -14,6 +14,10 @@ function generateKey() {
   return 'pvk_' + randomBytes(16).toString('hex');
 }
 
+function generateSecret() {
+  return randomBytes(20).toString('base64url'); // ~27 chars, URL-safe
+}
+
 function getSecret(req) {
   const auth = req.headers.authorization || '';
   if (auth.startsWith('Bearer ')) return auth.slice(7).trim();
@@ -97,9 +101,10 @@ export default async function handler(req, res) {
       const { name, email, store, plan } = req.body || {};
       if (!name || !email) return res.status(400).json({ error: 'name e email são obrigatórios' });
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Formato de email inválido.' });
-      const key = generateKey();
+      const key    = generateKey();
+      const secret = generateSecret();
       const client = {
-        key, name, email,
+        key, secret, name, email,
         store: store || '',
         plan: plan || 'starter',
         active: true,
@@ -107,7 +112,8 @@ export default async function handler(req, res) {
         createdAt: Date.now(),
       };
       await redis.set(`client:${key}`, JSON.stringify(client));
-      return res.status(201).json({ ok: true, key, client });
+      // Retorna o secret apenas neste momento — não é recuperável depois
+      return res.status(201).json({ ok: true, key, secret, client });
     }
 
     // TOGGLE
