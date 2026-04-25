@@ -85,9 +85,17 @@ export default async function handler(req, res) {
         `client:${clientKey}`,
         JSON.stringify({ ...client, usageCount: Number(usageTotal) || 0 })
       );
-    } else if (process.env.NODE_ENV === 'production') {
-      // Em produção, exige clientKey — bloqueia uso sem chave
-      return res.status(403).json({ error: 'clientKey obrigatória.' });
+    } else {
+      // Sem clientKey: modo demo — rate limit mais restrito (2 por minuto por IP)
+      const demoLimit = new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(2, '60 s'),
+        prefix: 'rl:demo',
+      });
+      const demoCheck = await demoLimit.limit(ip);
+      if (!demoCheck.success) {
+        return res.status(429).json({ error: 'Limite do modo demo atingido. Aguarde.' });
+      }
     }
 
     const jobId = randomUUID();

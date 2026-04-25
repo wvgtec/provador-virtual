@@ -3,7 +3,7 @@
 // NUNCA deve ser chamado diretamente pelo browser — só pelo QStash.
 
 import { Redis } from '@upstash/redis';
-import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
+import { Receiver } from '@upstash/qstash';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
@@ -137,11 +137,37 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
   return `data:image/png;base64,${imageBase64}`;
 }
 
+// ─── Validação de assinatura QStash ──────────────────────────────────────────
+
+const receiver = new Receiver({
+  currentSigningKey:  process.env.QSTASH_CURRENT_SIGNING_KEY,
+  nextSigningKey:     process.env.QSTASH_NEXT_SIGNING_KEY,
+});
+
 // ─── Handler principal ────────────────────────────────────────────────────────
 
 async function processHandler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Verifica que a chamada veio realmente do QStash
+  try {
+    const signature = req.headers['upstash-signature'];
+    if (!signature) {
+      return res.status(401).json({ error: 'Assinatura ausente.' });
+    }
+    const rawBody = JSON.stringify(req.body);
+    const isValid = await receiver.verify({
+      signature,
+      body: rawBody,
+      clockTolerance: 60,
+    });
+    if (!isValid) {
+      return res.status(401).json({ error: 'Assinatura inválida.' });
+    }
+  } catch (e) {
+    return res.status(401).json({ error: 'Falha na verificação: ' + e.message });
   }
 
   const { jobId } = req.body;
@@ -200,6 +226,4 @@ async function processHandler(req, res) {
   }
 }
 
-// Valida que a chamada veio mesmo do QStash (assinatura HMAC)
-// Requests sem assinatura válida são rejeitados com 401 antes de executar qualquer lógica
-export default verifySignatureAppRouter(processHandler);
+export default processHandler;
