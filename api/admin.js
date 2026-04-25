@@ -138,6 +138,84 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // CHANGE PLAN
+    if (action === 'changePlan') {
+      const { key, plan } = req.body || {};
+      if (!key) return res.status(400).json({ error: 'key é obrigatório' });
+      if (!isValidClientKey(key)) return res.status(400).json({ error: 'Formato de key inválido.' });
+      const validPlans = ['starter', 'pro', 'growth', 'scale', 'enterprise'];
+      if (!validPlans.includes(plan)) return res.status(400).json({ error: 'Plano inválido.' });
+      const raw = await redis.get(`client:${key}`);
+      if (!raw) return res.status(404).json({ error: 'Cliente não encontrado' });
+      const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      client.plan = plan;
+      await redis.set(`client:${key}`, JSON.stringify(client));
+      return res.json({ ok: true, plan });
+    }
+
+    // RESET USAGE
+    if (action === 'resetUsage') {
+      const { key } = req.body || {};
+      if (!key) return res.status(400).json({ error: 'key é obrigatório' });
+      if (!isValidClientKey(key)) return res.status(400).json({ error: 'Formato de key inválido.' });
+      const raw = await redis.get(`client:${key}`);
+      if (!raw) return res.status(404).json({ error: 'Cliente não encontrado' });
+      const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      client.usageCount = 0;
+      await redis.set(`client:${key}`, JSON.stringify(client));
+      // Também zera o contador separado de usage:key
+      await redis.set(`usage:${key}`, 0);
+      return res.json({ ok: true });
+    }
+
+    // JOBS — lista os últimos jobs (SCAN em job:*)
+    if (action === 'jobs') {
+      const limit  = Math.min(Number(req.query.limit  || req.body?.limit)  || 50, 200);
+      const filter = req.query.clientKey || req.body?.clientKey || '';
+
+      const jobKeys = [];
+      let cursor = 0;
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, { match: 'job:*', count: 200 });
+        cursor = Number(nextCursor);
+        jobKeys.push(...keys);
+      } while (cursor !== 0);
+
+      if (!jobKeys.length) return res.json({ jobs: [] });
+
+      const raws = await Promise.all(jobKeys.map(k => redis.get(k)));
+      let jobs = raws
+        .map((r, i) => {
+          const obj = typeof r === 'string' ? JSON.parse(r) : r;
+          if (!obj) return null;
+          if (!obj.jobId) obj.jobId = jobKeys[i].replace('job:', '');
+          return obj;
+        })
+        .filter(Boolean);
+
+      if (filter) jobs = jobs.filter(j => j.clientKey === filter);
+
+      jobs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      jobs = jobs.slice(0, limit);
+
+      return res.json({ jobs });
+    }
+
+    // UPDATE (campos genéricos: name, email, store)
+    if (action === 'update') {
+      const { key, name, email, store } = req.body || {};
+      if (!key) return res.status(400).json({ error: 'key é obrigatório' });
+      if (!isValidClientKey(key)) return res.status(400).json({ error: 'Formato de key inválido.' });
+      const raw = await redis.get(`client:${key}`);
+      if (!raw) return res.status(404).json({ error: 'Cliente não encontrado' });
+      const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (name  !== undefined) client.name  = name;
+      if (email !== undefined) client.email = email;
+      if (store !== undefined) client.store = store;
+      await redis.set(`client:${key}`, JSON.stringify(client));
+      return res.json({ ok: true, client });
+    }
+
     return res.status(400).json({ error: 'Ação inválida.' });
 
   } catch (err) {

@@ -9,6 +9,15 @@ import { randomUUID } from 'crypto';
 const PROJECT_ID       = 'provador-virtual-494213';
 const VALID_CATEGORIES = ['tops', 'bottoms', 'one-pieces', 'auto'];
 
+// ─── Planos e limites ─────────────────────────────────────────────────────────
+const PLAN_LIMITS = {
+  starter:    100,
+  pro:        500,
+  growth:     1000,
+  scale:      5000,
+  enterprise: Infinity,
+};
+
 const redis  = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
 const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
 
@@ -65,6 +74,18 @@ export default async function handler(req, res) {
   if (!raw) return res.status(403).json({ error: 'Chave de cliente inválida.' });
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (!client.active) return res.status(403).json({ error: 'Acesso suspenso. Entre em contato com o suporte.' });
+
+  // ─── Verificação de quota ─────────────────────────────────────────────────
+  const planLimit    = PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter;
+  const currentUsage = Number(client.usageCount) || 0;
+  if (currentUsage >= planLimit) {
+    return res.status(429).json({
+      error: `Limite do plano "${client.plan || 'starter'}" atingido (${planLimit} tryons). Faça upgrade para continuar.`,
+      code:  'QUOTA_EXCEEDED',
+      limit: planLimit,
+      usage: currentUsage,
+    });
+  }
 
   // ─── Validação de domínio ─────────────────────────────────────────────────
   if (client.store) {
