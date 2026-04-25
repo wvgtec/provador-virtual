@@ -1,6 +1,6 @@
 // api/result.js
 // Consultado pelo widget via polling para verificar o status do job.
-// Retorna: pending | processing | done (+ imagem) | error
+// Retorna: pending | processing | done (+ resultImage) | error
 
 import { Redis } from '@upstash/redis';
 
@@ -50,7 +50,16 @@ export default async function handler(req, res) {
 
   const job = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
+  // Retorna apenas os campos necessários — nunca devolve as imagens originais ou clientKey
+  const safePayload = {
+    status: job.status,
+    ...(job.status === 'done'       && { resultImage: job.resultImage, completedAt: job.completedAt }),
+    ...(job.status === 'processing' && { startedAt: job.startedAt }),
+    ...(job.status === 'error'      && { error: 'Erro ao processar imagem.' }),
+    ...(job.status === 'pending'    && { createdAt: job.createdAt }),
+  };
+
   res.setHeader('Cache-Control', 'no-store');
 
-  return res.status(200).json(job);
+  return res.status(200).json(safePayload);
 }

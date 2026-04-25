@@ -93,9 +93,7 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
   const personB64  = await toBase64(personImage);
   const productB64 = await toBase64(garmentImage);
 
-  console.log('[Vertex] personB64 len:', personB64?.length);
-  console.log('[Vertex] productB64 len:', productB64?.length);
-  console.log('[Vertex] category:', category);
+  console.log('[Vertex] iniciando request | category:', category);
 
   const instance = {
     personImage:   { image: { bytesBase64Encoded: personB64 } },
@@ -110,8 +108,6 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
       personGeneration: 'allow_all',
     },
   };
-
-  console.log('[Vertex] endpoint:', endpoint);
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -222,7 +218,7 @@ async function processHandler(req, res) {
       { ex: 3600 }
     );
 
-    return res.status(200).json({ jobId, status: 'error', error: err.message });
+    return res.status(200).json({ jobId, status: 'error', error: 'Erro ao processar imagem.' });
   }
 }
 

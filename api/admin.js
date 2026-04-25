@@ -3,7 +3,7 @@
 // CORS tratado globalmente pelo vercel.json — sem headers CORS aqui para evitar duplicatas.
 
 import { Redis } from '@upstash/redis';
-import { randomBytes } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL,
@@ -20,11 +20,48 @@ function getSecret(req) {
   return '';
 }
 
+// Comparação segura contra timing attack
+function safeCompare(a, b) {
+  try {
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    if (bufA.length !== bufB.length) return false;
+    return timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
+
+// Rate limiting simples via Redis
+async function isRateLimited(ip, prefix, maxRequests, windowSeconds) {
+  const key = `${prefix}:${ip}`;
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, windowSeconds);
+  return count > maxRequests;
+}
+
+// Validação de formato de chave pvk_
+function isValidClientKey(key) {
+  return typeof key === 'string' && /^pvk_[a-f0-9]{32}$/.test(key);
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // ─── Rate limiting no admin: 10 tentativas por minuto por IP ─────────────
+  const ip =
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    'unknown';
+
+  if (await isRateLimited(ip, 'rl:admin', 10, 60)) {
+    return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
+  }
+
+  // ─── Autenticação com comparação segura ──────────────────────────────────
   const secret = getSecret(req);
-  if (!secret || secret !== process.env.ADMIN_SECRET) {
+  const expected = process.env.ADMIN_SECRET || '';
+  if (!secret || !safeCompare(secret, expected)) {
     return res.status(401).json({ error: 'Senha incorreta' });
   }
 
@@ -40,7 +77,6 @@ export default async function handler(req, res) {
         .map((r, i) => {
           const obj = typeof r === 'string' ? JSON.parse(r) : r;
           if (!obj) return null;
-          // Compatibilidade: injeta o key caso o objeto antigo não tenha
           if (!obj.key) obj.key = redisKeys[i].replace('client:', '');
           return obj;
         })
@@ -70,6 +106,7 @@ export default async function handler(req, res) {
     if (action === 'toggle') {
       const { key } = req.body || {};
       if (!key) return res.status(400).json({ error: 'key é obrigatório' });
+      if (!isValidClientKey(key)) return res.status(400).json({ error: 'Formato de key inválido.' });
       const raw = await redis.get(`client:${key}`);
       if (!raw) return res.status(404).json({ error: 'Cliente não encontrado' });
       const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -82,14 +119,15 @@ export default async function handler(req, res) {
     if (action === 'delete') {
       const { key } = req.body || {};
       if (!key) return res.status(400).json({ error: 'key é obrigatório' });
+      if (!isValidClientKey(key)) return res.status(400).json({ error: 'Formato de key inválido.' });
       await redis.del(`client:${key}`);
       return res.json({ ok: true });
     }
 
-    return res.status(400).json({ error: 'Ação inválida: ' + action });
+    return res.status(400).json({ error: 'Ação inválida.' });
 
   } catch (err) {
     console.error('[admin] Erro:', err);
-    return res.status(500).json({ error: 'Erro interno', detail: err.message });
+    return res.status(500).json({ error: 'Erro interno no servidor.' });
   }
 }
