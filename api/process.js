@@ -67,6 +67,20 @@ function pemToBuffer(pem) {
   return Buffer.from(b64, 'base64');
 }
 
+// Bloqueia SSRF: rejeita IPs privados, loopback e link-local
+function isSafeUrl(value) {
+  try {
+    const url = new URL(value.startsWith('//') ? 'https:' + value : value);
+    if (!['http:', 'https:'].includes(url.protocol)) return false;
+    const host = url.hostname;
+    // Bloqueia loopback, privados e link-local
+    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1|fc00:|fd)/.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Vertex AI Virtual Try-On ─────────────────────────────────────────────────
 
 async function callVertexTryOn({ projectId, personImage, garmentImage, category }) {
@@ -83,9 +97,10 @@ async function callVertexTryOn({ projectId, personImage, garmentImage, category 
     if (!value.startsWith('http') && !value.startsWith('//')) {
       return stripPrefix(value);
     }
+    if (!isSafeUrl(value)) throw new Error('URL de imagem não permitida.');
     const url = value.startsWith('//') ? 'https:' + value : value;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Falha ao buscar imagem: ${url} → ${res.status}`);
+    if (!res.ok) throw new Error(`Falha ao buscar imagem: ${res.status}`);
     const buffer = await res.arrayBuffer();
     return Buffer.from(buffer).toString('base64');
   };

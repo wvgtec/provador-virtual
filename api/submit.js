@@ -81,12 +81,24 @@ export default async function handler(req, res) {
       }
 
       // Valida domínio de origem contra o store cadastrado
+      // Remove www e subdomínios comuns para comparar só o domínio raiz
       if (client.store) {
         const origin = req.headers.origin || req.headers.referer || '';
-        const allowed = client.store.replace(/^https?:\/\//, '').replace(/\/$/, '');
-        const incoming = origin.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0];
-        if (incoming && allowed && !incoming.endsWith(allowed)) {
-          return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
+        if (origin) {
+          const normalize = (s) =>
+            s.replace(/^https?:\/\//, '')
+             .replace(/\/$/, '')
+             .split('/')[0]
+             .replace(/^www\./, '');
+          const allowed  = normalize(client.store);
+          const incoming = normalize(origin);
+          // Permite domínio exato ou qualquer subdomínio do domínio cadastrado
+          const isAllowed =
+            incoming === allowed ||
+            incoming.endsWith('.' + allowed);
+          if (allowed && !isAllowed) {
+            return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
+          }
         }
       }
 

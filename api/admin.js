@@ -70,7 +70,14 @@ export default async function handler(req, res) {
   try {
     // LIST
     if (action === 'list') {
-      const redisKeys = await redis.keys('client:*');
+      // Usa SCAN em vez de KEYS para não bloquear o Redis em bases grandes
+      const redisKeys = [];
+      let cursor = 0;
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, { match: 'client:*', count: 100 });
+        cursor = Number(nextCursor);
+        redisKeys.push(...keys);
+      } while (cursor !== 0);
       if (!redisKeys.length) return res.json({ clients: [] });
       const raws = await Promise.all(redisKeys.map(k => redis.get(k)));
       const clients = raws
@@ -89,6 +96,7 @@ export default async function handler(req, res) {
     if (action === 'create') {
       const { name, email, store, plan } = req.body || {};
       if (!name || !email) return res.status(400).json({ error: 'name e email são obrigatórios' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Formato de email inválido.' });
       const key = generateKey();
       const client = {
         key, name, email,
