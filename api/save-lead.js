@@ -55,8 +55,10 @@ export default async function handler(req, res) {
   if (job.clientKey && job.clientKey !== clientKey) {
     return res.status(403).json({ error: 'Job não pertence a este cliente.' });
   }
-  if (job.status !== 'done') {
-    return res.status(400).json({ error: 'Job ainda não foi concluído.' });
+  // Aceita jobs em processamento ou concluídos — o widget pode submeter o lead
+  // antes de o status ser atualizado para 'done' no Redis (condição de corrida).
+  if (!['processing', 'done'].includes(job.status)) {
+    return res.status(400).json({ error: 'Job inválido ou em estado de erro.' });
   }
 
   // Já existe lead para este job?
