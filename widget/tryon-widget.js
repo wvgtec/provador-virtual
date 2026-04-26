@@ -1,6 +1,6 @@
 /**
- * Mirage — Widget de Provador Virtual v6.0
- * Design: NKSW v2 | API: Mirage (GCS upload + save-lead)
+ * Mirage — Widget de Provador Virtual v6.1
+ * Design: NKSW v3 | API: Mirage (GCS upload + save-lead)
  *
  * Configuração global (antes de carregar o script):
  *   window.VTON_API_URL          = 'https://...';
@@ -47,68 +47,140 @@
   const CSS = `
     .nksw-overlay {
       position: fixed; inset: 0; z-index: 99999;
-      background: rgba(0,0,0,0.72);
+      background: rgba(0,0,0,0.68);
       display: flex; align-items: center; justify-content: center;
       padding: 16px;
       animation: nksw-fade-in 0.2s ease;
     }
     @keyframes nksw-fade-in { from { opacity: 0 } to { opacity: 1 } }
+
     .nksw-modal {
-      background: #fff; border-radius: 16px;
-      width: 100%; max-width: 480px; max-height: 90dvh;
-      overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+      background: #fff; border-radius: 20px;
+      width: 100%; max-width: 420px; max-height: 90dvh;
+      overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.22);
       display: flex; flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     }
+
+    /* ── Header ── */
     .nksw-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 24px 16px; border-bottom: 1px solid #f0f0f0;
+      padding: 18px 20px 14px; border-bottom: 1px solid #f0f0f0;
+      position: sticky; top: 0; background: #fff; z-index: 2;
     }
-    .nksw-title { font-family: inherit; font-size: 17px; font-weight: 700; color: #111; margin: 0; }
+    .nksw-title {
+      font-size: 15px; font-weight: 700; color: #111; margin: 0;
+      letter-spacing: 0.01em;
+    }
     .nksw-close {
-      background: none; border: none; cursor: pointer;
-      width: 32px; height: 32px; border-radius: 50%;
+      background: #f4f4f4; border: none; cursor: pointer;
+      width: 30px; height: 30px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      color: #666; font-size: 20px; transition: background 0.15s;
+      color: #555; font-size: 18px; line-height: 1;
+      transition: background 0.15s; flex-shrink: 0;
     }
-    .nksw-close:hover { background: #f5f5f5; }
-    .nksw-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+    .nksw-close:hover { background: #e8e8e8; color: #111; }
+
+    /* ── Body ── */
+    .nksw-body {
+      padding: 20px; display: flex; flex-direction: column; gap: 14px;
+      flex: 1;
+    }
+
+    /* ── Upload Zone ── */
     .nksw-upload-zone {
-      border: 2px dashed #d1d1d1; border-radius: 12px;
-      padding: 32px 16px; text-align: center; cursor: pointer;
-      transition: border-color 0.2s, background 0.2s; position: relative;
+      text-align: center; cursor: pointer;
+      position: relative; padding: 24px 0 0;
+      transition: background 0.2s; border-radius: 12px;
     }
-    .nksw-upload-zone:hover, .nksw-upload-zone.drag-over { border-color: #1a1a1a; background: #fafafa; }
-    .nksw-upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .nksw-upload-icon { font-size: 36px; margin-bottom: 8px; }
-    .nksw-upload-text { font-size: 14px; color: #444; margin: 0; line-height: 1.5; }
-    .nksw-upload-hint { font-size: 12px; color: #999; margin: 6px 0 0; }
+    .nksw-upload-zone:hover { background: #fafafa; }
+    .nksw-upload-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%; z-index: 1;
+    }
+    .nksw-camera-icon {
+      width: 54px; height: 54px;
+      background: #F5C53F;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px;
+      box-shadow: 0 4px 12px rgba(245,197,63,0.35);
+    }
+    .nksw-camera-icon svg {
+      width: 26px; height: 26px;
+      stroke: #fff; fill: none; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    .nksw-upload-title {
+      font-size: 17px; font-weight: 700; color: #111;
+      margin: 0 0 6px; letter-spacing: -0.01em;
+    }
+    .nksw-upload-sub {
+      font-size: 13px; color: #777; margin: 0 auto 16px;
+      line-height: 1.55; max-width: 260px;
+    }
+    .nksw-upload-inner-zone {
+      border: 2px dashed #d4d4d4; border-radius: 12px;
+      padding: 20px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .nksw-upload-zone:hover .nksw-upload-inner-zone { border-color: #aaa; }
+    .nksw-upload-zone.drag-over .nksw-upload-inner-zone {
+      border-color: #555; background: #f5f5f5;
+    }
+    .nksw-upload-arrow { color: #888; }
+    .nksw-upload-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: #111; color: #fff; border: none; border-radius: 8px;
+      padding: 10px 22px; font-size: 14px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.01em; pointer-events: none;
+    }
+    .nksw-upload-btn svg {
+      width: 14px; height: 14px; stroke: #fff; fill: none;
+      stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .nksw-upload-hint { font-size: 11px; color: #bbb; margin: 0; letter-spacing: 0.04em; }
+
+    /* ── Preview ── */
     .nksw-preview-wrap { display: none; flex-direction: column; align-items: center; gap: 10px; }
     .nksw-preview-wrap.visible { display: flex; }
-    .nksw-preview-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; border: 1px solid #eee; background: #f5f5f5; }
+    .nksw-preview-img {
+      width: 100%; max-height: 280px; object-fit: contain;
+      border-radius: 12px; border: 1px solid #eee; background: #f8f8f8;
+    }
     .nksw-change-btn {
       background: none; border: 1px solid #ccc; border-radius: 8px;
-      padding: 6px 14px; font-size: 13px; cursor: pointer; color: #555; transition: border-color 0.15s;
+      padding: 7px 16px; font-size: 13px; cursor: pointer; color: #555;
+      transition: border-color 0.15s, color 0.15s;
     }
-    .nksw-change-btn:hover { border-color: #888; }
+    .nksw-change-btn:hover { border-color: #888; color: #111; }
+
+    /* ── Generate Button ── */
     .nksw-generate-btn {
-      width: 100%; padding: 14px; background: #111; color: #fff;
-      border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
-      cursor: pointer; transition: background 0.2s, opacity 0.2s; letter-spacing: 1px;
-      text-transform: uppercase;
+      width: 100%; padding: 15px; background: #111; color: #fff;
+      border: none; border-radius: 12px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s, opacity 0.2s;
+      letter-spacing: 1.8px; text-transform: uppercase;
     }
-    .nksw-generate-btn:hover:not(:disabled) { background: #333; }
-    .nksw-generate-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .nksw-generate-btn:hover:not(:disabled) { background: #2a2a2a; }
+    .nksw-generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .nksw-generate-btn.nksw-hidden { display: none; }
+
+    /* ── Loading ── */
     .nksw-loading { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 8px 0; }
     .nksw-loading.visible { display: flex; }
     .nksw-spinner {
-      width: 40px; height: 40px; border: 3px solid #eee;
+      width: 36px; height: 36px; border: 3px solid #f0f0f0;
       border-top-color: #111; border-radius: 50%;
-      animation: nksw-spin 0.7s linear infinite;
+      animation: nksw-spin 0.75s linear infinite;
     }
     @keyframes nksw-spin { to { transform: rotate(360deg) } }
     .nksw-loading-text { font-size: 14px; color: #555; text-align: center; line-height: 1.6; }
-    .nksw-progress { width: 100%; height: 4px; background: #eee; border-radius: 2px; overflow: hidden; }
+    .nksw-progress { width: 100%; height: 3px; background: #eee; border-radius: 2px; overflow: hidden; }
     .nksw-progress-bar { height: 100%; background: #111; border-radius: 2px; transition: width 1.8s ease; width: 0%; }
+
+    /* ── Lead ── */
     .nksw-lead { display: none; flex-direction: column; gap: 10px; }
     .nksw-lead.visible { display: flex; }
     .nksw-lead-inner {
@@ -136,27 +208,72 @@
     }
     .nksw-lead-skip:hover { color: #666; }
     .nksw-lead-sent { font-size: 13px; color: #2a7a2a; text-align: center; font-weight: 600; margin: 0; display: none; }
+
+    /* ── Result ── */
     .nksw-result-wrap { display: none; flex-direction: column; gap: 14px; }
     .nksw-result-wrap.visible { display: flex; }
-    .nksw-result-img { width: 100%; border-radius: 12px; border: 1px solid #eee; }
+    .nksw-result-img { width: 100%; border-radius: 14px; border: 1px solid #eee; }
     .nksw-result-actions { display: flex; gap: 10px; }
     .nksw-retry-btn {
-      flex: 1; padding: 12px; background: none; border: 1.5px solid #111;
-      border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+      flex: 1; padding: 12px; background: none; border: 1.5px solid #ddd;
+      border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+      color: #444; transition: border-color 0.15s, background 0.15s;
     }
-    .nksw-retry-btn:hover { background: #f5f5f5; }
+    .nksw-retry-btn:hover { background: #f5f5f5; border-color: #bbb; }
     .nksw-save-btn {
       flex: 1; padding: 12px; background: #111; color: #fff;
-      border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+      border: none; border-radius: 10px; font-size: 13px; font-weight: 600;
       cursor: pointer; transition: background 0.2s;
     }
     .nksw-save-btn:hover { background: #333; }
+
+    /* ── LGPD Notice (aparece após gerar a foto) ── */
+    .nksw-lgpd-notice {
+      display: none; align-items: flex-start; gap: 9px;
+      background: #f7f7f7; border-radius: 10px; padding: 12px 14px;
+    }
+    .nksw-lgpd-notice.visible { display: flex; }
+    .nksw-lgpd-notice svg {
+      width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px;
+      stroke: #999; fill: none; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    .nksw-lgpd-notice p { font-size: 10.5px; color: #888; margin: 0; line-height: 1.65; }
+    .nksw-lgpd-notice a { color: #666; text-decoration: underline; }
+    .nksw-lgpd-notice a:hover { color: #111; }
+
+    /* ── Error ── */
     .nksw-error {
       display: none; background: #fff3f3; border: 1px solid #ffc0c0;
       border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #c00; text-align: center;
     }
     .nksw-error.visible { display: block; }
-    .nksw-disclaimer { font-size: 11px; color: #bbb; text-align: center; line-height: 1.5; padding: 0 8px 4px; }
+
+    /* ── Footer ── */
+    .nksw-footer {
+      padding: 10px 20px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid #f0f0f0; gap: 12px;
+    }
+    .nksw-disclaimer { font-size: 10px; color: #ccc; margin: 0; line-height: 1.4; }
+    .nksw-powered-by {
+      display: flex; align-items: center; gap: 5px;
+      text-decoration: none; flex-shrink: 0;
+      opacity: 0.65; transition: opacity 0.15s;
+    }
+    .nksw-powered-by:hover { opacity: 1; }
+    .nksw-powered-by-label {
+      font-size: 9px; color: #aaa; letter-spacing: 0.04em;
+      white-space: nowrap; text-transform: uppercase;
+    }
+    .nksw-powered-by img { height: 16px; width: auto; display: block; }
+    .nksw-powered-by-fallback {
+      font-size: 12px; font-weight: 800; color: #111;
+      letter-spacing: 0.12em; font-family: Georgia, 'Times New Roman', serif;
+      display: none;
+    }
+
+    /* ── Trigger Button ── */
     .nksw-trigger-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
       cursor: pointer; transition: opacity 0.2s; font-family: inherit;
@@ -164,8 +281,9 @@
       font-size: 14px; font-weight: 700;
     }
     .nksw-trigger-btn:hover { opacity: 0.85; }
+
     @media (max-width: 480px) {
-      .nksw-modal { max-height: 100dvh; border-radius: 16px 16px 0 0; }
+      .nksw-modal { max-height: 100dvh; border-radius: 20px 20px 0 0; }
       .nksw-overlay { align-items: flex-end; padding: 0; }
     }
   `;
@@ -233,36 +351,69 @@
     overlay.innerHTML = `
       <div class="nksw-modal">
         <div class="nksw-header">
-          <h2 class="nksw-title">👙 Provador Virtual</h2>
+          <h2 class="nksw-title">Provador Virtual</h2>
           <button class="nksw-close" aria-label="Fechar">&times;</button>
         </div>
         <div class="nksw-body">
+
+          <!-- Upload Zone -->
           <div class="nksw-upload-zone" id="nksw-drop-zone" tabindex="0" role="button" aria-label="Enviar sua foto">
             <input type="file" id="nksw-file-input" accept="image/jpeg,image/png,image/webp" />
-            <div class="nksw-upload-icon">📸</div>
-            <p class="nksw-upload-text">Clique ou arraste sua foto aqui</p>
-            <p class="nksw-upload-hint">JPG, PNG ou WEBP · foto de corpo inteiro · boa iluminação</p>
+            <div class="nksw-camera-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </div>
+            <p class="nksw-upload-title">Sua prova começa aqui</p>
+            <p class="nksw-upload-sub">Envie uma foto sua de corpo inteiro para experimentar a peça selecionada.</p>
+            <div class="nksw-upload-inner-zone">
+              <svg class="nksw-upload-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <button class="nksw-upload-btn" type="button">
+                <svg viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Enviar foto
+              </button>
+              <p class="nksw-upload-hint">JPG · PNG · ATÉ 12MB</p>
+            </div>
           </div>
+
+          <!-- Preview da foto selecionada -->
           <div class="nksw-preview-wrap" id="nksw-preview-wrap">
             <img class="nksw-preview-img" id="nksw-preview-img" alt="Sua foto" />
             <button class="nksw-change-btn" id="nksw-change-btn">Trocar foto</button>
           </div>
+
+          <!-- Mensagem de erro -->
           <div class="nksw-error" id="nksw-error"></div>
+
+          <!-- Botão gerar -->
           <button class="nksw-generate-btn" id="nksw-generate-btn" disabled>
             EXPERIMENTAR VIRTUALMENTE
           </button>
+
+          <!-- Loading (oculta o botão enquanto gera) -->
           <div class="nksw-loading" id="nksw-loading">
             <div class="nksw-spinner"></div>
             <p class="nksw-loading-text" id="nksw-loading-text">
-              Gerando seu look...<br><small>Aguarde alguns segundos</small>
+              Gerando seu look...<br><small>Isso leva cerca de 10–20 segundos</small>
             </p>
             <div class="nksw-progress">
               <div class="nksw-progress-bar" id="nksw-progress-bar"></div>
             </div>
           </div>
+
+          <!-- Formulário de lead -->
           <div class="nksw-lead" id="nksw-lead">
             <div class="nksw-lead-inner" id="nksw-lead-inner">
-              <p class="nksw-lead-title">🛍️ Gostou do resultado?</p>
+              <p class="nksw-lead-title">Gostou do resultado?</p>
               <p class="nksw-lead-sub">${leadSub}</p>
               <input id="nksw-lead-name"  type="text"  placeholder="Seu nome"   autocomplete="name" />
               <input id="nksw-lead-phone" type="tel"   placeholder="WhatsApp"   autocomplete="tel" />
@@ -274,16 +425,44 @@
               ✅ Cadastro realizado! Fique de olho na sua caixa de entrada.
             </p>
           </div>
+
+          <!-- Resultado gerado -->
           <div class="nksw-result-wrap" id="nksw-result-wrap">
             <img class="nksw-result-img" id="nksw-result-img" alt="Resultado do provador virtual" />
             <div class="nksw-result-actions">
-              <button class="nksw-retry-btn" id="nksw-retry-btn">🔄 Tentar novamente</button>
-              <button class="nksw-save-btn"  id="nksw-save-btn">💾 Salvar foto</button>
+              <button class="nksw-retry-btn" id="nksw-retry-btn">↺ Tentar novamente</button>
+              <button class="nksw-save-btn"  id="nksw-save-btn">↓ Salvar foto</button>
             </div>
           </div>
-          <p class="nksw-disclaimer">
-            🔒 Sua foto é processada em tempo real e não é armazenada em nenhum servidor.
-          </p>
+
+          <!-- Aviso LGPD (exibido após gerar a foto) -->
+          <div class="nksw-lgpd-notice" id="nksw-lgpd-notice">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <p>
+              As imagens são processadas em sessão temporária e descartadas automaticamente,
+              em conformidade com a <strong>LGPD</strong> e GDPR. Ao usar este serviço, você concorda
+              com a <a href="https://www.mirageai.com.br" target="_blank" rel="noopener">Política de Privacidade</a>
+              e os <a href="https://www.mirageai.com.br" target="_blank" rel="noopener">Termos de Uso</a> da Mirage.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Footer com powered by Mirage -->
+        <div class="nksw-footer">
+          <p class="nksw-disclaimer">🔒 Foto processada em tempo real, sem armazenamento.</p>
+          <a href="https://www.mirageai.com.br" target="_blank" rel="noopener" class="nksw-powered-by" title="Powered by Mirage">
+            <span class="nksw-powered-by-label">powered by</span>
+            <img
+              src="https://www.mirageai.com.br/logo-mirage.png"
+              alt="Mirage"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='block';"
+            />
+            <span class="nksw-powered-by-fallback">MIRAGE</span>
+          </a>
         </div>
       </div>
     `;
@@ -334,6 +513,7 @@
     const resultImg   = $('nksw-result-img');
     const retryBtn    = $('nksw-retry-btn');
     const saveBtn     = $('nksw-save-btn');
+    const lgpdNotice  = $('nksw-lgpd-notice');
     const closeBtn    = overlay.querySelector('.nksw-close');
 
     // Estado
@@ -422,7 +602,9 @@
       dropZone.style.display = 'none';
       previewWrap.classList.add('visible');
       resultWrap.classList.remove('visible');
+      lgpdNotice.classList.remove('visible');
       generateBtn.disabled = true;
+      generateBtn.classList.remove('nksw-hidden');
 
       processImage(file)
         .then(dataUrl => { selectedDataUrl = dataUrl; generateBtn.disabled = false; })
@@ -441,6 +623,7 @@
       resultWrap.classList.remove('visible');
       loading.classList.remove('visible');
       leadWrap.classList.remove('visible');
+      lgpdNotice.classList.remove('visible');
       leadInner.style.display = '';
       leadSent.style.display  = 'none';
       leadSubmit.disabled     = false;
@@ -450,6 +633,7 @@
       leadEmail.value = '';
       dropZone.style.display = '';
       generateBtn.disabled   = true;
+      generateBtn.classList.remove('nksw-hidden');
       setProgress(0);
       clearError();
     }
@@ -509,12 +693,16 @@
     generateBtn.addEventListener('click', async () => {
       if (!selectedDataUrl) { showError('Aguarde o processamento da foto.'); return; }
       clearError();
+
+      // Oculta o botão enquanto está gerando
       generateBtn.disabled = true;
+      generateBtn.classList.add('nksw-hidden');
+
       previewWrap.classList.remove('visible');
       resultWrap.classList.remove('visible');
       loading.classList.add('visible');
       if (!leadDone) leadWrap.classList.add('visible');
-      loadingText.innerHTML = 'Gerando seu look...<br><small>Aguarde alguns segundos</small>';
+      loadingText.innerHTML = 'Gerando seu look...<br><small>Isso leva cerca de 10–20 segundos</small>';
       setProgress(10);
 
       try {
@@ -539,7 +727,6 @@
         setProgress(40);
 
         // 3. Submete o job (sem lead — salvo depois via save-lead)
-        loadingText.innerHTML = 'Gerando seu look...<br><small>Isso leva cerca de 10–20 segundos</small>';
         const submitRes = await fetch(`${apiUrl}/api/submit`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -589,12 +776,17 @@
 
         resultWrap.classList.add('visible');
 
+        // Exibe aviso LGPD após a foto ser gerada
+        lgpdNotice.classList.add('visible');
+
         // Se tinha lead pendente que ainda não foi enviado (job acabou depois)
         if (pendingLead) await postLead(pendingLead);
 
       } catch (err) {
         showError(err?.message || 'Erro inesperado. Tente novamente.');
         previewWrap.classList.add('visible');
+        // Restaura o botão em caso de erro
+        generateBtn.classList.remove('nksw-hidden');
         generateBtn.disabled = false;
         setProgress(0);
       } finally {
