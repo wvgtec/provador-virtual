@@ -55,6 +55,8 @@
       padding: 18px 20px 14px; border-bottom: 1px solid #f0f0f0;
       position: sticky; top: 0; background: #fff; z-index: 2;
     }
+    .nksw-title-wrap { display: flex; align-items: center; gap: 8px; }
+    .nksw-title-logo { height: 28px; width: auto; display: block; }
     .nksw-title { font-size: 15px; font-weight: 700; color: #111; margin: 0; letter-spacing: 0.01em; }
     .nksw-close {
       background: #f4f4f4; border: none; cursor: pointer;
@@ -357,7 +359,15 @@
     overlay.innerHTML = `
       <div class="nksw-modal">
         <div class="nksw-header">
-          <h2 class="nksw-title">Provador Virtual</h2>
+          <div class="nksw-title-wrap">
+            <img
+              class="nksw-title-logo"
+              src="https://www.mirageai.com.br/logo-mirage.png"
+              alt="Mirage"
+              onerror="this.style.display='none'"
+            />
+            <h2 class="nksw-title">Provador Virtual</h2>
+          </div>
           <button class="nksw-close" aria-label="Fechar">&times;</button>
         </div>
         <div class="nksw-body">
