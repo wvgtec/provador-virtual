@@ -447,8 +447,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 </div>
 
 <script>
-// URL da API — detectada automaticamente pelo domínio atual.
-const API_URL = window.location.origin;
+// URL da API — fixa no código. Para mudar, edite aqui.
+const API_URL = 'https://provador-virtual-brown.vercel.app';
 
 const PLANS = {
   starter:    { name:'Starter',    limit:100,      price:49,    overage:0.75, color:'#6B7280' },
@@ -685,7 +685,7 @@ function buildSnippet() {
   const btnColor  = document.getElementById('cfgBtnColor')?.value || '#ffffff';
   const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/'/g, "\\'");
   const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
-  const base      = window.location.origin;
+  const base      = 'https://provador-virtual-brown.vercel.app';
   const wUrl      = `${base}/widget/tryon-widget.js?v=6.0`;
   const optional  = `  /* Personalização opcional:
   window.VTON_BTN_TEXT   = '${btnText}';

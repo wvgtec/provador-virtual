@@ -132,6 +132,12 @@ const receiver = new Receiver({
   nextSigningKey:    process.env.QSTASH_NEXT_SIGNING_KEY,
 });
 
+// ─── Log estruturado ─────────────────────────────────────────────────────────
+
+function log(event, data = {}) {
+  console.log(JSON.stringify({ ts: new Date().toISOString(), event, ...data }));
+}
+
 // ─── Handler principal ────────────────────────────────────────────────────────
 
 export default async function processHandler(req, res) {
@@ -156,16 +162,19 @@ export default async function processHandler(req, res) {
 
   // ─── Idempotência — evita re-processamento em retry do QStash ────────────
   if (job.status === 'done') {
-    console.log(`[process] Job ${jobId} já concluído. Ignorando retry.`);
+    log('process_idempotent', { jobId });
     return res.status(200).json({ jobId, status: 'done', idempotent: true });
   }
 
   const { personImageUrl, garmentImageUrl, category, projectId, clientKey, lead, productUrl, productName, hash } = job;
+  const startedAt = Date.now();
+
+  log('process_start', { jobId, clientKey, category });
 
   // Marca como processing e move no índice por status
   await Promise.all([
     redis.set(`job:${jobId}`, JSON.stringify({
-      status: 'processing', startedAt: Date.now(), hash, clientKey,
+      status: 'processing', startedAt, hash, clientKey,
     }), { ex: 300 }),
     ...(clientKey ? [
       redis.zrem(`jobs:${clientKey}:pending`, jobId),
@@ -204,13 +213,20 @@ export default async function processHandler(req, res) {
       ] : []),
     ]);
 
-    // Agenda exclusão: foto da pessoa imediatamente (3min), resultado em 1h
+    // Foto da pessoa: deletada em 3min (privacidade)
+    // Resultado: deletado em 1h (tempo para o usuário ver e salvar)
+    const personPath = new URL(personImageUrl).pathname.replace(`/${BUCKET}/`, '');
     await Promise.all([
+      qstash.publishJSON({
+        url:   `${APP_URL}/api/cleanup-person`,
+        body:  { jobId, personPath },
+        delay: 180,
+      }).catch(e => log('cleanup_person_schedule_warn', { jobId, error: e.message })),
       qstash.publishJSON({
         url:   `${APP_URL}/api/cleanup`,
         body:  { jobId, objectPath: outputPath },
-        delay: 180,
-      }).catch(e => console.warn('[process] QStash cleanup agendado com erro:', e.message)),
+        delay: 3600,
+      }).catch(e => log('cleanup_result_schedule_warn', { jobId, error: e.message })),
     ]);
 
     // ─── Registra lead e analytics ────────────────────────────────────────
@@ -245,10 +261,11 @@ export default async function processHandler(req, res) {
       ]);
     }
 
+    log('process_done', { jobId, clientKey, durationMs: Date.now() - startedAt });
     return res.status(200).json({ jobId, status: 'done' });
 
   } catch (err) {
-    console.error(`[process] Erro no job ${jobId}:`, err);
+    log('process_error', { jobId, clientKey, error: err.message, durationMs: Date.now() - startedAt });
     const failedAt = Date.now();
     await Promise.all([
       redis.set(

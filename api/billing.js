@@ -194,14 +194,21 @@ export default async function handler(req, res) {
       return res.json({ ok: true, invoices: mock, isMock: true });
     }
 
-    // Helper: garante customer Stripe
+    // Helper: garante customer Stripe e mantém o índice stripe:customer: → clientKey
     async function ensureCustomer() {
-      if (client.stripeCustomerId) return client.stripeCustomerId;
+      if (client.stripeCustomerId) {
+        // Garante que o índice existe (migração silenciosa)
+        await redis.set(`stripe:customer:${client.stripeCustomerId}`, clientKey);
+        return client.stripeCustomerId;
+      }
       const customer = await stripe.customers.create({
         email: client.email, name: client.name, metadata: { clientKey },
       });
       client.stripeCustomerId = customer.id;
-      await redis.set(`client:${clientKey}`, JSON.stringify(client));
+      await Promise.all([
+        redis.set(`client:${clientKey}`, JSON.stringify(client)),
+        redis.set(`stripe:customer:${customer.id}`, clientKey),
+      ]);
       return customer.id;
     }
 

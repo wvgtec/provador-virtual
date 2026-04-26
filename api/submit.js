@@ -21,6 +21,10 @@ const PLAN_LIMITS = {
 const redis  = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
 const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
 
+function log(event, data = {}) {
+  console.log(JSON.stringify({ ts: new Date().toISOString(), event, ...data }));
+}
+
 async function isRateLimited(ip, prefix, maxRequests, windowSeconds) {
   const key = `${prefix}:${ip}`;
   const count = await redis.incr(key);
@@ -84,6 +88,15 @@ export default async function handler(req, res) {
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (!client.active) return res.status(403).json({ error: 'Acesso suspenso. Entre em contato com o suporte.' });
 
+  // ─── Status Stripe — defesa extra (webhook pode estar atrasado) ───────────
+  if (client.stripeSubscriptionId && ['canceled', 'unpaid'].includes(client.stripeStatus)) {
+    return res.status(403).json({
+      error:    'Assinatura inativa. Acesse o painel para regularizar.',
+      code:     'SUBSCRIPTION_INACTIVE',
+      stripeStatus: client.stripeStatus,
+    });
+  }
+
   // ─── Verificação de quota ─────────────────────────────────────────────────
   const planLimit    = PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter;
   const currentUsage = Number(client.usageCount) || 0;
@@ -146,6 +159,7 @@ export default async function handler(req, res) {
   // Verifica cache antes de criar job — retorno imediato sem chamar Vertex
   const cached = await redis.get(`cache:${garmentHash}`);
   if (cached) {
+    log('submit_cache_hit', { clientKey });
     return res.status(200).json({
       jobId:       `cached_${garmentHash.slice(0, 8)}`,
       status:      'done',
@@ -200,6 +214,7 @@ export default async function handler(req, res) {
     retries: 3,
   });
 
+  log('submit_job_created', { jobId, clientKey, category: safeCategory });
   return res.status(202).json({
     jobId,
     status:  'pending',

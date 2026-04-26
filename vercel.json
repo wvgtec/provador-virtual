@@ -34,6 +34,10 @@
       "maxDuration": 15,
       "memory": 128
     },
+    "api/cleanup-person.js": {
+      "maxDuration": 15,
+      "memory": 128
+    },
     "api/admin.js": {
       "maxDuration": 10,
       "memory": 128
@@ -45,6 +49,14 @@
     "api/billing.js": {
       "maxDuration": 15,
       "memory": 256
+    },
+    "api/stripe-webhook.js": {
+      "maxDuration": 15,
+      "memory": 256
+    },
+    "api/create-checkout.js": {
+      "maxDuration": 10,
+      "memory": 128
     }
   },
   "headers": [
