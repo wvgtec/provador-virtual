@@ -3,7 +3,7 @@
 // Login: email + senha. Demais ações: clientKey + senha.
 
 import { Redis } from '@upstash/redis';
-import { timingSafeEqual, scryptSync } from 'crypto';
+import { timingSafeEqual, scryptSync, randomBytes } from 'crypto';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL,
@@ -200,7 +200,7 @@ export default async function handler(req, res) {
 
     // UPDATE — atualiza dados da conta
     if (action === 'update') {
-      const { name, email, store } = params;
+      const { name, email, store, billingName, taxId, address } = params;
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({ error: 'Formato de email inválido.' });
       }
@@ -212,10 +212,32 @@ export default async function handler(req, res) {
         await redis.set(`client_email:${email.toLowerCase()}`, clientKey);
         client.email = email;
       }
-      if (name  !== undefined) client.name  = String(name).trim();
-      if (store !== undefined) client.store = String(store).trim();
+      if (name        !== undefined) client.name        = String(name).trim();
+      if (store       !== undefined) client.store       = String(store).trim();
+      if (billingName !== undefined) client.billingName = String(billingName).trim();
+      if (taxId       !== undefined) client.taxId       = String(taxId).trim();
+      if (address     !== undefined) client.address     = String(address).trim();
       await redis.set(`client:${clientKey}`, JSON.stringify(client));
       return res.json({ ok: true, client: sanitize(client) });
+    }
+
+    // CHANGE PASSWORD — altera a senha do próprio cliente
+    if (action === 'changePassword') {
+      const { currentPassword, newPassword } = params;
+      if (!currentPassword) return res.status(400).json({ error: 'Informe a senha atual.' });
+      const stored = client.passwordHash || client.secret || '';
+      if (!verifyPassword(currentPassword, stored)) {
+        return res.status(401).json({ error: 'Senha atual incorreta.' });
+      }
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+        return res.status(400).json({ error: 'A nova senha deve ter ao menos 6 caracteres.' });
+      }
+      const salt = randomBytes(16).toString('hex');
+      const hash = scryptSync(String(newPassword), salt, 64).toString('hex');
+      client.passwordHash = `${salt}:${hash}`;
+      delete client.secret;
+      await redis.set(`client:${clientKey}`, JSON.stringify(client));
+      return res.json({ ok: true });
     }
 
     return res.status(400).json({ error: 'Ação inválida.' });
