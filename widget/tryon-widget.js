@@ -1,19 +1,6 @@
 /**
- * Mirage — Widget de Provador Virtual v6.1
- * Design: NKSW v3 | API: Mirage (GCS upload + save-lead)
- *
- * Configuração global (antes de carregar o script):
- *   window.VTON_API_URL          = 'https://...';
- *   window.VTON_CLIENT_KEY       = 'pvk_...';
- *   window.VTON_GARMENT_URL      = '{{ image_url }}';
- *   window.VTON_GARMENT_CATEGORY = 'auto';
- *   window.VTON_STORE_NAME       = 'Minha Loja';
- *   window.VTON_BTN_TEXT         = 'Experimentar virtualmente';
- *   window.VTON_BTN_BG           = '#111111';
- *   window.VTON_BTN_COLOR        = '#ffffff';
- *   window.VTON_BTN_WIDTH        = '100%';
- *   window.VTON_BTN_HEIGHT       = '52px';
- *   window.VTON_BTN_RADIUS       = '12px';
+ * Mirage — Widget de Provador Virtual v6.2
+ * Design: NKSW v4 | Efeito de renderização + formulário abaixo do resultado
  */
 (function () {
   'use strict';
@@ -68,10 +55,7 @@
       padding: 18px 20px 14px; border-bottom: 1px solid #f0f0f0;
       position: sticky; top: 0; background: #fff; z-index: 2;
     }
-    .nksw-title {
-      font-size: 15px; font-weight: 700; color: #111; margin: 0;
-      letter-spacing: 0.01em;
-    }
+    .nksw-title { font-size: 15px; font-weight: 700; color: #111; margin: 0; letter-spacing: 0.01em; }
     .nksw-close {
       background: #f4f4f4; border: none; cursor: pointer;
       width: 30px; height: 30px; border-radius: 50%;
@@ -82,10 +66,7 @@
     .nksw-close:hover { background: #e8e8e8; color: #111; }
 
     /* ── Body ── */
-    .nksw-body {
-      padding: 20px; display: flex; flex-direction: column; gap: 14px;
-      flex: 1;
-    }
+    .nksw-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
 
     /* ── Upload Zone ── */
     .nksw-upload-zone {
@@ -99,36 +80,20 @@
       width: 100%; height: 100%; z-index: 1;
     }
     .nksw-camera-icon {
-      width: 54px; height: 54px;
-      background: #F5C53F;
-      border-radius: 50%;
+      width: 54px; height: 54px; background: #F5C53F; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 14px;
-      box-shadow: 0 4px 12px rgba(245,197,63,0.35);
+      margin: 0 auto 14px; box-shadow: 0 4px 12px rgba(245,197,63,0.35);
     }
-    .nksw-camera-icon svg {
-      width: 26px; height: 26px;
-      stroke: #fff; fill: none; stroke-width: 2;
-      stroke-linecap: round; stroke-linejoin: round;
-    }
-    .nksw-upload-title {
-      font-size: 17px; font-weight: 700; color: #111;
-      margin: 0 0 6px; letter-spacing: -0.01em;
-    }
-    .nksw-upload-sub {
-      font-size: 13px; color: #777; margin: 0 auto 16px;
-      line-height: 1.55; max-width: 260px;
-    }
+    .nksw-camera-icon svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nksw-upload-title { font-size: 17px; font-weight: 700; color: #111; margin: 0 0 6px; letter-spacing: -0.01em; }
+    .nksw-upload-sub { font-size: 13px; color: #777; margin: 0 auto 16px; line-height: 1.55; max-width: 260px; }
     .nksw-upload-inner-zone {
-      border: 2px dashed #d4d4d4; border-radius: 12px;
-      padding: 20px 16px;
+      border: 2px dashed #d4d4d4; border-radius: 12px; padding: 20px 16px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
       transition: border-color 0.2s, background 0.2s;
     }
     .nksw-upload-zone:hover .nksw-upload-inner-zone { border-color: #aaa; }
-    .nksw-upload-zone.drag-over .nksw-upload-inner-zone {
-      border-color: #555; background: #f5f5f5;
-    }
+    .nksw-upload-zone.drag-over .nksw-upload-inner-zone { border-color: #555; background: #f5f5f5; }
     .nksw-upload-arrow { color: #888; }
     .nksw-upload-btn {
       display: inline-flex; align-items: center; gap: 7px;
@@ -136,19 +101,13 @@
       padding: 10px 22px; font-size: 14px; font-weight: 600;
       cursor: pointer; letter-spacing: 0.01em; pointer-events: none;
     }
-    .nksw-upload-btn svg {
-      width: 14px; height: 14px; stroke: #fff; fill: none;
-      stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
-    }
+    .nksw-upload-btn svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     .nksw-upload-hint { font-size: 11px; color: #bbb; margin: 0; letter-spacing: 0.04em; }
 
     /* ── Preview ── */
     .nksw-preview-wrap { display: none; flex-direction: column; align-items: center; gap: 10px; }
     .nksw-preview-wrap.visible { display: flex; }
-    .nksw-preview-img {
-      width: 100%; max-height: 280px; object-fit: contain;
-      border-radius: 12px; border: 1px solid #eee; background: #f8f8f8;
-    }
+    .nksw-preview-img { width: 100%; max-height: 280px; object-fit: contain; border-radius: 12px; border: 1px solid #eee; background: #f8f8f8; }
     .nksw-change-btn {
       background: none; border: 1px solid #ccc; border-radius: 8px;
       padding: 7px 16px; font-size: 13px; cursor: pointer; color: #555;
@@ -167,18 +126,100 @@
     .nksw-generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .nksw-generate-btn.nksw-hidden { display: none; }
 
-    /* ── Loading ── */
-    .nksw-loading { display: none; flex-direction: column; align-items: center; gap: 14px; padding: 8px 0; }
-    .nksw-loading.visible { display: flex; }
-    .nksw-spinner {
-      width: 36px; height: 36px; border: 3px solid #f0f0f0;
-      border-top-color: #111; border-radius: 50%;
-      animation: nksw-spin 0.75s linear infinite;
+    /* ── Render Canvas ── */
+    .nksw-render-canvas { display: none; flex-direction: column; gap: 12px; }
+    .nksw-render-canvas.visible { display: flex; }
+
+    .nksw-render-box {
+      position: relative; border-radius: 14px; overflow: hidden;
+      background: #0a0a0a; border: 1.5px solid #1a1a1a;
+      width: 100%; height: 320px;
     }
-    @keyframes nksw-spin { to { transform: rotate(360deg) } }
-    .nksw-loading-text { font-size: 14px; color: #555; text-align: center; line-height: 1.6; }
+
+    .nksw-render-person {
+      width: 100%; height: 100%; object-fit: contain; display: block;
+    }
+
+    .nksw-render-result {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; object-fit: contain;
+      display: none; opacity: 0;
+      transition: opacity 0.7s ease;
+    }
+    .nksw-render-result.visible { display: block; opacity: 1; }
+
+    /* Scanline amarelo */
+    .nksw-scanline {
+      position: absolute; left: 0; right: 0; height: 10%;
+      background: linear-gradient(180deg, transparent, rgba(255,227,78,0.9), transparent);
+      filter: blur(2px); pointer-events: none;
+      display: none; z-index: 2;
+    }
+    .nksw-scanline.active { display: block; animation: nksw-scanline-anim 2.4s cubic-bezier(.4,.1,.4,1) infinite; }
+    @keyframes nksw-scanline-anim {
+      0%   { top: -10%; opacity: 0; }
+      8%   { opacity: 1; }
+      92%  { opacity: 1; }
+      100% { top: 110%; opacity: 0; }
+    }
+
+    /* Cantos dourados */
+    .nksw-corners { position: absolute; inset: 12px; pointer-events: none; z-index: 3; }
+    .nksw-corners span { position: absolute; width: 16px; height: 16px; border: 2px solid #FFE34E; }
+    .nksw-corners span:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; }
+    .nksw-corners span:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; }
+    .nksw-corners span:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; }
+    .nksw-corners span:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+    /* HUD */
+    .nksw-hud { position: absolute; top: 10px; left: 10px; z-index: 4; display: flex; flex-direction: column; gap: 5px; }
+    .nksw-hud-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 9px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 4px 9px; border-radius: 5px;
+      background: #111; color: #fff; border: 1px solid rgba(255,255,255,0.12);
+    }
+    .nksw-hud-chip.yellow { background: #FFE34E; color: #0a0a0a; border-color: rgba(0,0,0,0.15); }
+    .nksw-hud-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: #FFE34E;
+      animation: nksw-pulse-dot 1.2s infinite; flex-shrink: 0;
+    }
+    .nksw-hud-chip.yellow .nksw-hud-dot { background: #0a0a0a; animation: none; }
+    @keyframes nksw-pulse-dot {
+      0%,100% { opacity: 0.35; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.4); }
+    }
+
+    /* Área de loading (progresso + texto) */
+    .nksw-loading-area { display: none; flex-direction: column; gap: 8px; }
+    .nksw-loading-area.visible { display: flex; }
+    .nksw-loading-text { font-size: 13px; color: #666; text-align: center; line-height: 1.6; margin: 0; }
     .nksw-progress { width: 100%; height: 3px; background: #eee; border-radius: 2px; overflow: hidden; }
     .nksw-progress-bar { height: 100%; background: #111; border-radius: 2px; transition: width 1.8s ease; width: 0%; }
+
+    /* Ações do resultado */
+    .nksw-result-actions { display: none; gap: 10px; }
+    .nksw-result-actions.visible { display: flex; }
+    .nksw-retry-btn {
+      flex: 1; padding: 12px; background: none; border: 1.5px solid #ddd;
+      border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+      color: #444; transition: border-color 0.15s, background 0.15s;
+    }
+    .nksw-retry-btn:hover { background: #f5f5f5; border-color: #bbb; }
+    .nksw-save-btn {
+      flex: 1; padding: 12px; background: #111; color: #fff;
+      border: none; border-radius: 10px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .nksw-save-btn:hover { background: #333; }
+
+    /* ── Error ── */
+    .nksw-error {
+      display: none; background: #fff3f3; border: 1px solid #ffc0c0;
+      border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #c00; text-align: center;
+    }
+    .nksw-error.visible { display: block; }
 
     /* ── Lead ── */
     .nksw-lead { display: none; flex-direction: column; gap: 10px; }
@@ -209,45 +250,16 @@
     .nksw-lead-skip:hover { color: #666; }
     .nksw-lead-sent { font-size: 13px; color: #2a7a2a; text-align: center; font-weight: 600; margin: 0; display: none; }
 
-    /* ── Result ── */
-    .nksw-result-wrap { display: none; flex-direction: column; gap: 14px; }
-    .nksw-result-wrap.visible { display: flex; }
-    .nksw-result-img { width: 100%; border-radius: 14px; border: 1px solid #eee; }
-    .nksw-result-actions { display: flex; gap: 10px; }
-    .nksw-retry-btn {
-      flex: 1; padding: 12px; background: none; border: 1.5px solid #ddd;
-      border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
-      color: #444; transition: border-color 0.15s, background 0.15s;
-    }
-    .nksw-retry-btn:hover { background: #f5f5f5; border-color: #bbb; }
-    .nksw-save-btn {
-      flex: 1; padding: 12px; background: #111; color: #fff;
-      border: none; border-radius: 10px; font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
-    }
-    .nksw-save-btn:hover { background: #333; }
-
-    /* ── LGPD Notice (aparece após gerar a foto) ── */
+    /* ── LGPD Notice ── */
     .nksw-lgpd-notice {
       display: none; align-items: flex-start; gap: 9px;
       background: #f7f7f7; border-radius: 10px; padding: 12px 14px;
     }
     .nksw-lgpd-notice.visible { display: flex; }
-    .nksw-lgpd-notice svg {
-      width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px;
-      stroke: #999; fill: none; stroke-width: 2;
-      stroke-linecap: round; stroke-linejoin: round;
-    }
+    .nksw-lgpd-notice svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; stroke: #999; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .nksw-lgpd-notice p { font-size: 10.5px; color: #888; margin: 0; line-height: 1.65; }
     .nksw-lgpd-notice a { color: #666; text-decoration: underline; }
     .nksw-lgpd-notice a:hover { color: #111; }
-
-    /* ── Error ── */
-    .nksw-error {
-      display: none; background: #fff3f3; border: 1px solid #ffc0c0;
-      border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #c00; text-align: center;
-    }
-    .nksw-error.visible { display: block; }
 
     /* ── Footer ── */
     .nksw-footer {
@@ -262,16 +274,9 @@
       opacity: 0.65; transition: opacity 0.15s;
     }
     .nksw-powered-by:hover { opacity: 1; }
-    .nksw-powered-by-label {
-      font-size: 9px; color: #aaa; letter-spacing: 0.04em;
-      white-space: nowrap; text-transform: uppercase;
-    }
+    .nksw-powered-by-label { font-size: 9px; color: #aaa; letter-spacing: 0.04em; white-space: nowrap; text-transform: uppercase; }
     .nksw-powered-by img { height: 16px; width: auto; display: block; }
-    .nksw-powered-by-fallback {
-      font-size: 12px; font-weight: 800; color: #111;
-      letter-spacing: 0.12em; font-family: Georgia, 'Times New Roman', serif;
-      display: none;
-    }
+    .nksw-powered-by-fallback { font-size: 12px; font-weight: 800; color: #111; letter-spacing: 0.12em; font-family: Georgia, 'Times New Roman', serif; display: none; }
 
     /* ── Trigger Button ── */
     .nksw-trigger-btn {
@@ -285,6 +290,7 @@
     @media (max-width: 480px) {
       .nksw-modal { max-height: 100dvh; border-radius: 20px 20px 0 0; }
       .nksw-overlay { align-items: flex-end; padding: 0; }
+      .nksw-render-box { height: 280px; }
     }
   `;
 
@@ -356,7 +362,7 @@
         </div>
         <div class="nksw-body">
 
-          <!-- Upload Zone -->
+          <!-- 1. Upload Zone -->
           <div class="nksw-upload-zone" id="nksw-drop-zone" tabindex="0" role="button" aria-label="Enviar sua foto">
             <input type="file" id="nksw-file-input" accept="image/jpeg,image/png,image/webp" />
             <div class="nksw-camera-icon">
@@ -385,32 +391,57 @@
             </div>
           </div>
 
-          <!-- Preview da foto selecionada -->
+          <!-- 2. Preview pequena após upload -->
           <div class="nksw-preview-wrap" id="nksw-preview-wrap">
             <img class="nksw-preview-img" id="nksw-preview-img" alt="Sua foto" />
             <button class="nksw-change-btn" id="nksw-change-btn">Trocar foto</button>
           </div>
 
-          <!-- Mensagem de erro -->
+          <!-- 3. Render Canvas (processando + resultado) -->
+          <div class="nksw-render-canvas" id="nksw-render-canvas">
+            <div class="nksw-render-box" id="nksw-render-box">
+              <!-- Foto da pessoa (mostrada durante o processamento) -->
+              <img class="nksw-render-person" id="nksw-render-person" alt="Sua foto" />
+              <!-- Resultado da IA (aparece com crossfade quando pronto) -->
+              <img class="nksw-render-result" id="nksw-render-result" alt="Resultado" />
+              <!-- Scanline animado -->
+              <div class="nksw-scanline" id="nksw-scanline"></div>
+              <!-- Cantos dourados -->
+              <div class="nksw-corners"><span></span><span></span><span></span><span></span></div>
+              <!-- HUD de status -->
+              <div class="nksw-hud">
+                <div class="nksw-hud-chip" id="nksw-hud-chip">
+                  <span class="nksw-hud-dot" id="nksw-hud-dot"></span>
+                  <span id="nksw-hud-status">PROCESSANDO</span>
+                </div>
+                <div class="nksw-hud-chip" style="background:#0a0a0a;color:#888;font-size:8px">v4.2</div>
+              </div>
+            </div>
+            <!-- Progresso e texto (visíveis só durante loading) -->
+            <div class="nksw-loading-area" id="nksw-loading-area">
+              <p class="nksw-loading-text" id="nksw-loading-text">
+                Gerando seu look... Isso leva cerca de 10–20 segundos
+              </p>
+              <div class="nksw-progress">
+                <div class="nksw-progress-bar" id="nksw-progress-bar"></div>
+              </div>
+            </div>
+            <!-- Ações (visíveis só após o resultado) -->
+            <div class="nksw-result-actions" id="nksw-result-actions">
+              <button class="nksw-retry-btn" id="nksw-retry-btn">↺ Tentar novamente</button>
+              <button class="nksw-save-btn"  id="nksw-save-btn">↓ Salvar foto</button>
+            </div>
+          </div>
+
+          <!-- 4. Erro -->
           <div class="nksw-error" id="nksw-error"></div>
 
-          <!-- Botão gerar -->
+          <!-- 5. Botão gerar (visível só com preview) -->
           <button class="nksw-generate-btn" id="nksw-generate-btn" disabled>
             EXPERIMENTAR VIRTUALMENTE
           </button>
 
-          <!-- Loading (oculta o botão enquanto gera) -->
-          <div class="nksw-loading" id="nksw-loading">
-            <div class="nksw-spinner"></div>
-            <p class="nksw-loading-text" id="nksw-loading-text">
-              Gerando seu look...<br><small>Isso leva cerca de 10–20 segundos</small>
-            </p>
-            <div class="nksw-progress">
-              <div class="nksw-progress-bar" id="nksw-progress-bar"></div>
-            </div>
-          </div>
-
-          <!-- Formulário de lead -->
+          <!-- 6. Formulário de lead (abaixo do resultado) -->
           <div class="nksw-lead" id="nksw-lead">
             <div class="nksw-lead-inner" id="nksw-lead-inner">
               <p class="nksw-lead-title">Gostou do resultado?</p>
@@ -419,30 +450,18 @@
               <input id="nksw-lead-phone" type="tel"   placeholder="WhatsApp"   autocomplete="tel" />
               <input id="nksw-lead-email" type="email" placeholder="Seu e-mail" autocomplete="email" />
               <button class="nksw-lead-submit" id="nksw-lead-submit">Quero receber novidades</button>
-              <button class="nksw-lead-skip" id="nksw-lead-skip">Pular</button>
+              <button class="nksw-lead-skip"   id="nksw-lead-skip">Pular</button>
             </div>
             <p class="nksw-lead-sent" id="nksw-lead-sent">
               ✅ Cadastro realizado! Fique de olho na sua caixa de entrada.
             </p>
           </div>
 
-          <!-- Resultado gerado -->
-          <div class="nksw-result-wrap" id="nksw-result-wrap">
-            <img class="nksw-result-img" id="nksw-result-img" alt="Resultado do provador virtual" />
-            <div class="nksw-result-actions">
-              <button class="nksw-retry-btn" id="nksw-retry-btn">↺ Tentar novamente</button>
-              <button class="nksw-save-btn"  id="nksw-save-btn">↓ Salvar foto</button>
-            </div>
-          </div>
-
-          <!-- Aviso LGPD (exibido após gerar a foto) -->
+          <!-- 7. Aviso LGPD (exibido após gerar a foto) -->
           <div class="nksw-lgpd-notice" id="nksw-lgpd-notice">
-            <svg viewBox="0 0 24 24">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <p>
-              As imagens são processadas em sessão temporária e descartadas automaticamente,
+              Imagens processadas em sessão temporária e descartadas automaticamente,
               em conformidade com a <strong>LGPD</strong> e GDPR. Ao usar este serviço, você concorda
               com a <a href="https://www.mirageai.com.br" target="_blank" rel="noopener">Política de Privacidade</a>
               e os <a href="https://www.mirageai.com.br" target="_blank" rel="noopener">Termos de Uso</a> da Mirage.
@@ -485,36 +504,41 @@
 
     if (!clientKey) { console.error('[Mirage] VTON_CLIENT_KEY não definido.'); return; }
 
-    const overlay    = buildModal(storeName);
+    const overlay = buildModal(storeName);
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
 
     // Refs
     const $ = id => overlay.querySelector('#' + id);
-    const dropZone    = $('nksw-drop-zone');
-    const fileInput   = $('nksw-file-input');
-    const previewWrap = $('nksw-preview-wrap');
-    const previewImg  = $('nksw-preview-img');
-    const changeBtn   = $('nksw-change-btn');
-    const generateBtn = $('nksw-generate-btn');
-    const loading     = $('nksw-loading');
-    const loadingText = $('nksw-loading-text');
-    const progressBar = $('nksw-progress-bar');
-    const errorDiv    = $('nksw-error');
-    const leadWrap    = $('nksw-lead');
-    const leadInner   = $('nksw-lead-inner');
-    const leadName    = $('nksw-lead-name');
-    const leadPhone   = $('nksw-lead-phone');
-    const leadEmail   = $('nksw-lead-email');
-    const leadSubmit  = $('nksw-lead-submit');
-    const leadSkip    = $('nksw-lead-skip');
-    const leadSent    = $('nksw-lead-sent');
-    const resultWrap  = $('nksw-result-wrap');
-    const resultImg   = $('nksw-result-img');
-    const retryBtn    = $('nksw-retry-btn');
-    const saveBtn     = $('nksw-save-btn');
-    const lgpdNotice  = $('nksw-lgpd-notice');
-    const closeBtn    = overlay.querySelector('.nksw-close');
+    const dropZone      = $('nksw-drop-zone');
+    const fileInput     = $('nksw-file-input');
+    const previewWrap   = $('nksw-preview-wrap');
+    const previewImg    = $('nksw-preview-img');
+    const changeBtn     = $('nksw-change-btn');
+    const generateBtn   = $('nksw-generate-btn');
+    const renderCanvas  = $('nksw-render-canvas');
+    const renderPerson  = $('nksw-render-person');
+    const renderResult  = $('nksw-render-result');
+    const scanLine      = $('nksw-scanline');
+    const hudChip       = $('nksw-hud-chip');
+    const hudStatus     = $('nksw-hud-status');
+    const loadingArea   = $('nksw-loading-area');
+    const loadingText   = $('nksw-loading-text');
+    const progressBar   = $('nksw-progress-bar');
+    const resultActions = $('nksw-result-actions');
+    const retryBtn      = $('nksw-retry-btn');
+    const saveBtn       = $('nksw-save-btn');
+    const errorDiv      = $('nksw-error');
+    const leadWrap      = $('nksw-lead');
+    const leadInner     = $('nksw-lead-inner');
+    const leadName      = $('nksw-lead-name');
+    const leadPhone     = $('nksw-lead-phone');
+    const leadEmail     = $('nksw-lead-email');
+    const leadSubmit    = $('nksw-lead-submit');
+    const leadSkip      = $('nksw-lead-skip');
+    const leadSent      = $('nksw-lead-sent');
+    const lgpdNotice    = $('nksw-lgpd-notice');
+    const closeBtn      = overlay.querySelector('.nksw-close');
 
     // Estado
     let selectedDataUrl = null;
@@ -528,6 +552,15 @@
     function showError(msg) { errorDiv.textContent = msg; errorDiv.classList.add('visible'); }
     function clearError()   { errorDiv.classList.remove('visible'); }
     function setProgress(p) { progressBar.style.width = `${p}%`; }
+
+    function setHudProcessing() {
+      hudChip.classList.remove('yellow');
+      hudStatus.textContent = 'PROCESSANDO';
+    }
+    function setHudDone() {
+      hudChip.classList.add('yellow');
+      hudStatus.textContent = 'RENDER OK';
+    }
 
     function shakeLeadForm() {
       const steps = [6, -6, 4, -4, 0];
@@ -545,7 +578,7 @@
       return !!(leadName.value.trim() || leadPhone.value.trim() || leadEmail.value.trim());
     }
 
-    // ── Lead submit → Mirage save-lead ────────────────────────────────────
+    // ── Lead submit ────────────────────────────────────────────────────────
     async function submitLead() {
       const name     = leadName.value.trim();
       const whatsapp = leadPhone.value.trim();
@@ -559,7 +592,6 @@
       const lead = { name, email, whatsapp };
 
       if (!currentJobId) {
-        // Job ainda processando — guarda para enviar depois
         pendingLead = lead;
         leadInner.style.display = 'none';
         leadSent.style.display  = 'block';
@@ -578,12 +610,12 @@
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ jobId: currentJobId, clientKey, lead }),
         });
-      } catch (_) { /* falha silenciosa */ }
+      } catch (_) {}
 
       leadInner.style.display = 'none';
       leadSent.style.display  = 'block';
       leadSent.textContent    = '✅ Cadastro realizado! Fique de olho na sua caixa de entrada.';
-      leadDone  = true;
+      leadDone    = true;
       pendingLead = null;
     }
 
@@ -601,8 +633,7 @@
       previewImg.onload = () => URL.revokeObjectURL(objectUrl);
       dropZone.style.display = 'none';
       previewWrap.classList.add('visible');
-      resultWrap.classList.remove('visible');
-      lgpdNotice.classList.remove('visible');
+      renderCanvas.classList.remove('visible');
       generateBtn.disabled = true;
       generateBtn.classList.remove('nksw-hidden');
 
@@ -619,11 +650,20 @@
       leadDone        = false;
       fileInput.value = '';
       previewImg.src  = '';
+
+      // UI reset
       previewWrap.classList.remove('visible');
-      resultWrap.classList.remove('visible');
-      loading.classList.remove('visible');
+      renderCanvas.classList.remove('visible');
+      renderResult.classList.remove('visible');
+      renderResult.src = '';
+      renderPerson.src = '';
+      scanLine.classList.remove('active');
+      loadingArea.classList.remove('visible');
+      resultActions.classList.remove('visible');
       leadWrap.classList.remove('visible');
       lgpdNotice.classList.remove('visible');
+
+      // Lead form reset
       leadInner.style.display = '';
       leadSent.style.display  = 'none';
       leadSubmit.disabled     = false;
@@ -631,6 +671,10 @@
       leadName.value  = '';
       leadPhone.value = '';
       leadEmail.value = '';
+
+      // HUD reset
+      setHudProcessing();
+
       dropZone.style.display = '';
       generateBtn.disabled   = true;
       generateBtn.classList.remove('nksw-hidden');
@@ -672,12 +716,10 @@
 
     // ── Salvar foto ─────────────────────────────────────────────────────────
     saveBtn.addEventListener('click', () => {
-      const src = resultImg.src;
+      const src = renderResult.src;
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       let blobUrl = null;
-      try {
-        blobUrl = URL.createObjectURL(dataURLtoBlob(src));
-      } catch (_) {}
+      try { blobUrl = URL.createObjectURL(dataURLtoBlob(src)); } catch (_) {}
 
       if (isIOS) { window.open(blobUrl || src, '_blank'); return; }
 
@@ -694,19 +736,29 @@
       if (!selectedDataUrl) { showError('Aguarde o processamento da foto.'); return; }
       clearError();
 
-      // Oculta o botão enquanto está gerando
-      generateBtn.disabled = true;
-      generateBtn.classList.add('nksw-hidden');
-
+      // ─ Inicia estado de renderização ─
+      // Oculta preview e botão
       previewWrap.classList.remove('visible');
-      resultWrap.classList.remove('visible');
-      loading.classList.add('visible');
+      generateBtn.classList.add('nksw-hidden');
+      generateBtn.disabled = true;
+
+      // Monta o render canvas com a foto da pessoa
+      renderPerson.src = selectedDataUrl;
+      renderResult.classList.remove('visible');
+      renderResult.src = '';
+      setHudProcessing();
+      scanLine.classList.add('active');
+      renderCanvas.classList.add('visible');
+      loadingArea.classList.add('visible');
+      resultActions.classList.remove('visible');
+
+      // Mostra formulário de lead enquanto processa
       if (!leadDone) leadWrap.classList.add('visible');
-      loadingText.innerHTML = 'Gerando seu look...<br><small>Isso leva cerca de 10–20 segundos</small>';
+
       setProgress(10);
 
       try {
-        // 1. Solicita URL assinada para upload no GCS
+        // 1. URL de upload assinada
         const urlRes = await fetch(`${apiUrl}/api/upload-url`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -716,7 +768,7 @@
         if (!urlRes.ok) throw new Error(urlData.error || 'Erro ao gerar URL de upload.');
         setProgress(25);
 
-        // 2. Upload direto para o GCS via PUT
+        // 2. Upload para o GCS via PUT
         const blob = dataURLtoBlob(selectedDataUrl);
         const putRes = await fetch(urlData.signedUrl, {
           method:  'PUT',
@@ -726,7 +778,7 @@
         if (!putRes.ok) throw new Error('Falha no upload da foto. Tente novamente.');
         setProgress(40);
 
-        // 3. Submete o job (sem lead — salvo depois via save-lead)
+        // 3. Submete o job
         const submitRes = await fetch(`${apiUrl}/api/submit`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -743,12 +795,12 @@
         if (!submitRes.ok || !submitData.jobId) throw new Error(submitData.error || 'Falha ao enviar para processamento.');
         currentJobId = submitData.jobId;
 
-        // 4. Se tinha lead pendente (preenchido durante o upload), envia agora
+        // 4. Lead pendente → envia agora
         if (pendingLead) await postLead(pendingLead);
 
         setProgress(55);
 
-        // 5. Polling do resultado
+        // 5. Polling
         pollStart = Date.now();
         await new Promise((resolve, reject) => {
           pollTimer = setInterval(async () => {
@@ -764,33 +816,42 @@
               if (pollData.status === 'done' || pollData.status === 'completed') {
                 clearInterval(pollTimer);
                 setProgress(100);
-                resultImg.src = pollData.resultImage || pollData.output;
+
+                // ─ Crossfade: scanline para → resultado aparece ─
+                const resultUrl = pollData.resultImage || pollData.output;
+                renderResult.onload = () => {
+                  scanLine.classList.remove('active');
+                  renderResult.classList.add('visible');
+                  setHudDone();
+                  loadingArea.classList.remove('visible');
+                  resultActions.classList.add('visible');
+                  lgpdNotice.classList.add('visible');
+                };
+                renderResult.src = resultUrl;
                 resolve();
+
               } else if (pollData.status === 'error' || pollData.status === 'failed') {
                 clearInterval(pollTimer);
                 reject(new Error(pollData.error || 'Não foi possível processar. Tente com outra foto.'));
               }
-            } catch (_) { /* rede instável — continua */ }
+            } catch (_) {}
           }, POLL_MS);
         });
 
-        resultWrap.classList.add('visible');
-
-        // Exibe aviso LGPD após a foto ser gerada
-        lgpdNotice.classList.add('visible');
-
-        // Se tinha lead pendente que ainda não foi enviado (job acabou depois)
+        // Lead pendente (job acabou depois do preenchimento)
         if (pendingLead) await postLead(pendingLead);
 
       } catch (err) {
-        showError(err?.message || 'Erro inesperado. Tente novamente.');
+        // ─ Erro: restaura estado de preview ─
+        scanLine.classList.remove('active');
+        renderCanvas.classList.remove('visible');
+        leadWrap.classList.remove('visible');
         previewWrap.classList.add('visible');
-        // Restaura o botão em caso de erro
         generateBtn.classList.remove('nksw-hidden');
         generateBtn.disabled = false;
+        showError(err?.message || 'Erro inesperado. Tente novamente.');
         setProgress(0);
-      } finally {
-        loading.classList.remove('visible');
+        loadingArea.classList.remove('visible');
       }
     });
   }
@@ -821,7 +882,6 @@
   function init() {
     injectStyles();
 
-    // Suporte a botões com data-attributes (compatibilidade NKSW)
     document.querySelectorAll('.nksw-tryon-btn').forEach(btn => {
       const apiUrl = btn.dataset.apiUrl || btn.dataset.workerUrl || CFG.apiUrl;
       btn.addEventListener('click', () => initModal({
@@ -833,13 +893,11 @@
       }));
     });
 
-    // Modo Mirage padrão: cria botão no #vton-anchor
     const anchor = document.getElementById('vton-anchor');
     if (anchor) {
       const triggerBtn = createTriggerBtn(anchor);
       triggerBtn.addEventListener('click', () => initModal({}));
     } else {
-      // Fallback: qualquer elemento com data-vton
       document.querySelectorAll('[data-vton]').forEach(el => {
         el.addEventListener('click', () => initModal({}));
       });
