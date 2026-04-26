@@ -693,13 +693,12 @@ function buildSnippet() {
   const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
   const base      = window.location.origin;
   const wUrl      = `${base}/widget/tryon-widget.js?v=6.0`;
-  const optional  = `  /* Personalização opcional:
-  window.VTON_BTN_TEXT   = '${btnText}';
+  const optional  = `  window.VTON_BTN_TEXT   = '${btnText}';
   window.VTON_BTN_BG     = '${btnBg}';
   window.VTON_BTN_COLOR  = '${btnColor}';
   window.VTON_BTN_WIDTH  = '${btnWidth}';
   window.VTON_BTN_HEIGHT = '${btnHeight}';
-  window.VTON_BTN_RADIUS = '${btnRadius}'; */`;
+  window.VTON_BTN_RADIUS = '${btnRadius}';`;
 
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
