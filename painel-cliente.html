@@ -447,8 +447,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 </div>
 
 <script>
-// URL da API — fixa no código. Para mudar, edite aqui.
-const API_URL = 'https://provador-virtual-brown.vercel.app';
+// URL da API — detectada automaticamente pelo domínio atual.
+const API_URL = window.location.origin;
 
 const PLANS = {
   starter:    { name:'Starter',    limit:100,      price:49,    overage:0.75, color:'#6B7280' },
@@ -685,7 +685,7 @@ function buildSnippet() {
   const btnColor  = document.getElementById('cfgBtnColor')?.value || '#ffffff';
   const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/'/g, "\\'");
   const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
-  const base      = 'https://provador-virtual-brown.vercel.app';
+  const base      = window.location.origin;
   const wUrl      = `${base}/widget/tryon-widget.js?v=6.0`;
   const optional  = `  /* Personalização opcional:
   window.VTON_BTN_TEXT   = '${btnText}';
@@ -1004,19 +1004,34 @@ async function upgradePlan() {
 
 async function selectUpgradePlan(planId, planName, price) {
   closeModal('upgradeModal');
-  // Gera link de pagamento para o plano escolhido via payment_link
-  // Abre o modal de pagamento na aba Link com o plano como context
-  _payMode = 'upgrade';
-  _payInvoiceId = null;
-  _upgradeTarget = { planId, planName, price };
-  document.getElementById('payment-element').innerHTML         = '';
-  document.getElementById('payLinkBox').style.display          = 'none';
-  document.getElementById('paymentModalLoading').style.display = 'block';
-  document.getElementById('paymentModalError').style.display   = 'none';
-  document.getElementById('paymentModalBtn').style.display     = 'none';
-  document.getElementById('paymentModalTitle').textContent     = `Upgrade para ${planName}`;
-  document.getElementById('paymentModal').classList.add('open');
-  await selectPayTab('link');
+
+  // Verifica se o plano tem stripePriceId (sincronizado com Stripe)
+  const plan = st.plans.find(p => p.id === planId);
+  if (!plan?.stripePriceId) {
+    toast('Este plano ainda não foi sincronizado com o Stripe. Contate o suporte.', 'error');
+    return;
+  }
+
+  // Mostra feedback visual enquanto gera o checkout
+  toast('Redirecionando para o pagamento...', 'info');
+
+  try {
+    const r = await fetch(`${API_URL}/api/create-checkout`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ clientKey: st.clientKey, password: st.password, planId }),
+    }).then(res => res.json());
+
+    if (!r.ok) {
+      toast(r.error || 'Não foi possível iniciar o checkout. Tente novamente.', 'error');
+      return;
+    }
+
+    // Redireciona para o Stripe Checkout — após pagar, volta para painel-cliente.html?checkout=success
+    window.location.href = r.url;
+  } catch (e) {
+    toast('Erro de conexão. Tente novamente.', 'error');
+  }
 }
 let _upgradeTarget = null;
 
@@ -1118,6 +1133,23 @@ function renderPag(elId, page, total, limit, cb) {
       st.password  = password;
       st.client    = data.client;
       startApp();
+
+      // Detecta retorno do Stripe Checkout
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('checkout') === 'success') {
+        // Remove o parâmetro da URL sem recarregar a página
+        window.history.replaceState({}, '', window.location.pathname);
+        // Aguarda o webhook processar (até 3s) e recarrega billing
+        setTimeout(async () => {
+          await loadBillingData();
+          nav('billing');
+          toast('Pagamento confirmado! Seu plano será atualizado em instantes.', 'success');
+        }, 3000);
+      } else if (params.get('checkout') === 'canceled') {
+        window.history.replaceState({}, '', window.location.pathname);
+        nav('billing');
+        toast('Checkout cancelado. Você pode tentar novamente quando quiser.', 'info');
+      }
     } else {
       sessionStorage.removeItem('cpSession');
     }
