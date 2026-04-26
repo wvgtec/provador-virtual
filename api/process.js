@@ -172,7 +172,7 @@ export default async function processHandler(req, res) {
     // Atualiza status com URL do resultado — expira em 5 min
     await redis.set(
       `job:${jobId}`,
-      JSON.stringify({ status: 'done', resultImage: resultUrl, completedAt: Date.now() }),
+      JSON.stringify({ status: 'done', resultImage: resultUrl, completedAt: Date.now(), clientKey, productUrl, productName }),
       { ex: 300 }
     );
 
@@ -221,8 +221,8 @@ export default async function processHandler(req, res) {
     console.error(`[process] Erro no job ${jobId}:`, err);
     await redis.set(
       `job:${jobId}`,
-      JSON.stringify({ status: 'error', error: err.message, failedAt: Date.now() }),
-      { ex: 3600 }
+      JSON.stringify({ status: 'error', error: err.message, failedAt: Date.now(), clientKey }),
+      { ex: 300 }
     );
     return res.status(200).json({ jobId, status: 'error', error: 'Erro ao processar imagem.' });
   }

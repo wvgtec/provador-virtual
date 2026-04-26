@@ -230,4 +230,58 @@ export default async function handler(req, res) {
         }
       }
 
-      // Sem fatura real: cria Paymen
+      // Sem fatura real: cria PaymentIntent avulso com boleto + cartão
+      const billing = await calcBilling(client);
+      const amountCents = Math.round(billing.total * 100) || 100;
+      const pi = await stripe.paymentIntents.create({
+        amount:   amountCents,
+        currency: 'brl',
+        customer: customerId,
+        payment_method_types: ['card', 'boleto'],
+        metadata: { clientKey, plan: client.plan || 'starter' },
+      });
+      return res.json({ ok: true, clientSecret: pi.client_secret, publishableKey: pubKey, amount: billing.total });
+    }
+
+    // PAYMENT_LINK — cria link de pagamento Stripe (boleto / pix / cartão)
+    if (action === 'payment_link') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const { invoiceId } = params;
+
+      // Se tem fatura real com hosted URL, retorna direto
+      if (invoiceId && !invoiceId.startsWith('mock_')) {
+        try {
+          const inv = await stripe.invoices.retrieve(invoiceId);
+          if (inv.hosted_invoice_url) {
+            return res.json({ ok: true, url: inv.hosted_invoice_url });
+          }
+        } catch (e) { /* continua */ }
+      }
+
+      // Cria payment link avulso
+      const customerId2 = await ensureCustomer();
+      const billing = await calcBilling(client);
+      const amountCents = Math.round(billing.total * 100) || 100;
+      const product = await stripe.products.create({
+        name: `Mirage Provador Virtual — ${client.plan || 'starter'}`,
+      });
+      const price = await stripe.prices.create({
+        unit_amount: amountCents,
+        currency:    'brl',
+        product:     product.id,
+      });
+      const link = await stripe.paymentLinks.create({
+        line_items: [{ price: price.id, quantity: 1 }],
+        customer_creation: 'always',
+        metadata: { clientKey },
+      });
+      return res.json({ ok: true, url: link.url });
+    }
+
+    return res.status(400).json({ error: 'Ação inválida.' });
+
+  } catch (err) {
+    console.error('[billing] Erro:', err);
+    return res.status(500).json({ error: 'Erro interno: ' + err.message });
+  }
+}
