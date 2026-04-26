@@ -153,9 +153,25 @@ export default async function processHandler(req, res) {
   const raw = await redis.get(`job:${jobId}`);
   if (!raw) return res.status(404).json({ error: 'Job não encontrado ou expirado' });
   const job = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  const { personImageUrl, garmentImageUrl, category, projectId, clientKey, lead, productUrl, productName } = job;
 
-  await redis.set(`job:${jobId}`, JSON.stringify({ status: 'processing', startedAt: Date.now() }), { ex: 300 });
+  // ─── Idempotência — evita re-processamento em retry do QStash ────────────
+  if (job.status === 'done') {
+    console.log(`[process] Job ${jobId} já concluído. Ignorando retry.`);
+    return res.status(200).json({ jobId, status: 'done', idempotent: true });
+  }
+
+  const { personImageUrl, garmentImageUrl, category, projectId, clientKey, lead, productUrl, productName, hash } = job;
+
+  // Marca como processing e move no índice por status
+  await Promise.all([
+    redis.set(`job:${jobId}`, JSON.stringify({
+      status: 'processing', startedAt: Date.now(), hash, clientKey,
+    }), { ex: 300 }),
+    ...(clientKey ? [
+      redis.zrem(`jobs:${clientKey}:pending`, jobId),
+      redis.zadd(`jobs:${clientKey}:processing`, { score: Date.now(), member: jobId }),
+    ] : []),
+  ]);
 
   try {
     // Token único para Vertex AI + GCS
@@ -169,19 +185,33 @@ export default async function processHandler(req, res) {
     const outputPath = `outputs/${jobId}.png`;
     const resultUrl  = await uploadToGCS(accessToken, outputPath, Buffer.from(imageBase64, 'base64'), 'image/png');
 
-    // Atualiza status com URL do resultado — expira em 5 min
-    await redis.set(
-      `job:${jobId}`,
-      JSON.stringify({ status: 'done', resultImage: resultUrl, completedAt: Date.now(), clientKey, productUrl, productName }),
-      { ex: 300 }
-    );
+    const completedAt = Date.now();
 
-    // Agenda exclusão da imagem no GCS em 3 minutos (180 segundos)
-    await qstash.publishJSON({
-      url:   `${APP_URL}/api/cleanup`,
-      body:  { jobId, objectPath: outputPath },
-      delay: 180,
-    }).catch(e => console.warn('[process] QStash cleanup schedule falhou:', e.message));
+    // Atualiza status com URL do resultado — expira em 1h
+    await Promise.all([
+      redis.set(
+        `job:${jobId}`,
+        JSON.stringify({ status: 'done', resultImage: resultUrl, completedAt, clientKey, productUrl, productName, hash }),
+        { ex: 3600 }
+      ),
+      // Salva cache pelo hash — evita re-processar o mesmo par por 24h
+      ...(hash ? [redis.set(`cache:${hash}`, resultUrl, { ex: 86400 })] : []),
+      // Move no índice por status
+      ...(clientKey ? [
+        redis.zrem(`jobs:${clientKey}:processing`, jobId),
+        redis.zadd(`jobs:${clientKey}:done`, { score: completedAt, member: jobId }),
+        redis.expire(`jobs:${clientKey}:done`, 60 * 60 * 24 * 90),
+      ] : []),
+    ]);
+
+    // Agenda exclusão: foto da pessoa imediatamente (3min), resultado em 1h
+    await Promise.all([
+      qstash.publishJSON({
+        url:   `${APP_URL}/api/cleanup`,
+        body:  { jobId, objectPath: outputPath },
+        delay: 180,
+      }).catch(e => console.warn('[process] QStash cleanup agendado com erro:', e.message)),
+    ]);
 
     // ─── Registra lead e analytics ────────────────────────────────────────
     const ts = Date.now();
@@ -219,11 +249,19 @@ export default async function processHandler(req, res) {
 
   } catch (err) {
     console.error(`[process] Erro no job ${jobId}:`, err);
-    await redis.set(
-      `job:${jobId}`,
-      JSON.stringify({ status: 'error', error: err.message, failedAt: Date.now(), clientKey }),
-      { ex: 300 }
-    );
+    const failedAt = Date.now();
+    await Promise.all([
+      redis.set(
+        `job:${jobId}`,
+        JSON.stringify({ status: 'error', error: err.message, failedAt, clientKey }),
+        { ex: 300 }
+      ),
+      ...(clientKey ? [
+        redis.zrem(`jobs:${clientKey}:processing`, jobId),
+        redis.zadd(`jobs:${clientKey}:error`, { score: failedAt, member: jobId }),
+        redis.expire(`jobs:${clientKey}:error`, 60 * 60 * 24 * 7),
+      ] : []),
+    ]);
     return res.status(200).json({ jobId, status: 'error', error: 'Erro ao processar imagem.' });
   }
 }

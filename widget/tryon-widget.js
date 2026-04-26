@@ -20,8 +20,14 @@
 
   const MAX_PX        = 1200;
   const JPEG_QUALITY  = 0.88;
-  const POLL_MS       = 2000;
   const POLL_TIMEOUT  = 90000;
+
+  // Polling progressivo: reduz carga sem piorar UX
+  function getPollInterval(elapsedMs) {
+    if (elapsedMs < 10000) return 2000;   // 0-10s: a cada 2s
+    if (elapsedMs < 30000) return 5000;   // 10-30s: a cada 5s
+    return 8000;                           // 30s+: a cada 8s
+  }
 
   // ─── Configuração ──────────────────────────────────────────────────────────
   const CFG = {
@@ -430,7 +436,7 @@
     }
 
     function resetToUpload() {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       selectedDataUrl = null;
       currentJobId    = null;
       pendingLead     = null;
@@ -455,7 +461,7 @@
     }
 
     function closeModal() {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       overlay.remove();
       document.body.style.overflow = '';
     }
@@ -561,30 +567,31 @@
 
         setProgress(55);
 
-        // 5. Polling do resultado
+        // 5. Polling do resultado (progressivo: 2s → 5s → 8s)
         pollStart = Date.now();
         await new Promise((resolve, reject) => {
-          pollTimer = setInterval(async () => {
-            if (Date.now() - pollStart > POLL_TIMEOUT) {
-              clearInterval(pollTimer);
+          function schedulePoll() {
+            const elapsed  = Date.now() - pollStart;
+            if (elapsed > POLL_TIMEOUT) {
               return reject(new Error('O processamento demorou mais que o esperado. Tente novamente.'));
             }
-            const elapsed = Date.now() - pollStart;
             setProgress(Math.min(55 + (elapsed / POLL_TIMEOUT) * 40, 93));
-            try {
-              const pollRes  = await fetch(`${apiUrl}/api/result?jobId=${encodeURIComponent(currentJobId)}`);
-              const pollData = await pollRes.json();
-              if (pollData.status === 'done' || pollData.status === 'completed') {
-                clearInterval(pollTimer);
-                setProgress(100);
-                resultImg.src = pollData.resultImage || pollData.output;
-                resolve();
-              } else if (pollData.status === 'error' || pollData.status === 'failed') {
-                clearInterval(pollTimer);
-                reject(new Error(pollData.error || 'Não foi possível processar. Tente com outra foto.'));
-              }
-            } catch (_) { /* rede instável — continua */ }
-          }, POLL_MS);
+            pollTimer = setTimeout(async () => {
+              try {
+                const pollRes  = await fetch(`${apiUrl}/api/result?jobId=${encodeURIComponent(currentJobId)}`);
+                const pollData = await pollRes.json();
+                if (pollData.status === 'done' || pollData.status === 'completed') {
+                  setProgress(100);
+                  resultImg.src = pollData.resultImage || pollData.output;
+                  return resolve();
+                } else if (pollData.status === 'error' || pollData.status === 'failed') {
+                  return reject(new Error(pollData.error || 'Não foi possível processar. Tente com outra foto.'));
+                }
+              } catch (_) { /* rede instável — continua */ }
+              schedulePoll();
+            }, getPollInterval(elapsed));
+          }
+          schedulePoll();
         });
 
         resultWrap.classList.add('visible');

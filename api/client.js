@@ -153,22 +153,25 @@ export default async function handler(req, res) {
       if (!total) return res.json({ ok: true, jobs: [], total: 0, page, limit });
 
       if (status) {
-        // Com filtro de status: busca os últimos 500 e filtra em memória
-        // (evita scan global mas ainda é limitado — melhoria futura: índice por status)
-        const allIds = await redis.zrange(`jobs:${clientKey}`, 0, 499, { rev: true });
-        const raws   = await Promise.all(allIds.map(id => redis.get(`job:${id}`)));
-        let jobs = raws
-          .map((r, i) => {
-            const obj = typeof r === 'string' ? JSON.parse(r) : r;
-            if (!obj) return null;
-            if (!obj.jobId) obj.jobId = allIds[i];
-            return obj;
-          })
-          .filter(Boolean)
-          .filter(j => j.status === status);
+        // Filtro por status via índice dedicado — O(log n), sem scan em memória
+        const VALID_STATUSES = ['pending', 'processing', 'done', 'error'];
+        const safeStatus = VALID_STATUSES.includes(status) ? status : 'done';
+        const statusTotal = await redis.zcard(`jobs:${clientKey}:${safeStatus}`);
+        if (!statusTotal) return res.json({ ok: true, jobs: [], total: 0, page, limit });
 
-        const start = (page - 1) * limit;
-        return res.json({ ok: true, jobs: jobs.slice(start, start + limit), total: jobs.length, page, limit });
+        const start  = (page - 1) * limit;
+        const jobIds = await redis.zrange(`jobs:${clientKey}:${safeStatus}`, start, start + limit - 1, { rev: true });
+        if (!jobIds?.length) return res.json({ ok: true, jobs: [], total: statusTotal, page, limit });
+
+        const raws = await Promise.all(jobIds.map(id => redis.get(`job:${id}`)));
+        const jobs = raws.map((r, i) => {
+          const obj = typeof r === 'string' ? JSON.parse(r) : r;
+          if (!obj) return null;
+          if (!obj.jobId) obj.jobId = jobIds[i];
+          return obj;
+        }).filter(Boolean);
+
+        return res.json({ ok: true, jobs, total: statusTotal, page, limit });
       }
 
       // Sem filtro: paginação direta pelo índice

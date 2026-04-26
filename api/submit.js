@@ -4,7 +4,7 @@
 
 import { Redis } from '@upstash/redis';
 import { Client as QStashClient } from '@upstash/qstash';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 
 const PROJECT_ID       = 'provador-virtual-494213';
 const VALID_CATEGORIES = ['tops', 'bottoms', 'one-pieces', 'auto'];
@@ -71,6 +71,14 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Muitas requisições. Aguarde alguns segundos.' });
   }
 
+  // ─── Rate limit por clientKey (além do IP) ────────────────────────────────
+  const rlCkKey   = `rl:ck:${clientKey}:${Math.floor(Date.now() / 60000)}`;
+  const rlCkCount = await redis.incr(rlCkKey);
+  if (rlCkCount === 1) await redis.expire(rlCkKey, 60);
+  if (rlCkCount > 20) {
+    return res.status(429).json({ error: 'Limite por chave atingido. Aguarde 1 minuto.' });
+  }
+
   const raw = await redis.get(`client:${clientKey}`);
   if (!raw) return res.status(403).json({ error: 'Chave de cliente inválida.' });
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -130,9 +138,31 @@ export default async function handler(req, res) {
   const safeCategory    = VALID_CATEGORIES.includes(category) ? category : 'auto';
   const finalProductUrl = productUrl || finalGarmentUrl;
 
-  // ─── Contagem de uso ──────────────────────────────────────────────────────
+  // ─── Hash para cache por par (pessoa, roupa) ──────────────────────────────
+  const garmentHash = createHash('sha256')
+    .update(finalPersonUrl + '|' + finalGarmentUrl)
+    .digest('hex');
+
+  // Verifica cache antes de criar job — retorno imediato sem chamar Vertex
+  const cached = await redis.get(`cache:${garmentHash}`);
+  if (cached) {
+    return res.status(200).json({
+      jobId:       `cached_${garmentHash.slice(0, 8)}`,
+      status:      'done',
+      cached:      true,
+      resultImage: cached,
+      message:     'Resultado recuperado do cache.',
+    });
+  }
+
+  // ─── Contagem de uso (total + diário) ────────────────────────────────────
   const newCount = await redis.incr(`usage:${clientKey}`);
   await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, usageCount: Number(newCount) || 0 }));
+
+  // Contador diário para rate limit e analytics por dia
+  const dayKey   = `usage:${clientKey}:${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
+  const dayCount = await redis.incr(dayKey);
+  if (dayCount === 1) await redis.expire(dayKey, 86400);
 
   // ─── Cria job — só metadados, sem imagens inline ──────────────────────────
   const jobId    = randomUUID();
@@ -152,13 +182,16 @@ export default async function handler(req, res) {
         lead:            hasLead ? { name: leadName, email: leadEmail, whatsapp: leadWhatsapp } : null,
         productUrl:      finalProductUrl,
         productName:     productName ? String(productName).slice(0, 200) : '',
+        hash:            garmentHash,  // usado pelo process.js para salvar cache
       }),
       { ex: 3600 }
     ),
-    // Índice por cliente: permite busca O(log n) em vez de scan global
+    // Índice global por cliente (O(log n))
     redis.zadd(`jobs:${clientKey}`, { score: now, member: jobId }),
-    // TTL do índice: 90 dias (jobs individuais expiram em 1h, mas o índice fica para histórico)
     redis.expire(`jobs:${clientKey}`, 60 * 60 * 24 * 90),
+    // Índice por status — permite filtrar sem scan em memória
+    redis.zadd(`jobs:${clientKey}:pending`, { score: now, member: jobId }),
+    redis.expire(`jobs:${clientKey}:pending`, 60 * 60 * 24 * 90),
   ]);
 
   await qstash.publishJSON({
