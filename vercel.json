@@ -27,6 +27,18 @@
     "api/save-lead.js": {
       "maxDuration": 10,
       "memory": 128
+    },
+    "api/admin.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/client.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/billing.js": {
+      "maxDuration": 15,
+      "memory": 256
     }
   },
   "headers": [
