@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirage - Minha Conta</title>
+<link rel="icon" type="image/png" href="logo-mirage.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F9FC;--card:#FFFFFF;--border:#E6E8EC;--text:#0A0A0A;--muted:#6B7280;
+  --primary:#635BFF;--primary-light:#EEF0FF;
+  --success:#16A34A;--success-light:#F0FDF4;
+  --warning:#F59E0B;--warning-light:#FFFBEB;
+  --error:#DC2626;--error-light:#FEF2F2;
+  --sidebar-w:240px;--header-h:60px;
+}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+a{color:inherit;text-decoration:none}button{font-family:inherit;cursor:pointer}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-logo-mark{width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.login-logo-mark svg{color:#fff}
+.login-logo span{font-size:20px;font-weight:800;letter-spacing:-.03em}
+.login-card h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.login-card p{color:var(--muted);font-size:13px;margin-bottom:24px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.field input,.field select,.field textarea{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s;background:var(--bg)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px var(--primary-light)}
+.field textarea{resize:vertical;min-height:80px}
+.login-err{color:var(--error);font-size:13px;margin-top:10px;text-align:center;min-height:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid transparent;transition:all .15s;cursor:pointer;font-family:inherit;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:#4f46e5}
+.btn-secondary{background:var(--card);border-color:var(--border);color:var(--text)}.btn-secondary:hover{background:var(--bg)}
+.btn-danger{background:var(--error-light);border-color:#fecaca;color:var(--error)}.btn-danger:hover{background:var(--error);color:#fff;border-color:var(--error)}
+.btn-success{background:var(--success-light);border-color:#bbf7d0;color:var(--success)}.btn-success:hover{background:var(--success);color:#fff}
+.btn-warning{background:var(--warning-light);border-color:#fde68a;color:#92400e}.btn-warning:hover{background:var(--warning);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-full{width:100%}.btn:disabled{opacity:.5;cursor:not-allowed}
+.app{display:none;height:100vh}.app.visible{display:flex}
+.sidebar{width:var(--sidebar-w);background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:40;overflow-y:auto}
+.sidebar-brand{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-brand-mark{width:28px;height:28px;background:var(--primary);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-brand-mark svg{color:#fff}
+.sidebar-brand span{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.sidebar-section{padding:8px 12px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;margin-bottom:2px;border:1px solid transparent}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--primary-light);color:var(--primary);font-weight:600;border-color:#d4d1ff}
+.nav-item svg{flex-shrink:0;width:16px;height:16px}
+.nav-badge{margin-left:auto;background:var(--error);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px}
+.sidebar-footer{margin-top:auto;border-top:1px solid var(--border);padding:12px}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:var(--header-h);border-bottom:1px solid var(--border);background:var(--card);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:30}
+.topbar-title{font-size:15px;font-weight:700}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.content{padding:24px;flex:1;overflow-y:auto;max-width:1100px}
+.view{display:none}.view.active{display:block}
+.alert{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;border:1px solid;font-size:13px;margin-bottom:14px}
+.alert-warning{background:var(--warning-light);border-color:#fde68a;color:#92400e}
+.alert-error{background:var(--error-light);border-color:#fecaca;color:var(--error)}
+.alert-success{background:var(--success-light);border-color:#bbf7d0;color:#166534}
+.alert-info{background:var(--primary-light);border-color:#d4d1ff;color:var(--primary)}
+.alert-icon{flex-shrink:0;font-size:16px}.alert-body{flex:1}
+.alert-title{font-weight:600}.alert-sub{font-size:12px;opacity:.85;margin-top:2px}
+.alert .btn{margin-left:auto;flex-shrink:0}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.kpi-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.kpi-value{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.progress-wrap{background:#F3F4F6;border-radius:99px;height:8px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;transition:width .4s ease}
+.progress-fill.ok{background:var(--success)}.progress-fill.warn{background:var(--warning)}.progress-fill.over{background:var(--error)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:700}
+.card-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.section-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:720px){.section-grid{grid-template-columns:1fr}}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:8px 12px;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-success{background:var(--success-light);color:var(--success)}
+.badge-warning{background:var(--warning-light);color:#92400e}
+.badge-error{background:var(--error-light);color:var(--error)}
+.badge-muted{background:#F3F4F6;color:var(--muted)}
+.badge-primary{background:var(--primary-light);color:var(--primary)}
+.jobs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.job-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.job-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.job-img{width:100%;aspect-ratio:3/4;object-fit:cover;background:var(--bg);display:block}
+.job-img-ph{width:100%;aspect-ratio:3/4;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:var(--muted);font-size:11px}
+.job-meta{padding:8px 10px}.job-time{font-size:11px;color:var(--muted);margin-top:4px}
+.code-block{background:#0F172A;color:#E2E8F0;border-radius:10px;padding:16px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;overflow-x:auto;position:relative;margin-top:8px}
+.code-copy-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);color:#CBD5E1;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit}
+.code-copy-btn:hover{background:rgba(255,255,255,.2)}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;gap:12px}
+.info-row:last-child{border-bottom:none}
+.info-row-label{color:var(--muted);flex-shrink:0}.info-row-value{font-weight:500;text-align:right}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0}
+.empty{text-align:center;padding:40px 24px;color:var(--muted)}
+.empty-icon{font-size:32px;margin-bottom:10px}
+.empty-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar input,.filter-bar select{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:var(--card)}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--primary)}
+.text-muted{color:var(--muted)}.text-success{color:var(--success)}.text-error{color:var(--error)}.text-warning{color:var(--warning)}
+.fw-600{font-weight:600}.mt-8{margin-top:8px}.mt-16{margin-top:16px}
+.billing-total{font-size:32px;font-weight:800;letter-spacing:-.04em}
+</style>
+</head>
+<body>
+
+<div id="loginWrap" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span>Mirage</span>
+    </div>
+    <h1>Minha Conta</h1>
+    <p>Entre com seu email e senha de acesso.</p>
+    <div class="field">
+      <label>Email</label>
+      <input id="loginEmail" type="email" placeholder="seu@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input id="loginPassword" type="password" placeholder="••••••••••" autocomplete="current-password">
+    </div>
+    <button id="loginBtn" class="btn btn-primary btn-full" onclick="doLogin()">Entrar</button>
+    <div id="loginErr" class="login-err"></div>
+  </div>
+</div>
+
+<div id="app" class="app">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-mark">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span>Mirage</span>
+    </div>
+    <div class="sidebar-section">
+      <div class="nav-item active" onclick="nav('dashboard')">
+        <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/></svg>
+        Dashboard
+      </div>
+
+      <div class="nav-item" onclick="nav('produtos')">
+        <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Produtos
+      </div>
+      <div class="nav-item" onclick="nav('leads')">
+        <svg fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Leads
+      </div>
+      <div class="nav-item" onclick="nav('integracao')">
+        <svg fill="none" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="8 6 2 12 8 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Integração
+      </div>
+      <div class="nav-item" onclick="nav('billing')">
+        <svg fill="none" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" stroke="currentColor" stroke-width="2"/><line x1="1" y1="10" x2="23" y2="10" stroke="currentColor" stroke-width="2"/></svg>
+        Billing
+        <span id="billingBadge" class="nav-badge" style="display:none">!</span>
+      </div>
+      <div class="nav-item" onclick="nav('config')">
+        <svg fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="2"/></svg>
+        Configurações
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div style="padding:8px 8px 10px;">
+        <div style="font-size:13px;font-weight:600;" id="sidebarStoreName">-</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="sidebarPlan">-</div>
+      </div>
+      <button class="btn btn-secondary btn-full btn-sm" onclick="doLogout()">Sair da conta</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-actions" id="topbarActions"></div>
+    </div>
+    <div class="content">
+
+      <div id="view-dashboard" class="view active">
+        <div id="dashAlerts"></div>
+        <div class="kpi-grid" id="dashKpis"></div>
+        <div class="section-grid">
+          <div class="card">
+            <div class="card-header">
+              <div><div class="card-title">Uso do plano</div><div class="card-sub" id="dashPlanSub">carregando...</div></div>
+              <button class="btn btn-sm btn-primary" onclick="nav('billing')">Ver billing</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+              <span id="dashUsageLabel">-</span><span id="dashUsagePct" class="fw-600">-</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-fill ok" id="dashProgress" style="width:0%"></div></div>
+            <div class="mt-16">
+              <div class="info-row"><span class="info-row-label">Excedente estimado</span><span class="info-row-value fw-600" id="dashOverage">-</span></div>
+              <div class="info-row"><span class="info-row-label">Total estimado este mês</span><span class="info-row-value fw-600" id="dashTotal">-</span></div>
+              <div class="info-row"><span class="info-row-label">Próxima cobrança</span><span class="info-row-value" id="dashNextDate">-</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Atividade recente</div></div>
+            <div id="dashRecentJobs"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Leads recentes</div><button class="btn btn-sm btn-secondary" onclick="nav('leads')">Ver todos</button></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Nome</th><th>Email</th><th>WhatsApp</th><th>Data</th></tr></thead>
+            <tbody id="dashLeadsTbody"><tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Carregando...</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+
+      <div id="view-produtos" class="view">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Produtos mais experimentados</div></div>
+          <canvas id="productsChart" height="80"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Ranking completo</div></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>#</th><th>Produto</th><th>Gerações</th><th>% do uso</th></tr></thead>
+            <tbody id="productsTbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-leads" class="view">
+        <div class="kpi-grid" id="leadsKpis"></div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Todos os leads</div></div>
+            <button class="btn btn-sm btn-secondary" onclick="exportLeadsCSV()">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Exportar CSV
+            </button>
+          </div>
+          <div class="filter-bar">
+            <input type="text" id="leadsSearch" placeholder="Buscar por nome ou email..." oninput="st.leadsPage=1;filterLeads()" style="flex:1;min-width:200px;">
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Nome</th><th>Email</th><th>WhatsApp</th><th>Produto</th><th>Data</th></tr></thead>
+            <tbody id="leadsTbody"></tbody></table>
+          </div>
+          <div id="leadsPagination" style="display:flex;gap:8px;margin-top:16px;justify-content:center;"></div>
+        </div>
+      </div>
+
+      <div id="view-integracao" class="view">
+        <div class="section-grid">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Status do widget</div></div>
+            <div class="info-row"><span class="info-row-label">Situação</span><span class="badge badge-success">Ativo</span></div>
+            <div class="info-row"><span class="info-row-label">Versão</span><span class="info-row-value">v6.0</span></div>
+            <div class="info-row"><span class="info-row-label">Loja configurada</span><span class="info-row-value" id="integStoreUrl">-</span></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Personalização do botão</div></div>
+            <div class="field"><label>Texto do botão</label><input id="cfgBtnText" value="Experimentar" oninput="buildSnippet()"></div>
+            <div class="field"><label>Cor de fundo</label><input id="cfgBtnBg" type="color" value="#000000" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
+            <div class="field"><label>Cor do texto</label><input id="cfgBtnColor" type="color" value="#ffffff" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Snippet de instalação</div><div class="card-sub">Cole antes do &lt;/body&gt; em cada página de produto</div></div></div>
+          <div class="field" style="margin-bottom:12px;">
+            <label>Plataforma</label>
+            <select id="snippetPlatform" onchange="buildSnippet()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              <option value="shopify">Shopify</option>
+              <option value="nuvemshop">Nuvemshop</option>
+              <option value="woocommerce">WooCommerce</option>
+              <option value="lojaintegrada">Loja Integrada</option>
+              <option value="vtexio">VTEX IO</option>
+              <option value="vtexlegacy">VTEX Legacy</option>
+            </select>
+          </div>
+          <div class="code-block"><button class="code-copy-btn" onclick="copySnippet()">Copiar</button><pre id="snippetCode" style="white-space:pre-wrap;word-break:break-all;font-size:12px;"></pre></div>
+          <div id="snippetHint" style="margin-top:12px;padding:12px;background:var(--warning-light);border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;"></div>
+        </div>
+      </div>
+
+      <div id="view-billing" class="view">
+        <div id="billingAlerts"></div>
+        <div class="section-grid">
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Plano atual</div></div><button class="btn btn-sm btn-primary" onclick="upgradePlan()">Upgrade</button></div>
+            <div style="margin-bottom:14px;"><span id="billingPlanBadge" class="badge badge-primary" style="font-size:13px;padding:4px 12px;">-</span></div>
+            <div class="info-row"><span class="info-row-label">Gerações incluídas</span><span class="info-row-value fw-600" id="billingLimit">-</span></div>
+            <div class="info-row"><span class="info-row-label">Preço mensal</span><span class="info-row-value fw-600" id="billingPrice">-</span></div>
+            <div class="info-row"><span class="info-row-label">Excedente por geração</span><span class="info-row-value" id="billingOverageRate">-</span></div>
+            <div class="info-row"><span class="info-row-label">Assinatura</span><span id="billingSubStatus" class="badge badge-success">Ativo</span></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Estimativa deste mês</div></div>
+            <div style="margin-bottom:14px;"><div class="billing-total" id="billingTotal">R$ 0</div><div class="text-muted" style="font-size:12px;margin-top:4px;" id="billingTotalSub">-</div></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span id="billingUsageLabel">-</span><span id="billingUsagePct" class="fw-600">-</span></div>
+            <div class="progress-wrap" style="margin-bottom:14px;"><div class="progress-fill ok" id="billingProgress" style="width:0%"></div></div>
+            <div class="info-row"><span class="info-row-label">Plano base</span><span class="info-row-value" id="billingBase">-</span></div>
+            <div class="info-row"><span class="info-row-label">Excedente</span><span class="info-row-value" id="billingExcess">-</span></div>
+            <div class="info-row"><span class="info-row-label">Total estimado</span><span class="info-row-value fw-600" id="billingTotalRow">-</span></div>
+          </div>
+        </div>
+        <div class="section-grid">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Próxima cobrança</div></div>
+            <div class="info-row"><span class="info-row-label">Data</span><span class="info-row-value fw-600" id="billingNextDate">-</span></div>
+            <div class="info-row"><span class="info-row-label">Valor estimado</span><span class="info-row-value fw-600" id="billingNextAmt">-</span></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Forma de pagamento</div></div>
+            <div id="billingPayMethod"><div class="text-muted" style="font-size:13px;padding:6px 0;">Nenhum cartão cadastrado</div></div>
+            <button class="btn btn-secondary btn-sm mt-8" onclick="openPaymentModal('card')">Gerenciar pagamento</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Faturas</div></div><span id="billingMockNote" class="text-muted" style="font-size:11px;display:none;">dados simulados</span></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Fatura</th><th>Período</th><th>Valor</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody id="invoicesTbody"></tbody></table>
+          </div>
+          <div id="invoicesEmpty" class="empty" style="display:none;"><div class="empty-icon">🧾</div><div class="empty-title">Sem faturas ainda</div></div>
+        </div>
+      </div>
+
+      <div id="view-config" class="view">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Dados da conta</div></div>
+          <div class="field"><label>Nome da empresa</label><input id="cfgName" type="text"></div>
+          <div class="field"><label>Email de contato</label><input id="cfgEmail" type="email"></div>
+          <div class="field"><label>URL da loja</label><input id="cfgStore" type="url" placeholder="https://minha-loja.com.br"></div>
+          <button class="btn btn-primary" onclick="saveConfig()">Salvar alterações</button>
+          <div id="cfgMsg" style="font-size:13px;margin-top:10px;min-height:18px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Credenciais de acesso</div></div>
+          <div class="info-row"><span class="info-row-label">Email de login</span><span class="info-row-value" id="cfgEmailDisplay">-</span></div>
+          <div style="margin-top:16px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Alterar senha</div>
+            <div class="field"><label>Senha atual</label><input id="cfgCurrentPassword" type="password" placeholder="Sua senha atual"></div>
+            <div class="field"><label>Nova senha</label><input id="cfgNewPassword" type="password" placeholder="Mínimo 6 caracteres"></div>
+            <div class="field"><label>Confirmar nova senha</label><input id="cfgConfirmPassword" type="password" placeholder="Repita a nova senha"></div>
+            <button class="btn btn-secondary btn-sm" onclick="changePassword()">Alterar senha</button>
+            <div id="cfgPwdMsg" style="font-size:13px;margin-top:8px;min-height:16px;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Endereço de cobrança</div></div>
+          <div class="field"><label>Empresa / Nome completo</label><input id="cfgBillingName" type="text"></div>
+          <div class="field"><label>CNPJ / CPF (opcional)</label><input id="cfgTax" type="text" placeholder="00.000.000/0001-00"></div>
+          <div class="field"><label>Endereço</label><textarea id="cfgAddress" rows="2" placeholder="Rua, numero, cidade, estado"></textarea></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="saveBillingAddress()">Salvar endereço</button>
+            <button class="btn btn-secondary btn-sm" onclick="openPaymentModal('card')">Gerenciar cartão</button>
+          </div>
+          <div id="cfgAddrMsg" style="font-size:13px;margin-top:8px;min-height:16px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title" id="invoiceModalTitle">Fatura</div><div class="text-muted" style="font-size:12px;margin-top:2px;" id="invoiceModalPeriod"></div></div>
+      <button class="modal-close" onclick="closeModal('invoiceModal')">&times;</button>
+    </div>
+    <div id="invoiceModalBody"></div>
+    <div style="display:flex;gap:8px;margin-top:20px;" id="invoiceModalActions"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="paymentModal" onclick="closePaymentModal(event)">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title" id="paymentModalTitle">Pagamento</div>
+      <button class="modal-close" onclick="closeModal('paymentModal')">&times;</button>
+    </div>
+
+    <!-- Seletor de método -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="btn btn-secondary btn-sm" id="tabCard" onclick="selectPayTab('card')" style="flex:1">💳 Cartão de crédito</button>
+      <button class="btn btn-secondary btn-sm" id="tabLink" onclick="selectPayTab('link')" style="flex:1">🏦 Boleto / PIX</button>
+    </div>
+
+    <div id="paymentModalLoading" style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Carregando...</div>
+    <div id="payment-element" style="margin:4px 0 16px;"></div>
+    <div id="payLinkBox" style="display:none;padding:16px;background:var(--primary-light);border-radius:10px;text-align:center;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Link de pagamento gerado</div>
+      <a id="payLinkUrl" href="#" target="_blank" class="btn btn-primary btn-sm">Abrir link de pagamento</a>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Aceita cartão de crédito, boleto e PIX</div>
+    </div>
+    <div id="paymentModalError" style="color:#ef4444;font-size:13px;margin-bottom:12px;padding:10px 12px;background:#fef2f2;border-radius:8px;display:none;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;">
+      <button class="btn btn-secondary" onclick="closeModal('paymentModal')">Fechar</button>
+      <button class="btn btn-primary" id="paymentModalBtn" onclick="confirmStripePayment()" style="display:none;">Pagar agora</button>
+    </div>
+    <!-- Stripe + segurança -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#635BFF;letter-spacing:-.02em;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#635BFF"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Stripe
+      </span>
+      <span style="font-size:11px;color:var(--muted);">Pagamentos 100% seguros</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        SSL 256-bit
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de upgrade de plano -->
+<div class="modal-overlay" id="upgradeModal" onclick="if(event.target===this)closeModal('upgradeModal')">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div><div class="modal-title">Mudar de plano</div><div class="text-muted" style="font-size:12px;margin-top:2px;" id="upgradeSub">Escolha o plano ideal para o seu volume</div></div>
+      <button class="modal-close" onclick="closeModal('upgradeModal')">&times;</button>
+    </div>
+    <div id="upgradePlansBody" style="display:grid;gap:10px;padding:4px 0 8px;"></div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;">Após o pagamento, seu plano será atualizado em até 24h. Dúvidas? Fale com o suporte.</div>
+  </div>
+</div>
+
+<script>
+// URL da API — detectada automaticamente pelo domínio atual.
+const API_URL = window.location.origin;
+
+const PLANS = {
+  starter:    { name:'Starter',    limit:100,      price:49,    overage:0.75, color:'#6B7280' },
+  pro:        { name:'Pro',        limit:500,      price:149,   overage:0.40, color:'#635BFF' },
+  growth:     { name:'Growth',     limit:1000,     price:249,   overage:0.20, color:'#16A34A' },
+  scale:      { name:'Scale',      limit:5000,     price:749,   overage:0.10, color:'#F59E0B' },
+  enterprise: { name:'Enterprise', limit:Infinity, price:2499,  overage:0,    color:'#0A0A0A' },
+};
+
+const st = {
+  clientKey:'', password:'', client:null,
+  billing:null, invoices:[], invoicesMock:false,
+  allLeads:[], jobsPage:1, leadsPage:1,
+  plans:[],
+};
+let productsChart = null;
+
+async function api(endpoint, action, data={}) {
+  const r = await fetch(`${API_URL}/api/${endpoint}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action, clientKey:st.clientKey, password:st.password, ...data }),
+  });
+  return r.json();
+}
+
+async function doLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const errEl    = document.getElementById('loginErr');
+  const btn      = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Preencha email e senha.'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const r = await fetch(`${API_URL}/api/client`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'login', email, password }),
+    });
+    const data = await r.json();
+    if (!data.ok) { errEl.textContent = data.error || 'Credenciais inválidas.'; return; }
+    st.clientKey = data.clientKey;
+    st.password  = password;
+    st.client    = data.client;
+    sessionStorage.setItem('cpSession', JSON.stringify({ clientKey:data.clientKey, password }));
+    startApp();
+  } catch { errEl.textContent = 'Erro de conexão. Tente novamente.'; }
+  finally { btn.disabled=false; btn.textContent='Entrar'; }
+}
+
+document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+
+function doLogout() {
+  sessionStorage.removeItem('cpSession');
+  location.reload();
+}
+
+async function startApp() {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  const c = st.client;
+  document.getElementById('sidebarStoreName').textContent = c.name || c.store || 'Minha loja';
+  document.getElementById('sidebarPlan').textContent = 'Carregando...';
+  document.getElementById('cfgName').value         = c.name        || '';
+  document.getElementById('cfgEmail').value        = c.email       || '';
+  document.getElementById('cfgStore').value        = c.store       || '';
+  document.getElementById('cfgEmailDisplay').textContent = c.email || '-';
+  document.getElementById('cfgBillingName').value  = c.billingName || '';
+  document.getElementById('cfgTax').value          = c.taxId       || '';
+  document.getElementById('cfgAddress').value      = c.address     || '';
+  // Carrega billing e lista de planos disponíveis em paralelo
+  const [, plansRes] = await Promise.all([
+    loadBillingData(),
+    fetch(`${API_URL}/api/client`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'listPlans'}) }).then(r=>r.json()).catch(()=>({ok:false,plans:[]})),
+  ]);
+  if (plansRes.ok && plansRes.plans?.length) st.plans = plansRes.plans;
+  if (st.billing) {
+    document.getElementById('sidebarPlan').textContent = `${st.billing.planName || st.billing.plan || 'Plano'} — R$ ${st.billing.planPrice}/mês`;
+  }
+  loadDashboard();
+}
+
+const VIEW_TITLES = { dashboard:'Dashboard', geracoes:'Gerações', produtos:'Produtos', leads:'Leads', integracao:'Integração', billing:'Billing', config:'Configurações' };
+
+function nav(id) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const navEl = [...document.querySelectorAll('.nav-item')].find(n=>n.getAttribute('onclick')?.includes(`'${id}'`));
+  if (navEl) navEl.classList.add('active');
+  document.getElementById(`view-${id}`)?.classList.add('active');
+  document.getElementById('topbarTitle').textContent = VIEW_TITLES[id]||id;
+  document.getElementById('topbarActions').innerHTML = '';
+  if (id==='dashboard')   loadDashboard();
+  else if (id==='geracoes')   loadJobs();
+  else if (id==='produtos')   loadProducts();
+  else if (id==='leads')      loadLeads();
+  else if (id==='integracao') loadIntegracao();
+  else if (id==='billing')    renderBilling();
+}
+
+async function loadBillingData() {
+  const [sum, inv] = await Promise.all([ api('billing','summary'), api('billing','invoices') ]);
+  if (sum.ok) st.billing = sum;
+  if (inv.ok) { st.invoices = inv.invoices||[]; st.invoicesMock = inv.isMock||false; }
+  const hasPending = st.invoices.some(i=>i.status==='pending'||i.status==='open');
+  document.getElementById('billingBadge').style.display = hasPending ? 'flex' : 'none';
+}
+
+async function loadDashboard() {
+  const b = st.billing; if (!b) return;
+  const planName = b.planName || b.plan || 'Plano';
+  const planPrice = b.planPrice || 0;
+  const pct  = b.limit===Infinity ? 0 : Math.round((b.usage/b.limit)*100);
+  let alertsHtml='';
+  if (pct>=100) alertsHtml += mkAlert('error','⛔','Limite atingido — novas gerações estão bloqueadas',`Você usou ${b.usage} de ${b.limit} gerações.`,'<button class="btn btn-sm btn-danger" onclick="nav(\'billing\')">Fazer upgrade</button>');
+  else if (pct>=80) alertsHtml += mkAlert('warning','⚠️',`${pct}% do limite usado`,`Estimativa: R$ ${b.total}.`,'<button class="btn btn-sm btn-warning" onclick="nav(\'billing\')">Ver billing</button>');
+  if (st.invoices.some(i=>i.status==='pending'||i.status==='open')) alertsHtml += mkAlert('error','🧾','Fatura pendente','Regularize para evitar suspensão.','<button class="btn btn-sm btn-danger" onclick="nav(\'billing\')">Pagar agora</button>');
+  document.getElementById('dashAlerts').innerHTML = alertsHtml;
+  const rem = b.limit===Infinity ? '∞' : Math.max(0, b.limit-b.usage);
+  document.getElementById('dashKpis').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Gerações usadas</div><div class="kpi-value ${pct>=100?'text-error':pct>=80?'text-warning':''}">${b.usage}</div><div class="kpi-sub">de ${b.limit===Infinity?'∞':b.limit} no plano</div></div>
+    <div class="kpi-card"><div class="kpi-label">Restantes</div><div class="kpi-value">${rem}</div><div class="kpi-sub">até o fim do ciclo</div></div>
+    <div class="kpi-card"><div class="kpi-label">Custo estimado</div><div class="kpi-value">R$ ${b.total}</div><div class="kpi-sub">próx. cobrança ${fmtDate(b.nextDate)}</div></div>`;
+  document.getElementById('dashPlanSub').textContent = `Plano ${planName} — R$ ${planPrice}/mês`;
+  document.getElementById('dashUsageLabel').textContent = `${b.usage} / ${b.limit===Infinity?'∞':b.limit} gerações`;
+  document.getElementById('dashUsagePct').textContent = pct+'%';
+  const prog = document.getElementById('dashProgress');
+  prog.style.width = Math.min(100,pct)+'%';
+  prog.className = 'progress-fill '+(pct>=100?'over':pct>=80?'warn':'ok');
+  document.getElementById('dashOverage').textContent = b.overageAmt>0 ? `R$ ${b.overageAmt} (${b.excess} × R$ ${b.overage})` : 'Nenhum';
+  document.getElementById('dashTotal').textContent = `R$ ${b.total}`;
+  document.getElementById('dashNextDate').textContent = fmtDate(b.nextDate);
+  const jr = await api('client','jobs',{limit:1});
+  const dj = document.getElementById('dashRecentJobs');
+  if (dj) dj.innerHTML = jr.ok && jr.total ? `<div style="font-size:13px;color:var(--muted);padding:8px 0;">${jr.total} geração${jr.total!==1?'s':''} realizadas no total.</div>` : '<div style="font-size:13px;color:var(--muted);padding:8px 0;">Nenhuma geração ainda.</div>';
+  if (jr.ok) { document.getElementById('dashKpis').innerHTML += `<div class="kpi-card"><div class="kpi-label">Total de gerações</div><div class="kpi-value">${jr.total||b.usage}</div><div class="kpi-sub">todos os tempos</div></div>`; }
+  const lr = await api('client','leads',{limit:5});
+  const tb = document.getElementById('dashLeadsTbody');
+  if (lr.ok&&lr.leads?.length) {
+    tb.innerHTML = lr.leads.slice(0,5).map(l=>`<tr><td>${esc(l.name)}</td><td>${esc(l.email)}</td><td>${esc(l.whatsapp)}</td><td class="text-muted">${fmtTs(l.completedAt)}</td></tr>`).join('');
+    document.getElementById('dashKpis').innerHTML += `<div class="kpi-card"><div class="kpi-label">Leads capturados</div><div class="kpi-value">${lr.total}</div><div class="kpi-sub">total cadastrado</div></div>`;
+  } else {
+    tb.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Nenhum lead ainda.</td></tr>';
+  }
+}
+
+function mkAlert(type,icon,title,sub,action='') {
+  return `<div class="alert alert-${type}"><span class="alert-icon">${icon}</span><div class="alert-body"><div class="alert-title">${title}</div><div class="alert-sub">${sub}</div></div>${action}</div>`;
+}
+
+async function loadJobs() {
+  const status = document.getElementById('jobsStatus')?.value||'';
+  document.getElementById('jobsGrid').innerHTML = '<div class="text-muted" style="font-size:13px;">Carregando...</div>';
+  const r = await api('client','jobs',{page:st.jobsPage,limit:30,status});
+  const grid = document.getElementById('jobsGrid');
+  document.getElementById('jobsCount').textContent = r.total ? `${r.total} gerações` : '';
+  if (!r.ok||!r.jobs?.length) { grid.innerHTML='<div class="empty"><div class="empty-icon">🖼️</div><div class="empty-title">Nenhuma geração encontrada</div></div>'; document.getElementById('jobsPagination').innerHTML=''; return; }
+  grid.innerHTML = r.jobs.map(jobCard).join('');
+  renderPag('jobsPagination', st.jobsPage, r.total, 30, p=>{ st.jobsPage=p; loadJobs(); });
+}
+
+function jobCard(j) {
+  const cls   = {done:'badge-success',pending:'badge-muted',processing:'badge-primary',error:'badge-error'}[j.status]||'badge-muted';
+  const label = {done:'Concluído',pending:'Pendente',processing:'Processando',error:'Erro'}[j.status]||j.status;
+  const img   = j.resultImage ? `<img class="job-img" src="${esc(j.resultImage)}" loading="lazy" onerror="this.style.display='none'">` : `<div class="job-img-ph"><span style="font-size:28px;">👗</span><span>${label}</span></div>`;
+  return `<div class="job-card">${img}<div class="job-meta"><span class="badge ${cls}">${label}</span><div class="job-time">${fmtTs(j.createdAt)}</div></div></div>`;
+}
+
+async function loadProducts() {
+  const r = await api('client','products',{limit:20});
+  if (!r.ok||!r.products?.length) { document.getElementById('productsTbody').innerHTML='<tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">Nenhum dado de produto ainda.</td></tr>'; return; }
+  const products=r.products, total=products.reduce((s,p)=>s+p.count,0);
+  if (productsChart) { productsChart.destroy(); productsChart=null; }
+  const displayName = p => {
+    const n = p.name || '';
+    // Usa o nome se existir, não for a URL em si, não for "desconhecido" e não for imagem CDN
+    if (n && n !== p.url && n.toLowerCase() !== 'desconhecido' && !/\.(webp|jpg|jpeg|png|gif)/i.test(n)) return n;
+    try {
+      const u = new URL(p.url);
+      // CDN de imagem: extrai nome do arquivo limpo
+      const parts = u.pathname.split('/').filter(Boolean);
+      const last  = parts[parts.length-1] || '';
+      const clean = last.replace(/\.(webp|jpg|jpeg|png|gif)$/i,'').replace(/_\d+x\d+[\w]*$/i,'').replace(/[-_]+/g,' ').trim();
+      return clean || (u.hostname + u.pathname).slice(0,60);
+    } catch { return (p.url||'').slice(0,60) || 'Produto'; }
+  };
+  const labels = products.slice(0,10).map(p => displayName(p).slice(0,40));
+  productsChart = new Chart(document.getElementById('productsChart').getContext('2d'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Tryons', data:products.slice(0,10).map(p=>p.count), backgroundColor:'#635BFF', borderRadius:6 }] },
+    options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } },
+  });
+  document.getElementById('productsTbody').innerHTML = products.map((p,i)=>{
+    const label = displayName(p);
+    return `<tr><td>${i+1}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(p.url)}"><a href="${esc(p.url)}" target="_blank" style="color:var(--primary);text-decoration:underline;">${esc(label)}</a></td><td><strong>${p.count}</strong></td><td>${total?Math.round((p.count/total)*100):0}%</td></tr>`;
+  }).join('');
+}
+
+async function loadLeads() {
+  const r = await api('client','leads',{limit:200});
+  st.allLeads = r.ok ? (r.leads||[]) : [];
+  document.getElementById('leadsKpis').innerHTML = `<div class="kpi-card"><div class="kpi-label">Total de leads</div><div class="kpi-value">${r.total||0}</div><div class="kpi-sub">todos os tempos</div></div>`;
+  st.leadsPage=1; filterLeads();
+}
+
+function filterLeads() {
+  const q = (document.getElementById('leadsSearch')?.value||'').toLowerCase();
+  const filtered = q ? st.allLeads.filter(l=>l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)) : st.allLeads;
+  const limit=30, start=(st.leadsPage-1)*limit;
+  document.getElementById('leadsTbody').innerHTML = filtered.slice(start,start+limit).map(l=>{
+    let prod=l.productUrl||''; try{ prod=new URL(prod).pathname.split('/').filter(Boolean).pop()||prod; }catch{}
+    return `<tr><td>${esc(l.name)}</td><td>${esc(l.email)}</td><td>${esc(l.whatsapp)}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(l.productUrl||'')}">${esc(prod)}</td><td class="text-muted">${fmtTs(l.completedAt)}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Nenhum lead encontrado.</td></tr>';
+  renderPag('leadsPagination', st.leadsPage, filtered.length, limit, p=>{ st.leadsPage=p; filterLeads(); });
+}
+
+function exportLeadsCSV() {
+  if (!st.allLeads.length) { alert('Nenhum lead para exportar.'); return; }
+  const rows = [['Nome','Email','WhatsApp','Produto','Data'], ...st.allLeads.map(l=>[l.name,l.email,l.whatsapp,l.productUrl||'',l.completedAt?new Date(l.completedAt).toLocaleString('pt-BR'):''])];
+  const csv  = rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+function loadIntegracao() {
+  document.getElementById('integStoreUrl').textContent = st.client?.store || 'Não configurado';
+  buildSnippet();
+}
+
+function buildSnippet() {
+  const btnText   = document.getElementById('cfgBtnText')?.value  || 'Experimentar';
+  const btnBg     = document.getElementById('cfgBtnBg')?.value    || '#000000';
+  const btnColor  = document.getElementById('cfgBtnColor')?.value || '#ffffff';
+  const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/'/g, "\\'");
+  const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
+  const base      = window.location.origin;
+  const wUrl      = `${base}/widget/tryon-widget.js?v=6.0`;
+  const optional  = `  /* Personalização opcional:
+  window.VTON_BTN_TEXT   = '${btnText}';
+  window.VTON_BTN_BG     = '${btnBg}';
+  window.VTON_BTN_COLOR  = '${btnColor}'; */`;
+
+  const garments = {
+    shopify:       "{{ product.featured_image | img_url: 'master' }}",
+    nuvemshop:     '{product.featured_image.src}',
+    woocommerce:   '<?php echo get_the_post_thumbnail_url(get_the_ID(), "full"); ?>',
+    lojaintegrada: '{% if product.image %}{{ product.image.url }}{% endif %}',
+    vtexlegacy:    '$product.ImageURL',
+  };
+
+  const hints = {
+    shopify:       'Cole no arquivo <strong>product.liquid</strong> do seu tema (Loja Online > Temas > Editar código), antes do <code>&lt;/body&gt;</code>.',
+    nuvemshop:     'Cole no template de produto da sua Nuvemshop (Personalizar > Editar HTML), antes do <code>&lt;/body&gt;</code>.',
+    woocommerce:   'Cole no arquivo <strong>single-product.php</strong> do seu tema filho, antes do <code>&lt;/body&gt;</code>.',
+    lojaintegrada: 'Cole no template de produto via painel da Loja Integrada (Layout > Editar template), antes do <code>&lt;/body&gt;</code>.',
+    vtexio:        'Adicione o bloco no arquivo <strong>product.jsonc</strong> ou como um bloco customizado via VTEX IO Toolbelt.',
+    vtexlegacy:    'Cole no template de produto do portal VTEX (CMS > Sites and channels > template), antes do <code>&lt;/body&gt;</code>.',
+  };
+
+  let snippet;
+  if (platform === 'vtexio') {
+    snippet = `<script>
+  window.VTON_API_URL    = '${base}';
+  window.VTON_CLIENT_KEY = '${st.clientKey}';
+  window.VTON_STORE_NAME = '${storeName}';
+  window.addEventListener('load', function() {
+    var img = document.querySelector('[class*="productImageTag"]')
+           || document.querySelector('[class*="product-image"] img');
+    if (img) window.VTON_GARMENT_URL = img.src;
+  });
+${optional}
+<\/script>
+<div id="vton-anchor"><\/div>
+<script src="${wUrl}" defer><\/script>`;
+  } else {
+    snippet = `<script>
+  window.VTON_API_URL     = '${base}';
+  window.VTON_CLIENT_KEY  = '${st.clientKey}';
+  window.VTON_GARMENT_URL = '${garments[platform] || garments.shopify}';
+  window.VTON_STORE_NAME  = '${storeName}';
+${optional}
+<\/script>
+<div id="vton-anchor"><\/div>
+<script src="${wUrl}" defer><\/script>`;
+  }
+
+  document.getElementById('snippetCode').textContent = snippet;
+  document.getElementById('snippetHint').innerHTML = hints[platform] || '';
+}
+
+function copySnippet() {
+  navigator.clipboard.writeText(document.getElementById('snippetCode').textContent)
+    .then(()=>{ const b=document.querySelector('.code-copy-btn'); b.textContent='Copiado!'; setTimeout(()=>b.textContent='Copiar',2000); });
+}
+
+function renderBilling() {
+  const b=st.billing; if (!b) { loadBillingData().then(renderBilling); return; }
+  const planName = b.planName || b.plan || 'Plano';
+  const planPrice = b.planPrice || 0;
+  const planColor = '#635BFF';
+  const pct = b.limit===Infinity ? 0 : Math.round((b.usage/b.limit)*100);
+  let alertsHtml='';
+  if (!b.stripeEnabled) alertsHtml += mkAlert('info','ℹ️','Stripe não configurado','Os valores são estimativas. Entre em contato para ativar pagamentos automáticos.');
+  if (pct>=100) alertsHtml += mkAlert('error','⛔','Limite atingido','Novas gerações bloqueadas até upgrade.','<button class="btn btn-sm btn-danger" onclick="upgradePlan()">Fazer upgrade</button>');
+  else if (pct>=80) alertsHtml += mkAlert('warning','⚠️',`${pct}% do limite usado`,`Estimativa: R$ ${b.total}.`);
+  if (st.invoices.some(i=>['uncollectible','failed'].includes(i.status))) alertsHtml += mkAlert('error','💳','Pagamento falhou','Atualize sua forma de pagamento.','<button class="btn btn-sm btn-danger" onclick="openPaymentModal(\'card\')">Atualizar cartão</button>');
+  document.getElementById('billingAlerts').innerHTML = alertsHtml;
+  const badge=document.getElementById('billingPlanBadge');
+  badge.textContent=planName; badge.style.background=planColor+'22'; badge.style.color=planColor;
+  document.getElementById('billingLimit').textContent = b.limit===Infinity?'Ilimitado':b.limit.toLocaleString('pt-BR');
+  document.getElementById('billingPrice').textContent = `R$ ${planPrice}/mês`;
+  document.getElementById('billingOverageRate').textContent = b.overage>0?`R$ ${b.overage} por geração`:'Sem cobrança extra';
+  const smap={active:['badge-success','Ativo'],past_due:['badge-error','Atrasado'],canceled:['badge-error','Cancelado'],trialing:['badge-warning','Trial']};
+  const [sc,sl]=smap[b.subscriptionStatus]||['badge-success','Ativo'];
+  document.getElementById('billingSubStatus').className='badge '+sc;
+  document.getElementById('billingSubStatus').textContent=sl;
+  document.getElementById('billingTotal').textContent=`R$ ${b.total}`;
+  document.getElementById('billingTotalSub').textContent=`Plano R$ ${planPrice}`+(b.overageAmt>0?` + excedente R$ ${b.overageAmt}`:'');
+  document.getElementById('billingUsageLabel').textContent=`${b.usage} / ${b.limit===Infinity?'∞':b.limit}`;
+  document.getElementById('billingUsagePct').textContent=pct+'%';
+  const prog=document.getElementById('billingProgress');
+  prog.style.width=Math.min(100,pct)+'%';
+  prog.className='progress-fill '+(pct>=100?'over':pct>=80?'warn':'ok');
+  document.getElementById('billingBase').textContent=`R$ ${planPrice}`;
+  document.getElementById('billingExcess').textContent=b.excess>0?`${b.excess} × R$ ${b.overage} = R$ ${b.overageAmt}`:'Nenhum';
+  document.getElementById('billingTotalRow').textContent=`R$ ${b.total}`;
+  document.getElementById('billingNextDate').textContent=fmtDate(b.nextDate);
+  document.getElementById('billingNextAmt').textContent=`R$ ${b.total}`;
+  const pmEl=document.getElementById('billingPayMethod');
+  if (b.paymentMethod) {
+    const {brand,last4,expMonth,expYear}=b.paymentMethod;
+    pmEl.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;"><span style="font-size:22px;">💳</span><div><div class="fw-600" style="text-transform:capitalize;">${brand} terminando em ${last4}</div><div class="text-muted" style="font-size:12px;">Expira ${String(expMonth).padStart(2,'0')}/${expYear}</div></div></div>`;
+  } else { pmEl.innerHTML='<div class="text-muted" style="font-size:13px;padding:6px 0;">Nenhum cartão cadastrado</div>'; }
+  if (st.invoicesMock) document.getElementById('billingMockNote').style.display='inline';
+  const tbody=document.getElementById('invoicesTbody'), emptyEl=document.getElementById('invoicesEmpty');
+  if (!st.invoices.length) { tbody.innerHTML=''; emptyEl.style.display='block'; return; }
+  emptyEl.style.display='none';
+  const scm={paid:'badge-success',pending:'badge-warning',open:'badge-warning',uncollectible:'badge-error',failed:'badge-error',void:'badge-muted'};
+  const slm={paid:'Pago',pending:'Pendente',open:'Pendente',uncollectible:'Falhou',failed:'Falhou',void:'Cancelado'};
+  tbody.innerHTML = st.invoices.map(inv=>{
+    const sc2=scm[inv.status]||'badge-muted', sl2=slm[inv.status]||inv.status;
+    const period=inv.periodStart?`${fmtDate(inv.periodStart)} - ${fmtDate(inv.periodEnd)}`:'-';
+    const btn=(inv.status==='pending'||inv.status==='open')
+      ? `<button class="btn btn-sm btn-danger" onclick="payInvoice('${inv.id}')">Pagar</button>`
+      : `<button class="btn btn-sm btn-secondary" onclick="showInvoiceDetail('${inv.id}')">Ver</button>`;
+    return `<tr><td class="text-muted" style="font-size:12px;">${inv.number||fmtDate(inv.date)}</td><td class="text-muted" style="font-size:12px;">${period}</td><td class="fw-600">R$ ${inv.amount}</td><td><span class="badge ${sc2}">${sl2}</span></td><td>${btn}</td></tr>`;
+  }).join('');
+}
+
+// ─── Stripe Elements inline ──────────────────────────────────────────────────
+let _stripe = null, _stripeElements = null, _payMode = 'card', _payInvoiceId = null;
+
+async function openPaymentModal(mode = 'card', invoiceId = null) {
+  _payMode      = mode;
+  _payInvoiceId = invoiceId;
+
+  // Reseta o modal
+  document.getElementById('payment-element').innerHTML = '';
+  document.getElementById('payLinkBox').style.display          = 'none';
+  document.getElementById('paymentModalLoading').style.display = 'block';
+  document.getElementById('paymentModalError').style.display   = 'none';
+  document.getElementById('paymentModalBtn').style.display     = 'none';
+  document.getElementById('paymentModal').classList.add('open');
+
+  // Sempre mostra as 3 abas
+  const title = mode === 'card' ? 'Gerenciar pagamento' : 'Pagar fatura';
+  document.getElementById('paymentModalTitle').textContent = title;
+
+  // Aba padrão: cartão
+  await selectPayTab('card');
+}
+
+async function selectPayTab(tab) {
+  const data = _payInvoiceId ? { invoiceId: _payInvoiceId } : {};
+
+  // Destaca aba ativa (apenas card e link)
+  ['card','link'].forEach(t => {
+    const el = document.getElementById('tab' + (t === 'card' ? 'Card' : 'Link'));
+    if (!el) return;
+    const active = t === tab;
+    el.style.background  = active ? 'var(--primary)' : '';
+    el.style.color       = active ? '#fff' : '';
+    el.style.borderColor = active ? 'var(--primary)' : '';
+  });
+
+  document.getElementById('payment-element').innerHTML         = '';
+  document.getElementById('payLinkBox').style.display          = 'none';
+  document.getElementById('paymentModalBtn').style.display     = 'none';
+  document.getElementById('paymentModalError').style.display   = 'none';
+  document.getElementById('paymentModalLoading').style.display = 'block';
+
+  // Aba "Boleto / PIX" gera um link de pagamento Stripe (suporta boleto, pix e cartão)
+  if (tab === 'link') {
+    const r = await api('billing', 'payment_link', data);
+    document.getElementById('paymentModalLoading').style.display = 'none';
+    if (!r.ok) {
+      document.getElementById('paymentModalError').textContent = r.error || 'Não foi possível gerar o link. Entre em contato com o suporte.';
+      document.getElementById('paymentModalError').style.display = 'block';
+      return;
+    }
+    const linkEl = document.getElementById('payLinkUrl');
+    linkEl.href = r.url;
+    linkEl.textContent = 'Pagar com Boleto ou PIX';
+    document.getElementById('payLinkBox').innerHTML = `
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Link gerado com sucesso</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Clique para pagar via boleto, PIX ou cartão</div>
+      <a id="payLinkUrl" href="${r.url}" target="_blank" class="btn btn-primary btn-sm">Abrir link de pagamento</a>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">O link expira em 24 horas</div>`;
+    document.getElementById('payLinkBox').style.display = 'block';
+    return;
+  }
+
+  // Aba Cartão: setup_intent (salvar cartão) ou pay_invoice (pagar com cartão)
+  const action = (_payMode === 'card' && !_payInvoiceId) ? 'setup_intent' : 'pay_invoice';
+  await _loadStripeCard(action, data);
+}
+
+async function _loadStripeCard(action, data) {
+  const r = await api('billing', action, data);
+  document.getElementById('paymentModalLoading').style.display = 'none';
+  if (!r.ok) {
+    document.getElementById('paymentModalError').textContent = r.error || 'Erro ao iniciar pagamento.';
+    document.getElementById('paymentModalError').style.display = 'block';
+    return;
+  }
+  _payMode = action === 'setup_intent' ? 'card' : 'pay';
+  _stripe = Stripe(r.publishableKey);
+  _stripeElements = _stripe.elements({
+    clientSecret: r.clientSecret,
+    appearance: { theme: 'stripe', variables: { colorPrimary: '#6366f1', borderRadius: '8px' } },
+  });
+  const el = _stripeElements.create('payment');
+  el.on('ready', () => {
+    document.getElementById('paymentModalBtn').style.display = 'inline-flex';
+    document.getElementById('paymentModalBtn').textContent   = action === 'setup_intent' ? 'Salvar cartão' : 'Pagar agora';
+  });
+  el.mount('#payment-element');
+}
+
+async function confirmStripePayment() {
+  const btn   = document.getElementById('paymentModalBtn');
+  const errEl = document.getElementById('paymentModalError');
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+  errEl.style.display = 'none';
+  try {
+    let result;
+    if (_payMode === 'pay') {
+      result = await _stripe.confirmPayment({
+        elements: _stripeElements,
+        redirect: 'if_required',
+        confirmParams: { return_url: window.location.href },
+      });
+    } else {
+      result = await _stripe.confirmSetup({
+        elements: _stripeElements,
+        redirect: 'if_required',
+        confirmParams: { return_url: window.location.href },
+      });
+    }
+    if (result.error) {
+      errEl.textContent = result.error.message;
+      errEl.style.display = 'block';
+    } else {
+      closeModal('paymentModal');
+      await loadBillingData();
+      renderBilling();
+    }
+  } catch(e) {
+    errEl.textContent = 'Erro inesperado. Tente novamente.';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = _payMode === 'pay' ? 'Pagar agora' : 'Salvar cartão';
+}
+
+function closePaymentModal(e) {
+  if (e.target === document.getElementById('paymentModal')) closeModal('paymentModal');
+}
+
+// ─── Modal helpers ────────────────────────────────────────────────────────────
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('open');
+}
+
+function payInvoice(invoiceId) {
+  openPaymentModal('pay', invoiceId);
+}
+
+function showInvoiceDetail(invoiceId) {
+  const inv = st.invoices.find(i => i.id === invoiceId);
+  if (!inv) return;
+  document.getElementById('invoiceModalTitle').textContent  = `Fatura ${inv.number || fmtDate(inv.date)}`;
+  document.getElementById('invoiceModalPeriod').textContent = inv.periodStart ? `${fmtDate(inv.periodStart)} - ${fmtDate(inv.periodEnd)}` : '';
+  const scm = {paid:'badge-success',pending:'badge-warning',open:'badge-warning',uncollectible:'badge-error',void:'badge-muted'};
+  const slm = {paid:'Pago',pending:'Pendente',open:'Pendente',uncollectible:'Falhou',void:'Cancelado'};
+  const lines = (inv.lines||[]).map(l=>`<div class="info-row"><span class="info-row-label">${esc(l.description)}</span><span class="info-row-value">R$ ${l.amount}</span></div>`).join('');
+  document.getElementById('invoiceModalBody').innerHTML = `
+    <div class="info-row"><span class="info-row-label">Valor</span><span class="info-row-value fw-600">R$ ${inv.amount}</span></div>
+    <div class="info-row"><span class="info-row-label">Status</span><span class="badge ${scm[inv.status]||'badge-muted'}">${slm[inv.status]||inv.status}</span></div>
+    ${lines}`;
+  const acts = document.getElementById('invoiceModalActions');
+  acts.innerHTML = '';
+  if (inv.pdfUrl) acts.innerHTML += `<a href="${esc(inv.pdfUrl)}" target="_blank" class="btn btn-secondary btn-sm">Baixar PDF</a>`;
+  if (inv.hostedUrl) acts.innerHTML += `<a href="${esc(inv.hostedUrl)}" target="_blank" class="btn btn-secondary btn-sm">Ver online</a>`;
+  acts.innerHTML += `<button class="btn btn-secondary btn-sm" onclick="closeModal('invoiceModal')" style="margin-left:auto;">Fechar</button>`;
+  document.getElementById('invoiceModal').classList.add('open');
+}
+
+async function upgradePlan() {
+  // Recarrega planos se necessário
+  if (!st.plans.length) {
+    const r = await fetch(`${API_URL}/api/client`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'listPlans'}) }).then(r=>r.json()).catch(()=>({ok:false,plans:[]}));
+    if (r.ok && r.plans?.length) st.plans = r.plans;
+  }
+  // Filtra planos internos (demo, teste, etc.)
+  const HIDDEN_KEYWORDS = ['demo', 'demonstra', 'teste', 'test', 'interno', 'trial'];
+  const plans = st.plans.filter(p => {
+    const n = (p.name || '').toLowerCase();
+    return !HIDDEN_KEYWORDS.some(k => n.includes(k));
+  });
+  const currentPlanId = st.billing?.plan || st.client?.plan || '';
+  const currentPrice  = st.billing?.planPrice || 0;
+  const body = document.getElementById('upgradePlansBody');
+
+  if (!plans.length) {
+    body.innerHTML = '<div class="text-muted" style="text-align:center;padding:20px;">Nenhum plano disponível. Entre em contato com o suporte.</div>';
+    document.getElementById('upgradeModal').classList.add('open');
+    return;
+  }
+
+  body.innerHTML = plans.map(p => {
+    const isCurrent = p.id === currentPlanId || (p.price === currentPrice);
+    const isDisabled = p.price < currentPrice && !isCurrent;
+    const limitStr = p.tryons === 0 ? 'Ilimitado' : `${Number(p.tryons).toLocaleString('pt-BR')} tryons/mês`;
+    const overageStr = p.overage > 0 ? `R$ ${Number(p.overage).toFixed(2)} por geração extra` : 'Sem cobrança extra';
+    return `<div style="border:2px solid ${isCurrent ? 'var(--primary)' : 'var(--border)'};border-radius:12px;padding:16px;background:${isCurrent ? 'var(--primary-light)' : 'var(--card)'};opacity:${isDisabled?0.5:1};">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-weight:700;font-size:15px;">${esc(p.name)} ${isCurrent?'<span class="badge badge-primary" style="font-size:10px;margin-left:6px;">Plano atual</span>':''}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--primary);">R$ ${Number(p.price).toFixed(2)}<span style="font-size:12px;font-weight:400;color:var(--muted)">/mês</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${limitStr} · ${overageStr}</div>
+      ${isCurrent ? '<div class="btn btn-secondary btn-sm btn-full" style="cursor:default;opacity:0.6;">Plano atual</div>' :
+        isDisabled ? '' :
+        `<button class="btn btn-primary btn-sm btn-full" onclick="selectUpgradePlan('${esc(p.id)}','${esc(p.name)}',${p.price})">Selecionar este plano</button>`
+      }
+    </div>`;
+  }).join('');
+
+  document.getElementById('upgradeModal').classList.add('open');
+}
+
+async function selectUpgradePlan(planId, planName, price) {
+  closeModal('upgradeModal');
+  // Gera link de pagamento para o plano escolhido via payment_link
+  // Abre o modal de pagamento na aba Link com o plano como context
+  _payMode = 'upgrade';
+  _payInvoiceId = null;
+  _upgradeTarget = { planId, planName, price };
+  document.getElementById('payment-element').innerHTML         = '';
+  document.getElementById('payLinkBox').style.display          = 'none';
+  document.getElementById('paymentModalLoading').style.display = 'block';
+  document.getElementById('paymentModalError').style.display   = 'none';
+  document.getElementById('paymentModalBtn').style.display     = 'none';
+  document.getElementById('paymentModalTitle').textContent     = `Upgrade para ${planName}`;
+  document.getElementById('paymentModal').classList.add('open');
+  await selectPayTab('link');
+}
+let _upgradeTarget = null;
+
+async function saveConfig() {
+  const name  = document.getElementById('cfgName').value.trim();
+  const email = document.getElementById('cfgEmail').value.trim();
+  const store = document.getElementById('cfgStore').value.trim();
+  const msgEl = document.getElementById('cfgMsg');
+  msgEl.textContent = 'Salvando...'; msgEl.style.color = 'var(--muted)';
+  const r = await api('client','update',{name,email,store});
+  if (r.ok) {
+    st.client = r.client;
+    msgEl.textContent = 'Alterações salvas.'; msgEl.style.color = 'var(--success)';
+    document.getElementById('sidebarStoreName').textContent = r.client.name || r.client.store || 'Minha loja';
+  } else {
+    msgEl.textContent = r.error || 'Erro ao salvar.'; msgEl.style.color = 'var(--error)';
+  }
+  setTimeout(()=>msgEl.textContent='', 4000);
+}
+
+async function saveBillingAddress() {
+  const billingName = document.getElementById('cfgBillingName').value.trim();
+  const taxId       = document.getElementById('cfgTax').value.trim();
+  const address     = document.getElementById('cfgAddress').value.trim();
+  const msgEl       = document.getElementById('cfgAddrMsg');
+  msgEl.textContent = 'Salvando...'; msgEl.style.color = 'var(--muted)';
+  const r = await api('client','update',{billingName,taxId,address});
+  if (r.ok) {
+    st.client = r.client;
+    msgEl.textContent = 'Endereço salvo.'; msgEl.style.color = 'var(--success)';
+  } else {
+    msgEl.textContent = r.error || 'Erro ao salvar.'; msgEl.style.color = 'var(--error)';
+  }
+  setTimeout(()=>msgEl.textContent='', 4000);
+}
+
+async function changePassword() {
+  const currentPwd = document.getElementById('cfgCurrentPassword').value;
+  const newPwd     = document.getElementById('cfgNewPassword').value;
+  const confirmPwd = document.getElementById('cfgConfirmPassword').value;
+  const msgEl      = document.getElementById('cfgPwdMsg');
+  msgEl.textContent = ''; msgEl.style.color = 'var(--muted)';
+  if (!currentPwd) { msgEl.textContent = 'Informe a senha atual.'; msgEl.style.color = 'var(--error)'; return; }
+  if (newPwd.length < 6) { msgEl.textContent = 'A nova senha deve ter ao menos 6 caracteres.'; msgEl.style.color = 'var(--error)'; return; }
+  if (newPwd !== confirmPwd) { msgEl.textContent = 'As senhas não coincidem.'; msgEl.style.color = 'var(--error)'; return; }
+  if (currentPwd === newPwd) { msgEl.textContent = 'A nova senha deve ser diferente da atual.'; msgEl.style.color = 'var(--error)'; return; }
+  msgEl.textContent = 'Alterando...'; msgEl.style.color = 'var(--muted)';
+  const r = await api('client','changePassword',{currentPassword:currentPwd, newPassword:newPwd});
+  if (r.ok) {
+    st.password = newPwd;
+    sessionStorage.setItem('cpSession', JSON.stringify({clientKey:st.clientKey, password:newPwd}));
+    msgEl.textContent = 'Senha alterada com sucesso.'; msgEl.style.color = 'var(--success)';
+    document.getElementById('cfgCurrentPassword').value = '';
+    document.getElementById('cfgNewPassword').value     = '';
+    document.getElementById('cfgConfirmPassword').value = '';
+  } else {
+    msgEl.textContent = r.error || 'Erro ao alterar senha.'; msgEl.style.color = 'var(--error)';
+  }
+  setTimeout(()=>msgEl.textContent='', 5000);
+}
+
+// ─── Utilitários ──────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(s) {
+  if (!s) return '-';
+  try { const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; } catch { return s; }
+}
+function fmtTs(ts) {
+  if (!ts) return '-';
+  try { return new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch { return '-'; }
+}
+function renderPag(elId, page, total, limit, cb) {
+  const pages = Math.ceil(total/limit);
+  const el    = document.getElementById(elId);
+  if (!el || pages<=1) { if(el) el.innerHTML=''; return; }
+  let html = '';
+  if (page>1) html += `<button class="btn btn-secondary btn-sm" onclick="(${cb.toString()})(${page-1})">‹ Anterior</button>`;
+  html += `<span style="font-size:12px;color:var(--muted);align-self:center;">${page} / ${pages}</span>`;
+  if (page<pages) html += `<button class="btn btn-secondary btn-sm" onclick="(${cb.toString()})(${page+1})">Próxima ›</button>`;
+  el.innerHTML = html;
+}
+
+// ─── Restaura sessão salva ────────────────────────────────────────────────────
+(async function init() {
+  const saved = sessionStorage.getItem('cpSession');
+  if (!saved) return;
+  try {
+    const { clientKey, password } = JSON.parse(saved);
+    if (!clientKey || !password) return;
+    const r = await fetch(`${API_URL}/api/client`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'me', clientKey, password }),
+    });
+    const data = await r.json();
+    if (data.ok) {
+      st.clientKey = clientKey;
+      st.password  = password;
+      st.client    = data.client;
+      startApp();
+    } else {
+      sessionStorage.removeItem('cpSession');
+    }
+  } catch { sessionStorage.removeItem('cpSession'); }
+})();
+</script>
+</body>
+</html>

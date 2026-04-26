@@ -548,7 +548,8 @@
             garmentImage:   garmentUrl,
             category,
             clientKey,
-            productUrl:     garmentUrl,
+            productUrl:     window.location.href,
+            productName:    document.title || window.location.hostname,
           }),
         });
         const submitData = await submitRes.json();

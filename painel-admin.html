@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirage Admin</title>
+<link rel="icon" type="image/png" href="logo-mirage.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #F7F9FC;
+  --card:     #FFFFFF;
+  --border:   #E6E8EC;
+  --text:     #0A0A0A;
+  --muted:    #6B7280;
+  --primary:  #635BFF;
+  --primary-light: #EEF0FF;
+  --success:  #16A34A;
+  --warning:  #F59E0B;
+  --error:    #DC2626;
+  --sidebar-w: 240px;
+  --header-h: 64px;
+}
+html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ── Login ── */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.login-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+.login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.login-logo img { height: 36px; }
+.login-logo span { font-size: 20px; font-weight: 800; letter-spacing: -.03em; }
+.login-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.login-card p { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+.field input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; transition: border-color .15s; background: var(--bg); }
+.field input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px var(--primary-light); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid transparent; transition: all .15s; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #4f46e5; }
+.btn-secondary { background: var(--card); border-color: var(--border); color: var(--text); }
+.btn-secondary:hover { background: var(--bg); border-color: #ccc; }
+.btn-danger { background: #fef2f2; border-color: #fecaca; color: var(--error); }
+.btn-danger:hover { background: var(--error); color: #fff; border-color: var(--error); }
+.btn-success { background: #f0fdf4; border-color: #bbf7d0; color: var(--success); }
+.btn-success:hover { background: var(--success); color: #fff; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-full { width: 100%; }
+.login-err { color: var(--error); font-size: 13px; margin-top: 10px; text-align: center; }
+
+/* ── App shell ── */
+.app { display: none; height: 100vh; }
+.app.visible { display: flex; }
+.sidebar {
+  width: var(--sidebar-w); background: var(--card); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 40; overflow-y: auto;
+}
+.sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.sidebar-brand img { height: 28px; }
+.sidebar-brand span { font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
+.sidebar-section { padding: 8px 12px; }
+.sidebar-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 12px 8px 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all .15s; margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; border-color: #d4d1ff; }
+.nav-item svg { flex-shrink: 0; opacity: .7; }
+.nav-item.active svg { opacity: 1; }
+.sidebar-footer { margin-top: auto; border-top: 1px solid var(--border); padding: 12px; }
+.user-row { display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 8px; cursor: pointer; }
+.user-row:hover { background: var(--bg); }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+.user-name { font-size: 13px; font-weight: 600; }
+.user-role { font-size: 11px; color: var(--muted); }
+
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; }
+.topbar { height: var(--header-h); border-bottom: 1px solid var(--border); background: var(--card); display: flex; align-items: center; padding: 0 28px; gap: 16px; position: sticky; top: 0; z-index: 30; }
+.topbar-title { font-size: 16px; font-weight: 700; }
+.topbar-sub { font-size: 12px; color: var(--muted); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.content { padding: 28px; flex: 1; overflow-y: auto; }
+
+/* ── Views ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── KPI cards ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: box-shadow .15s; }
+.kpi-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+.kpi-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -.03em; color: var(--text); line-height: 1; }
+.kpi-delta { font-size: 12px; margin-top: 6px; font-weight: 600; }
+.kpi-delta.up { color: var(--success); }
+.kpi-delta.down { color: var(--error); }
+.kpi-delta.neutral { color: var(--muted); }
+
+/* ── Charts ── */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.chart-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+.chart-wrap { position: relative; height: 180px; }
+@media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+
+/* ── Tables ── */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.card-header h3 { font-size: 14px; font-weight: 700; }
+.card-body { padding: 0; }
+table { width: 100%; border-collapse: collapse; }
+thead th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; background: #fafafa; border-bottom: 1px solid var(--border); }
+tbody td { padding: 13px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #fafbff; }
+
+/* ── Search ── */
+.search-wrap { position: relative; }
+.search-wrap input { padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; width: 220px; background: var(--bg); }
+.search-wrap input:focus { border-color: var(--primary); background: #fff; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+/* ── Badges ── */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-success { background: #f0fdf4; color: var(--success); }
+.badge-error   { background: #fef2f2; color: var(--error); }
+.badge-warning { background: #fffbeb; color: var(--warning); }
+.badge-muted   { background: var(--bg); color: var(--muted); }
+.badge-primary { background: var(--primary-light); color: var(--primary); }
+.badge-blue    { background: #eff6ff; color: #2563eb; }
+
+/* ── Progress bar ── */
+.progress-wrap { display: flex; align-items: center; gap: 8px; }
+.progress-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+.progress-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* ── Alerts ── */
+.alerts-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 8px; font-size: 13px; }
+.alert-item.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.alert-item.err  { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+/* ── Client detail ── */
+.detail-grid { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+@media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-section { margin-bottom: 20px; }
+.detail-section h4 { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--muted); font-weight: 500; }
+.info-value { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.api-key-wrap { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 12px; background: var(--bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); }
+
+/* ── Actions sidebar ── */
+.actions-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.actions-card h4 { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+.action-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text); border: 1px solid var(--border); background: #fff; cursor: pointer; transition: all .15s; margin-bottom: 8px; font-family: inherit; text-align: left; }
+.action-btn:hover { background: var(--bg); border-color: #bbb; }
+.action-btn.danger { color: var(--error); border-color: #fecaca; }
+.action-btn.danger:hover { background: #fef2f2; }
+
+/* ── Modal ── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+.modal-bg.open { display: flex; }
+.modal-box { background: var(--card); border-radius: 16px; padding: 32px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,.15); }
+.modal-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 24px; justify-content: flex-end; }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 64px 20px; color: var(--muted); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.empty p { font-size: 13px; margin-bottom: 20px; }
+
+/* ── Skeleton ── */
+.skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; max-width: 320px; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--error); }
+
+/* ── Secret reveal ── */
+.secret-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; margin-top: 16px; }
+.secret-box h4 { font-size: 13px; font-weight: 700; color: var(--success); margin-bottom: 8px; }
+.secret-val { font-family: monospace; font-size: 13px; background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #bbf7d0; word-break: break-all; margin: 6px 0; }
+.secret-warn { font-size: 12px; color: #166534; }
+
+/* ── Billing ── */
+.billing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+@media (max-width: 700px) { .billing-grid { grid-template-columns: 1fr; } }
+
+/* ── Settings ── */
+.plan-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.plan-row:last-child { border-bottom: none; }
+.plan-name { font-weight: 700; width: 100px; }
+.plan-detail { font-size: 12px; color: var(--muted); flex: 1; }
+.plan-price { font-weight: 700; color: var(--primary); width: 80px; text-align: right; }
+
+/* ── Back btn ── */
+.back-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; margin-bottom: 20px; padding: 6px 0; transition: color .15s; background: none; border: none; font-family: inherit; }
+.back-btn:hover { color: var(--text); }
+
+/* ── Job status ── */
+.job-status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab { padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+.tab.active { color: var(--primary); border-color: var(--primary); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Filter row ── */
+.filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-family: inherit; background: var(--bg); color: var(--text); outline: none; cursor: pointer; }
+.filter-select:focus { border-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="logo-mirage.png" alt="Mirage">
+      <span>Mirage</span>
+    </div>
+    <h1>Painel Admin</h1>
+    <p>Acesso restrito ao administrador Mirage.</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="in-email" placeholder="admin@miragetryon.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="in-pass" placeholder="••••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary btn-full" id="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="logo-mirage.png" alt="">
+      <span>Mirage</span>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Visão geral</div>
+      <div class="nav-item active" onclick="navigate('dashboard', this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="navigate('clients', this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes
+      </div>
+      <div class="nav-item" onclick="navigate('jobs', this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Jobs
+      </div>
+      <div class="nav-item" onclick="navigate('produtos', this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+        Produtos
+      </div>
+      <div class="sidebar-label">Financeiro</div>
+      <div class="nav-item" onclick="navigate('billing', this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Billing
+      </div>
+      <div class="sidebar-label">Sistema</div>
+      <div class="nav-item" onclick="navigate('settings', this)">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Configurações
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-row" onclick="doLogout()">
+        <div class="user-avatar">A</div>
+        <div>
+          <div class="user-name">Admin</div>
+          <div class="user-role">Sair da conta</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub"></div>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div class="kpi-grid" id="kpi-grid">
+          <div class="kpi-card"><div class="kpi-label">MRR</div><div class="kpi-value skeleton" style="height:32px;width:100px"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Clientes ativos</div><div class="kpi-value skeleton" style="height:32px;width:60px"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Tryons (total)</div><div class="kpi-value skeleton" style="height:32px;width:80px"></div></div>
+          <div class="kpi-card"><div class="kpi-label">Taxa ocupação</div><div class="kpi-value skeleton" style="height:32px;width:70px"></div></div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">Tryons por plano</div>
+            <div class="chart-wrap"><canvas id="chart-plans"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">MRR por plano</div>
+            <div class="chart-wrap"><canvas id="chart-mrr"></canvas></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><h3>Top clientes</h3></div>
+            <div class="card-body" id="top-clients-list"><div style="padding:20px" class="skeleton" style="height:120px"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Alertas</h3></div>
+            <div class="card-body" id="alerts-list" style="padding:16px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTS LIST -->
+      <div class="view" id="view-clients">
+        <div class="filter-row">
+          <div class="search-wrap">
+            <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Buscar cliente..." id="client-search" oninput="filterClients()">
+          </div>
+          <select class="filter-select" id="client-plan-filter" onchange="filterClients()">
+            <option value="">Todos os planos</option>
+            <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="growth">Growth</option>
+            <option value="scale">Scale</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
+          <select class="filter-select" id="client-status-filter" onchange="filterClients()">
+            <option value="">Todos status</option>
+            <option value="active">Ativos</option>
+            <option value="inactive">Suspensos</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Clientes <span id="client-count" style="font-weight:400;color:var(--muted)"></span></h3>
+            <button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ Novo cliente</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Plano</th>
+                <th>Uso</th>
+                <th>Status</th>
+                <th>Criado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="clients-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CLIENT DETAIL -->
+      <div class="view" id="view-client-detail">
+        <button class="back-btn" onclick="navigate('clients')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar para clientes
+        </button>
+        <div id="client-detail-content"></div>
+      </div>
+
+      <!-- JOBS -->
+      <div class="view" id="view-jobs">
+        <div class="filter-row">
+          <select class="filter-select" id="jobs-client-filter" onchange="filterJobs()">
+            <option value="">Todos os clientes</option>
+          </select>
+          <select class="filter-select" id="jobs-status-filter" onchange="filterJobs()">
+            <option value="">Todos status</option>
+            <option value="done">Done</option>
+            <option value="error">Error</option>
+            <option value="processing">Processing</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Jobs recentes</h3><button class="btn btn-secondary btn-sm" onclick="loadJobs()">Atualizar</button></div>
+          <table>
+            <thead>
+              <tr><th>Job ID</th><th>Cliente</th><th>Status</th><th>Data</th><th>Resultado</th></tr>
+            </thead>
+            <tbody id="jobs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PRODUTOS / PLANOS -->
+      <div class="view" id="view-produtos">
+        <div class="card">
+          <div class="card-header">
+            <h3>Planos cadastrados</h3>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Nome</th><th>Tryons incluídos</th><th>Excedente / tryon</th><th>Valor mensal</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="plans-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BILLING -->
+      <div class="view" id="view-billing">
+        <div class="billing-grid" id="billing-kpis"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><h3>Receita por plano</h3></div>
+            <div class="card-body" id="billing-plans" style="padding:16px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Clientes — estimativa mensal</h3></div>
+            <table>
+              <thead><tr><th>Cliente</th><th>Plano</th><th>Uso</th><th>Excedente</th><th>Total</th></tr></thead>
+              <tbody id="billing-clients-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="view" id="view-settings">
+        <div class="card" style="max-width:640px">
+          <div class="card-header"><h3>Planos e Limites</h3></div>
+          <div class="card-body" style="padding:0 20px" id="plans-list"></div>
+        </div>
+        <div class="card" style="max-width:640px;margin-top:16px">
+          <div class="card-header"><h3>Configurações da API</h3></div>
+          <div style="padding:16px 20px">
+            <div class="info-row">
+              <span class="info-label">URL da API</span>
+              <span class="info-value" id="settings-api-url" style="font-family:monospace;font-size:12px"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRIAR CLIENTE -->
+<div class="modal-bg" id="modal-create" onclick="closeModalBg(event,'modal-create')">
+  <div class="modal-box">
+    <h2>Novo cliente</h2>
+    <div class="field"><label>Nome da loja</label><input type="text" id="new-name" placeholder="Ex: Minha Loja"></div>
+    <div class="field"><label>E-mail do responsável</label><input type="email" id="new-email" placeholder="dono@loja.com"></div>
+    <div class="field"><label>URL da loja (opcional)</label><input type="text" id="new-store" placeholder="loja.myshopify.com"></div>
+    <div class="field">
+      <label>Plano</label>
+      <select id="new-plan" class="filter-select" style="width:100%;padding:10px 12px;font-size:14px">
+        <option value="starter">Starter (100 tryons / R$ 49)</option>
+        <option value="pro">Pro (500 tryons / R$ 149)</option>
+        <option value="growth" selected>Growth (1000 tryons / R$ 249)</option>
+        <option value="scale">Scale (5000 tryons / R$ 749)</option>
+        <option value="enterprise">Enterprise (ilimitado / R$ 2.499)</option>
+      </select>
+    </div>
+    <div class="field"><label>Senha de acesso ao painel (mín. 6 chars)</label><input type="password" id="new-password" placeholder="O cliente usará esta senha para entrar"></div>
+    <div id="created-result" style="display:none"></div>
+    <div class="modal-actions" id="create-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-create')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createClient()">Criar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SNIPPET -->
+<div class="modal-bg" id="modal-snippet" onclick="closeModalBg(event,'modal-snippet')">
+  <div class="modal-box" style="max-width:560px">
+    <h2>Código de instalação</h2>
+    <div class="field">
+      <label>Plataforma</label>
+      <select class="filter-select" id="snippet-platform" onchange="updateSnippet()" style="width:100%;padding:10px 12px;font-size:14px">
+        <option value="shopify">Shopify</option>
+        <option value="nuvemshop">Nuvemshop</option>
+        <option value="woocommerce">WooCommerce</option>
+        <option value="lojaintegrada">Loja Integrada</option>
+        <option value="vtexio">VTEX IO</option>
+        <option value="vtexlegacy">VTEX Legacy</option>
+      </select>
+    </div>
+    <div style="position:relative;background:#1a1a2e;border-radius:10px;padding:16px;margin-top:8px;font-family:monospace;font-size:12px;color:#a8d8ff;white-space:pre-wrap;word-break:break-all" id="snippet-box">
+      <button onclick="copySnippet()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Copiar</button>
+    </div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('modal-snippet')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL TROCAR PLANO -->
+<div class="modal-bg" id="modal-plan" onclick="closeModalBg(event,'modal-plan')">
+  <div class="modal-box" style="max-width:380px">
+    <h2>Trocar plano</h2>
+    <div class="field">
+      <label>Novo plano</label>
+      <select id="change-plan-select" class="filter-select" style="width:100%;padding:10px 12px;font-size:14px">
+        <option value="starter">Starter (100 tryons / R$ 49)</option>
+        <option value="pro">Pro (500 tryons / R$ 149)</option>
+        <option value="growth">Growth (1000 tryons / R$ 249)</option>
+        <option value="scale">Scale (5000 tryons / R$ 749)</option>
+        <option value="enterprise">Enterprise (ilimitado / R$ 2.499)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-plan')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmPlanChange()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-produto" onclick="closeModalBg(event,'modal-produto')">
+  <div class="modal-box" style="max-width:440px">
+    <h2 id="modal-produto-title">Novo plano</h2>
+    <input type="hidden" id="produto-edit-id">
+    <div class="field">
+      <label>Nome do plano</label>
+      <input type="text" id="produto-nome" placeholder="Ex: Starter, Pro, Growth..." style="width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field">
+        <label>Tryons incluídos</label>
+        <input type="number" id="produto-tryons" placeholder="Ex: 100" min="1" style="width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg)">
+      </div>
+      <div class="field">
+        <label>Valor mensal (R$)</label>
+        <input type="number" id="produto-preco" placeholder="Ex: 49.90" min="0" step="0.01" style="width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg)">
+      </div>
+    </div>
+    <div class="field">
+      <label>Tryon excedente (R$ por tryon)</label>
+      <input type="number" id="produto-excedente" placeholder="Ex: 0.75" min="0" step="0.01" style="width:100%;padding:10px 12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg)">
+    </div>
+    <div id="modal-produto-err" style="color:var(--danger);font-size:13px;margin-bottom:8px;display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-produto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveProduto()">Salvar plano</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Planos ────────────────────────────────────────────────────────────────────
+const PLANS = {
+  starter:    { name: 'Starter',    limit: 100,      price: 19,  overage: 0.05, color: '#6B7280' },
+  pro:        { name: 'Pro',        limit: 500,      price: 29,  overage: 0.04, color: '#2563eb' },
+  growth:     { name: 'Growth',     limit: 1000,     price: 49,  overage: 0.04, color: '#635BFF' },
+  scale:      { name: 'Scale',      limit: 5000,     price: 149, overage: 0.03, color: '#16A34A' },
+  enterprise: { name: 'Enterprise', limit: Infinity, price: 499, overage: 0.02, color: '#0A0A0A' },
+};
+const WIDGET_VERSION = '6.0';
+
+// ─── Estado ────────────────────────────────────────────────────────────────────
+let apiUrl   = window.location.origin;
+let apiPass  = '';
+let clients  = [];
+let allJobs  = [];
+let currentView = 'dashboard';
+let selectedKey = null;
+let snippetKey  = '';
+let snippetStore = '';
+let planChangeKey = null;
+let dashCharts = {};
+
+// URL da API — detectada automaticamente pelo domínio atual.
+const API_URL = window.location.origin;
+
+// ─── Login ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('in-email').value.trim();
+  const pass  = document.getElementById('in-pass').value.trim();
+  const err   = document.getElementById('login-err');
+  const btn   = document.getElementById('login-btn');
+  if (!email || !pass) { err.textContent = 'Preencha email e senha.'; return; }
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const res = await fetch(`${API_URL}/api/admin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', email, password: pass }),
+    });
+    const data = await res.json();
+    if (!data.ok) { err.textContent = data.error || 'Credenciais inválidas.'; btn.disabled = false; btn.textContent = 'Entrar'; return; }
+    apiUrl  = API_URL;
+    apiPass = pass;
+    localStorage.setItem('mg_email', email);
+    localStorage.setItem('mg_pass',  pass);
+    const listData = await apiFetch('list');
+    clients = listData.clients || [];
+    document.getElementById('topbar-sub').textContent = API_URL;
+    document.getElementById('settings-api-url').textContent = API_URL;
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    navigate('dashboard');
+  } catch (e) {
+    err.textContent = 'Não foi possível conectar: ' + e.message;
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('mg_email'); localStorage.removeItem('mg_pass');
+  location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const email = localStorage.getItem('mg_email') || '';
+  const pass  = localStorage.getItem('mg_pass')  || '';
+  if (email && pass) {
+    document.getElementById('in-email').value = email;
+    document.getElementById('in-pass').value  = pass;
+    doLogin();
+  }
+  document.getElementById('in-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  renderSettings();
+});
+
+// ─── Navegação ─────────────────────────────────────────────────────────────────
+const VIEW_TITLES = {
+  dashboard:      'Dashboard',
+  clients:        'Clientes',
+  'client-detail': 'Detalhe do cliente',
+  jobs:           'Jobs',
+  produtos:       'Produtos / Planos',
+  billing:        'Billing',
+  settings:       'Configurações',
+};
+
+function navigate(view, navEl) {
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  document.getElementById('topbar-title').textContent = VIEW_TITLES[view] || view;
+  document.getElementById('topbar-actions').innerHTML = '';
+
+  const ta = document.getElementById('topbar-actions');
+  if (view === 'clients') {
+    ta.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ Novo cliente</button>`;
+    renderClients();
+  } else if (view === 'dashboard') {
+    ta.innerHTML = `<button class="btn btn-secondary btn-sm" onclick="loadDashboard()">Atualizar</button>`;
+    loadDashboard();
+  } else if (view === 'billing') {
+    renderBilling();
+  } else if (view === 'settings') {
+    renderSettings();
+  } else if (view === 'jobs') {
+    ta.innerHTML = `<button class="btn btn-secondary btn-sm" onclick="loadJobs()">Atualizar</button>`;
+    loadJobs();
+  } else if (view === 'produtos') {
+    ta.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openPlanModal()">+ Novo plano</button>`;
+    loadProdutos();
+  }
+}
+
+// ─── API helper ────────────────────────────────────────────────────────────────
+async function apiFetch(action, body = null) {
+  const opts = {
+    method: body ? 'POST' : 'GET',
+    headers: { Authorization: `Bearer ${apiPass}`, 'Content-Type': 'application/json' },
+  };
+  if (body) opts.body = JSON.stringify({ action, ...body });
+  const url = body ? `${apiUrl}/api/admin` : `${apiUrl}/api/admin?action=${action}`;
+  const res = await fetch(url, opts);
+  return res.json();
+}
+
+async function loadClients() {
+  const data = await apiFetch('list');
+  clients = data.clients || [];
+}
+
+// ─── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  await loadClients();
+  renderKPIs();
+  renderCharts();
+  renderTopClients();
+  renderAlerts();
+}
+
+function calcMRR() {
+  return clients.filter(c => c.active).reduce((s, c) => {
+    const p = PLANS[c.plan || 'starter'];
+    return s + (p ? p.price : 0);
+  }, 0);
+}
+
+function renderKPIs() {
+  const active   = clients.filter(c => c.active).length;
+  const tryons   = clients.reduce((s, c) => s + (c.usageCount || 0), 0);
+  const mrr      = calcMRR();
+  const occupied = clients.filter(c => {
+    const p = PLANS[c.plan || 'starter'];
+    return p && p.limit !== Infinity && (c.usageCount || 0) / p.limit >= 0.8;
+  }).length;
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">MRR estimado</div>
+      <div class="kpi-value">R$ ${mrr.toLocaleString()}</div>
+      <div class="kpi-delta neutral">${active} clientes ativos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Clientes ativos</div>
+      <div class="kpi-value">${active}</div>
+      <div class="kpi-delta neutral">${clients.length} total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Tryons realizados</div>
+      <div class="kpi-value">${tryons.toLocaleString()}</div>
+      <div class="kpi-delta neutral">todos os planos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Perto do limite</div>
+      <div class="kpi-value ${occupied > 0 ? 'up' : ''}" style="color:${occupied > 0 ? 'var(--warning)' : 'var(--success)'}">${occupied}</div>
+      <div class="kpi-delta neutral">clientes com +80% uso</div>
+    </div>
+  `;
+}
+
+function renderCharts() {
+  // Por plano — tryons
+  const planUsage = {};
+  const planClients = {};
+  clients.forEach(c => {
+    const p = c.plan || 'starter';
+    planUsage[p]   = (planUsage[p]   || 0) + (c.usageCount || 0);
+    planClients[p] = (planClients[p] || 0) + 1;
+  });
+
+  const planKeys   = Object.keys(PLANS).filter(k => planUsage[k] !== undefined);
+  const planNames  = planKeys.map(k => PLANS[k].name);
+  const planColors = planKeys.map(k => PLANS[k].color);
+
+  if (dashCharts.plans) dashCharts.plans.destroy();
+  if (dashCharts.mrr)   dashCharts.mrr.destroy();
+
+  const ctx1 = document.getElementById('chart-plans').getContext('2d');
+  dashCharts.plans = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: planNames,
+      datasets: [{ label: 'Tryons', data: planKeys.map(k => planUsage[k] || 0), backgroundColor: planColors, borderRadius: 6 }],
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 11 } } }, x: { ticks: { font: { size: 11 } } } } },
+  });
+
+  const ctx2 = document.getElementById('chart-mrr').getContext('2d');
+  dashCharts.mrr = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: planNames,
+      datasets: [{ data: planKeys.map(k => (planClients[k] || 0) * (PLANS[k]?.price || 0)), backgroundColor: planColors, borderWidth: 0 }],
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } },
+  });
+}
+
+function renderTopClients() {
+  const sorted = [...clients].sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0)).slice(0, 5);
+  const max    = sorted[0]?.usageCount || 1;
+  const el     = document.getElementById('top-clients-list');
+  if (!sorted.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><p>Nenhum cliente ainda.</p></div>'; return; }
+  el.innerHTML = sorted.map(c => {
+    const pct = Math.round(((c.usageCount || 0) / max) * 100);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer" onclick="openClientDetail('${escHtml(c.key)}')">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px">${escHtml(c.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${escHtml(c.plan || 'starter')}</div>
+      </div>
+      <div class="progress-wrap" style="width:120px">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:var(--primary)"></div></div>
+      </div>
+      <div style="font-weight:700;font-size:13px;color:var(--primary);width:40px;text-align:right">${c.usageCount || 0}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlerts() {
+  const alerts = [];
+  clients.forEach(c => {
+    const p = PLANS[c.plan || 'starter'];
+    if (!p || p.limit === Infinity) return;
+    const pct = (c.usageCount || 0) / p.limit;
+    if (pct >= 1)   alerts.push({ type: 'err',  msg: `${c.name} atingiu o limite (${c.plan})` });
+    else if (pct >= 0.8) alerts.push({ type: 'warn', msg: `${c.name} está com ${Math.round(pct*100)}% do plano usado` });
+    if (!c.active) alerts.push({ type: 'warn', msg: `${c.name} está suspenso` });
+  });
+
+  const el = document.getElementById('alerts-list');
+  if (!alerts.length) {
+    el.innerHTML = '<div class="empty" style="padding:24px"><div class="empty-icon">✅</div><p>Tudo operando normalmente.</p></div>';
+    return;
+  }
+  el.innerHTML = `<div class="alerts-list">${alerts.map(a => `<div class="alert-item ${a.type}">⚠ ${escHtml(a.msg)}</div>`).join('')}</div>`;
+}
+
+// ─── Clientes ──────────────────────────────────────────────────────────────────
+async function renderClients() {
+  if (!clients.length) await loadClients();
+  filterClients();
+  populateJobsClientFilter();
+}
+
+function filterClients() {
+  const q      = (document.getElementById('client-search')?.value || '').toLowerCase();
+  const plan   = document.getElementById('client-plan-filter')?.value || '';
+  const status = document.getElementById('client-status-filter')?.value || '';
+
+  let filtered = clients.filter(c => {
+    if (q && !c.name?.toLowerCase().includes(q) && !c.email?.toLowerCase().includes(q)) return false;
+    if (plan   && (c.plan || 'starter') !== plan) return false;
+    if (status === 'active'   && !c.active) return false;
+    if (status === 'inactive' &&  c.active) return false;
+    return true;
+  });
+
+  document.getElementById('client-count').textContent = `(${filtered.length})`;
+  const tbody = document.getElementById('clients-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">👥</div><h3>Nenhum cliente</h3><p>Tente outro filtro.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const plan  = PLANS[c.plan || 'starter'] || PLANS.starter;
+    const usage = c.usageCount || 0;
+    const pct   = plan.limit === Infinity ? 0 : Math.min(Math.round(usage / plan.limit * 100), 100);
+    const barColor = pct >= 100 ? 'var(--error)' : pct >= 80 ? 'var(--warning)' : 'var(--primary)';
+    const limitStr = plan.limit === Infinity ? '∞' : plan.limit.toLocaleString();
+    const ago = c.createdAt ? timeAgo(c.createdAt) : '-';
+    return `<tr>
+      <td>
+        <div style="font-weight:600">${escHtml(c.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${escHtml(c.email)}</div>
+        ${c.store ? `<div style="font-size:11px;color:var(--muted)">${escHtml(c.store)}</div>` : ''}
+      </td>
+      <td><span class="badge badge-primary">${escHtml(c.plan || 'starter')}</span></td>
+      <td style="min-width:160px">
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
+          <div class="progress-label">${usage.toLocaleString()}/${limitStr}</div>
+        </div>
+      </td>
+      <td><span class="badge ${c.active ? 'badge-success' : 'badge-error'}">${c.active ? '● Ativo' : '● Suspenso'}</span></td>
+      <td style="color:var(--muted);font-size:12px">${ago}</td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="openClientDetail('${escHtml(c.key)}')">Ver</button>
+          <button class="btn btn-secondary btn-sm" onclick="openSnippet('${escHtml(c.key)}','${escHtml(c.store || c.name)}')">Snippet</button>
+          <button class="btn btn-sm ${c.active ? 'btn-danger' : 'btn-success'}" onclick="toggleClient('${escHtml(c.key)}')">${c.active ? 'Suspender' : 'Ativar'}</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Client Detail ─────────────────────────────────────────────────────────────
+function openClientDetail(key) {
+  selectedKey = key;
+  navigate('client-detail');
+  renderClientDetail(key);
+}
+
+async function renderClientDetail(key) {
+  const c = clients.find(c => c.key === key);
+  if (!c) { document.getElementById('client-detail-content').innerHTML = '<p>Cliente não encontrado.</p>'; return; }
+
+  if (!produtosCache.length) await loadProdutos();
+  const plan  = getPlanData(c.plan || 'starter');
+  const usage = c.usageCount || 0;
+  const pct   = plan.limit === Infinity ? 0 : Math.min(Math.round(usage / plan.limit * 100), 100);
+  const barColor = pct >= 100 ? 'var(--error)' : pct >= 80 ? 'var(--warning)' : 'var(--primary)';
+  const limitStr = plan.limit === Infinity ? 'Ilimitado' : plan.limit.toLocaleString();
+  const total = calcClientBilling(c);
+
+  document.getElementById('topbar-title').textContent = c.name;
+  document.getElementById('client-detail-content').innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="card detail-section">
+          <div class="card-header">
+            <h3>${escHtml(c.name)} <span class="badge ${c.active ? 'badge-success' : 'badge-error'}" style="margin-left:8px">${c.active ? 'Ativo' : 'Suspenso'}</span></h3>
+          </div>
+          <div style="padding:16px 20px">
+            <div class="detail-section">
+              <h4>Uso do plano</h4>
+              <div style="margin-bottom:10px">
+                <div class="progress-wrap" style="gap:12px">
+                  <div class="progress-track" style="height:10px;flex:1">
+                    <div class="progress-fill" style="width:${pct}%;background:${barColor};height:100%"></div>
+                  </div>
+                  <span style="font-size:13px;font-weight:700;color:${barColor}">${pct}%</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);margin-top:6px">${usage.toLocaleString()} de ${limitStr} tryons • Plano ${plan.name} (R$ ${plan.price}/mês)</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <h4>Informações</h4>
+              <div class="info-row"><span class="info-label">E-mail</span><span class="info-value">${escHtml(c.email)}</span></div>
+              <div class="info-row"><span class="info-label">Domínio</span><span class="info-value">${c.store ? escHtml(c.store) : '<span style="color:var(--muted)">não informado</span>'}</span></div>
+              <div class="info-row"><span class="info-label">Plano</span><span class="info-value"><span class="badge badge-primary">${escHtml(c.plan || 'starter')}</span> R$ ${plan.price}/mês</span></div>
+              <div class="info-row"><span class="info-label">Estimativa mensal</span><span class="info-value" style="color:var(--primary);font-size:16px">R$ ${total.toFixed(2)}</span></div>
+              <div class="info-row"><span class="info-label">Cliente desde</span><span class="info-value">${c.createdAt ? new Date(c.createdAt).toLocaleDateString('pt-BR') : '-'}</span></div>
+            </div>
+            <div class="detail-section">
+              <h4>API Key</h4>
+              <div class="api-key-wrap">
+                <span>••••••••••••••••••••</span>
+                <button class="btn btn-secondary btn-sm" onclick="copyText('${escHtml(c.key)}')">Copiar chave</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Leads recentes</h3><button class="btn btn-secondary btn-sm" onclick="loadClientLeads('${escHtml(c.key)}')">Carregar</button></div>
+          <div id="client-leads-table">
+            <div class="empty" style="padding:32px"><div class="empty-icon">👤</div><p>Clique em "Carregar" para ver os leads.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="actions-card" style="margin-bottom:16px">
+          <h4>Ações rápidas</h4>
+          <button class="action-btn" onclick="openSnippet('${escHtml(c.key)}','${escHtml(c.store || c.name)}')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Ver snippet de instalação
+          </button>
+          <button class="action-btn" onclick="openPlanChange('${escHtml(c.key)}')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Trocar plano
+          </button>
+          <button class="action-btn" onclick="resetUsage('${escHtml(c.key)}')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.8"/></svg>
+            Resetar contagem de uso
+          </button>
+          <button class="action-btn" onclick="toggleClient('${escHtml(c.key)}')" style="color:${c.active ? 'var(--error)':'var(--success)'};border-color:${c.active ? '#fecaca':'#bbf7d0'}">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/>${c.active ? '<line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>' : '<polyline points="20 6 9 17 4 12"/>'}</svg>
+            ${c.active ? 'Suspender cliente' : 'Reativar cliente'}
+          </button>
+          <button class="action-btn danger" onclick="deleteClient('${escHtml(c.key)}','${escHtml(c.name)}')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Excluir cliente
+          </button>
+        </div>
+        <div class="actions-card">
+          <h4>Painel do cliente</h4>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">O cliente acessa com o email <strong>${escHtml(c.email)}</strong> e a senha definida abaixo.</p>
+          <button class="btn btn-primary btn-full btn-sm" onclick="window.open('https://wvgtec.github.io/provador-virtual-landing/painel-cliente.html','_blank')">Abrir painel do cliente</button>
+        </div>
+        <div class="actions-card" style="margin-top:12px">
+          <h4>Alterar senha do cliente</h4>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Define a senha que o cliente usará para entrar no painel.</p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="password" id="newClientPassword" placeholder="Nova senha (mín. 6 chars)" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
+            <button class="btn btn-secondary btn-sm" onclick="setClientPassword('${escHtml(c.key)}')">Definir</button>
+          </div>
+          <div id="pwdMsg" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadClientLeads(key) {
+  document.getElementById('client-leads-table').innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Carregando...</div>';
+  try {
+    const res  = await fetch(`${apiUrl}/api/leads?key=${encodeURIComponent(key)}&action=leads&limit=50`, { headers: { Authorization: `Bearer ${apiPass}` } });
+    const data = await res.json();
+    const leads = data.leads || [];
+    if (!leads.length) {
+      document.getElementById('client-leads-table').innerHTML = '<div class="empty" style="padding:32px"><div class="empty-icon">👤</div><p>Nenhum lead ainda.</p></div>';
+      return;
+    }
+    document.getElementById('client-leads-table').innerHTML = `
+      <table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Data</th></tr></thead>
+        <tbody>${leads.map(l => `<tr>
+          <td style="font-weight:600">${escHtml(l.name||'-')}</td>
+          <td>${escHtml(l.email||'-')}</td>
+          <td>${escHtml(l.whatsapp||'-')}</td>
+          <td style="font-size:12px;color:var(--muted)">${l.completedAt ? new Date(l.completedAt).toLocaleDateString('pt-BR') : '-'}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  } catch (e) {
+    document.getElementById('client-leads-table').innerHTML = `<div class="empty" style="padding:32px"><div class="empty-icon">⚠️</div><p>${escHtml(e.message)}</p></div>`;
+  }
+}
+
+// ─── Jobs ──────────────────────────────────────────────────────────────────────
+async function loadJobs() {
+  document.getElementById('jobs-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Carregando...</td></tr>`;
+  try {
+    const data = await apiFetch('jobs');
+    allJobs = data.jobs || [];
+    filterJobs();
+  } catch (e) {
+    document.getElementById('jobs-tbody').innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">⚠️</div><p>${escHtml(e.message)}</p></div></td></tr>`;
+  }
+}
+
+function filterJobs() {
+  const clientFilter = document.getElementById('jobs-client-filter')?.value || '';
+  const statusFilter = document.getElementById('jobs-status-filter')?.value || '';
+  const filtered = allJobs.filter(j => {
+    if (clientFilter && j.clientKey !== clientFilter) return false;
+    if (statusFilter && j.status   !== statusFilter)  return false;
+    return true;
+  });
+  const tbody = document.getElementById('jobs-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">📋</div><h3>Nenhum job</h3><p>Tente outro filtro.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(j => {
+    const client = clients.find(c => c.key === j.clientKey);
+    const statusColor = j.status === 'done' ? 'var(--success)' : j.status === 'error' ? 'var(--error)' : 'var(--warning)';
+    const date = j.completedAt || j.createdAt;
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px;color:var(--muted)">${j.id?.slice(0,8)||'-'}…</td>
+      <td style="font-weight:500">${client ? escHtml(client.name) : escHtml(j.clientKey?.slice(0,8)||'-')}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${statusColor}"><span class="job-status-dot" style="background:${statusColor}"></span>${j.status}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${date ? timeAgo(date) : '-'}</td>
+      <td>${j.resultImage ? `<a href="${escHtml(j.resultImage)}" target="_blank" style="color:var(--primary);font-size:12px;font-weight:600">Ver</a>` : '-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function populateJobsClientFilter() {
+  const sel = document.getElementById('jobs-client-filter');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Todos os clientes</option>' +
+    clients.map(c => `<option value="${escHtml(c.key)}">${escHtml(c.name)}</option>`).join('');
+}
+
+// ─── Billing ───────────────────────────────────────────────────────────────────
+
+// Retorna dados do plano: primeiro busca em produtosCache (Redis), depois em PLANS hardcoded
+function getPlanData(planId) {
+  if (produtosCache && produtosCache.length) {
+    const found = produtosCache.find(p => p.id === planId || p.name?.toLowerCase() === planId?.toLowerCase());
+    if (found) {
+      return {
+        name:   found.name,
+        price:  Number(found.price)   || 0,
+        overage: Number(found.overage) || 0,
+        limit:  found.tryons === 0 ? Infinity : (Number(found.tryons) || 100),
+        color:  '#635BFF',
+      };
+    }
+  }
+  return PLANS[planId || 'starter'] || PLANS.starter;
+}
+
+function calcClientBilling(c) {
+  const plan  = getPlanData(c.plan || 'starter');
+  const usage = c.usageCount || 0;
+  const overage = plan.limit !== Infinity ? Math.max(0, usage - plan.limit) : 0;
+  return plan.price + overage * plan.overage;
+}
+
+async function renderBilling() {
+  // Garante que os planos do Redis estão carregados
+  if (!produtosCache.length) await loadProdutos();
+  const active = clients.filter(c => c.active);
+  const mrr    = calcMRR();
+  const totalJobs = clients.reduce((s, c) => s + (c.usageCount || 0), 0);
+
+  // KPIs
+  document.getElementById('billing-kpis').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">MRR estimado</div><div class="kpi-value">R$ ${mrr.toLocaleString()}</div><div class="kpi-delta neutral">${active.length} clientes</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total tryons</div><div class="kpi-value">${totalJobs.toLocaleString()}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Ticket médio</div><div class="kpi-value">R$ ${active.length ? Math.round(mrr/active.length) : 0}</div></div>
+  `;
+
+  // Por plano
+  const byPlan = {};
+  clients.filter(c => c.active).forEach(c => {
+    const p = c.plan || 'starter';
+    byPlan[p] = byPlan[p] || { count: 0, revenue: 0 };
+    byPlan[p].count++;
+    byPlan[p].revenue += PLANS[p]?.price || 0;
+  });
+  // Agrupa por plano usando getPlanData
+  const allPlanIds = [...new Set(clients.filter(c=>c.active).map(c=>c.plan||'starter'))];
+  document.getElementById('billing-plans').innerHTML = allPlanIds.length
+    ? allPlanIds.map(k => {
+        const p = getPlanData(k);
+        const info = byPlan[k] || { count: 0, revenue: 0 };
+        return `<div class="plan-row">
+          <div class="plan-name"><span class="badge badge-primary">${escHtml(p.name)}</span></div>
+          <div class="plan-detail">${info.count} clientes • R$ ${p.price}/mês</div>
+          <div class="plan-price">R$ ${info.revenue.toLocaleString()}</div>
+        </div>`;
+      }).join('')
+    : '<p style="color:var(--muted);font-size:13px">Nenhum cliente ativo.</p>';
+
+  // Por cliente
+  const sorted = [...clients].sort((a, b) => calcClientBilling(b) - calcClientBilling(a));
+  document.getElementById('billing-clients-tbody').innerHTML = sorted.map(c => {
+    const plan     = getPlanData(c.plan || 'starter');
+    const usage    = c.usageCount || 0;
+    const overage  = plan.limit !== Infinity ? Math.max(0, usage - plan.limit) : 0;
+    const total    = calcClientBilling(c);
+    const limitStr = plan.limit === Infinity ? '∞' : plan.limit.toLocaleString();
+    return `<tr>
+      <td style="font-weight:600">${escHtml(c.name)}</td>
+      <td><span class="badge badge-primary">${escHtml(c.plan||'starter')}</span></td>
+      <td style="font-size:12px">${usage.toLocaleString()}/${limitStr}</td>
+      <td style="font-size:12px;color:${overage>0?'var(--warning)':'var(--muted)'}">${overage>0 ? `+${overage} (R$ ${(overage*plan.overage).toFixed(2)})` : '—'}</td>
+      <td style="font-weight:700;color:var(--primary)">R$ ${total.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Produtos / Planos ─────────────────────────────────────────────────────────
+let produtosCache = [];
+
+async function loadProdutos() {
+  const r = await apiFetch('listPlans');
+  if (!r.ok) { toast('Erro ao carregar planos.', 'error'); return; }
+  produtosCache = r.plans || [];
+  renderProdutos();
+}
+
+function renderProdutos() {
+  const tbody = document.getElementById('plans-tbody');
+  if (!produtosCache.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted);">Nenhum plano cadastrado ainda.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = produtosCache.map(p => `
+    <tr>
+      <td><strong>${esc(p.name)}</strong> <span style="font-size:11px;color:var(--muted);margin-left:4px;">${esc(p.id)}</span></td>
+      <td>${p.tryons === 0 ? 'Ilimitado' : Number(p.tryons).toLocaleString('pt-BR')}</td>
+      <td>R$ ${Number(p.overage).toFixed(2)}</td>
+      <td>R$ ${Number(p.price).toFixed(2)}/mês</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-secondary btn-sm" onclick="openPlanModal('${esc(p.id)}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduto('${esc(p.id)}','${esc(p.name)}')">Excluir</button>
+      </td>
+    </tr>`).join('');
+
+  // Atualiza o select de trocar plano do cliente
+  const sel = document.getElementById('change-plan-select');
+  if (sel) {
+    sel.innerHTML = produtosCache.map(p =>
+      `<option value="${esc(p.id)}">${esc(p.name)} (${p.tryons === 0 ? 'Ilimitado' : p.tryons} tryons / R$ ${Number(p.price).toFixed(2)})</option>`
+    ).join('');
+  }
+}
+
+function openPlanModal(id = null) {
+  const plan = id ? produtosCache.find(p => p.id === id) : null;
+  document.getElementById('modal-produto-title').textContent = plan ? 'Editar plano' : 'Novo plano';
+  document.getElementById('produto-edit-id').value = plan ? plan.id : '';
+  document.getElementById('produto-nome').value      = plan ? plan.name    : '';
+  document.getElementById('produto-tryons').value    = plan ? plan.tryons  : '';
+  document.getElementById('produto-preco').value     = plan ? plan.price   : '';
+  document.getElementById('produto-excedente').value = plan ? plan.overage : '';
+  document.getElementById('modal-produto-err').style.display = 'none';
+  openModal('modal-produto');
+}
+
+async function saveProduto() {
+  const id       = document.getElementById('produto-edit-id').value.trim();
+  const name     = document.getElementById('produto-nome').value.trim();
+  const tryons   = Number(document.getElementById('produto-tryons').value);
+  const price    = Number(document.getElementById('produto-preco').value);
+  const overage  = Number(document.getElementById('produto-excedente').value);
+  const errEl    = document.getElementById('modal-produto-err');
+
+  if (!name) { errEl.textContent = 'Nome é obrigatório.'; errEl.style.display='block'; return; }
+  if (isNaN(tryons) || tryons < 0) { errEl.textContent = 'Tryons inválido.'; errEl.style.display='block'; return; }
+  if (isNaN(price)  || price  < 0) { errEl.textContent = 'Valor inválido.';  errEl.style.display='block'; return; }
+  if (isNaN(overage)|| overage< 0) { errEl.textContent = 'Excedente inválido.'; errEl.style.display='block'; return; }
+
+  const action = id ? 'updatePlan' : 'createPlan';
+  const r = await apiFetch(action, { id: id || undefined, name, tryons, price, overage });
+  if (!r.ok) { errEl.textContent = r.error || 'Erro ao salvar.'; errEl.style.display='block'; return; }
+  closeModal('modal-produto');
+  toast(id ? 'Plano atualizado!' : 'Plano criado!', 'success');
+  await loadProdutos();
+}
+
+async function deleteProduto(id, name) {
+  if (!confirm(`Excluir o plano "${name}"? Clientes nesse plano não serão afetados.`)) return;
+  const r = await apiFetch('deletePlan', { id });
+  if (!r.ok) { toast(r.error || 'Erro ao excluir.', 'error'); return; }
+  toast('Plano excluído.', 'success');
+  await loadProdutos();
+}
+
+// ─── Settings ──────────────────────────────────────────────────────────────────
+function renderSettings() {
+  document.getElementById('plans-list').innerHTML = Object.entries(PLANS).map(([k, p]) => `
+    <div class="plan-row">
+      <div class="plan-name"><span class="badge badge-primary">${p.name}</span></div>
+      <div class="plan-detail">Limite: ${p.limit === Infinity ? 'Ilimitado' : p.limit.toLocaleString()} tryons • Excedente: R$ ${p.overage}/tryon</div>
+      <div class="plan-price">R$ ${p.price}/mês</div>
+    </div>`).join('');
+}
+
+// ─── Criar cliente ─────────────────────────────────────────────────────────────
+function openCreateModal() {
+  document.getElementById('new-name').value     = '';
+  document.getElementById('new-email').value    = '';
+  document.getElementById('new-store').value    = '';
+  document.getElementById('new-password').value = '';
+  document.getElementById('new-plan').value     = 'growth';
+  document.getElementById('created-result').style.display = 'none';
+  document.getElementById('create-actions').style.display = 'flex';
+  document.getElementById('modal-create').classList.add('open');
+}
+
+async function createClient() {
+  const name     = document.getElementById('new-name').value.trim();
+  const email    = document.getElementById('new-email').value.trim();
+  const store    = document.getElementById('new-store').value.trim();
+  const plan     = document.getElementById('new-plan').value;
+  const password = document.getElementById('new-password').value;
+  if (!name || !email) { alert('Nome e e-mail são obrigatórios.'); return; }
+  const btn = document.querySelector('#create-actions .btn-primary');
+  btn.disabled = true; btn.textContent = 'Criando...';
+  const r = await apiFetch('create', { name, email, store, plan, password });
+  btn.disabled = false; btn.textContent = 'Criar cliente';
+  if (!r.ok) { alert(r.error || 'Erro ao criar cliente.'); return; }
+  const panelUrl = 'https://wvgtec.github.io/provador-virtual-landing/painel-cliente.html';
+  const el = document.getElementById('created-result');
+  el.style.display = 'block';
+  el.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;font-size:13px;">
+    <div style="font-weight:700;color:#166534;margin-bottom:8px;">✅ Cliente criado com sucesso!</div>
+    <div style="margin-bottom:6px;"><strong>Chave API:</strong></div>
+    <div class="secret-val">${escHtml(r.key)}</div>
+    ${r.client.passwordHash || password ? `<div style="margin:6px 0 2px;"><strong>Senha do painel:</strong></div><div class="secret-val">${escHtml(password||'(definida)')}</div>` : ''}
+    <div style="margin:8px 0 2px;font-size:12px;"><strong>Link do painel:</strong></div>
+    <div class="secret-val" style="font-size:11px;">${escHtml(panelUrl)}</div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%" onclick="copyText('${escHtml(panelUrl)}')">Copiar link do painel</button>
+  </div>`;
+  document.getElementById('create-actions').style.display = 'none';
+  await loadClients();
+}
+
+async function toggleClient(key) {
+  const r = await apiFetch('toggle', { key });
+  if (!r.ok) { alert(r.error || 'Erro.'); return; }
+  await loadClients();
+  if (document.getElementById('client-detail-panel')?.style.display !== 'none') {
+    openClientDetail(key);
+  }
+}
+
+async function deleteClient(key, name) {
+  if (!confirm(`Excluir "${name}"? Esta ação não pode ser desfeita.`)) return;
+  const r = await apiFetch('delete', { key });
+  if (!r.ok) { alert(r.error || 'Erro ao excluir.'); return; }
+  document.getElementById('client-detail-panel').style.display = 'none';
+  await loadClients();
+}
+
+async function setClientPassword(key) {
+  const pw = document.getElementById('newClientPassword').value;
+  if (!pw || pw.length < 6) { alert('Senha deve ter no mínimo 6 caracteres.'); return; }
+  const r = await apiFetch('setPassword', { key, password: pw });
+  if (r.ok) { alert('Senha definida com sucesso.'); document.getElementById('newClientPassword').value = ''; }
+  else { alert(r.error || 'Erro ao definir senha.'); }
+}
+
+async function resetUsage(key) {
+  if (!confirm('Zerar o contador de uso deste cliente?')) return;
+  const r = await apiFetch('resetUsage', { key });
+  if (r.ok) { await loadClients(); openClientDetail(key); }
+  else alert(r.error || 'Erro ao zerar uso.');
+}
+
+let _planChangeKey = '';
+async function openPlanChange(key) {
+  _planChangeKey = key;
+  if (!produtosCache.length) await loadProdutos();
+  const sel = document.getElementById('change-plan-select');
+  if (produtosCache.length) {
+    sel.innerHTML = produtosCache.map(p =>
+      `<option value="${esc(p.id)}">${esc(p.name)} (${p.tryons === 0 ? 'Ilimitado' : p.tryons} tryons / R$ ${Number(p.price).toFixed(2)})</option>`
+    ).join('');
+  }
+  document.getElementById('modal-plan').classList.add('open');
+}
+
+async function confirmPlanChange() {
+  const plan = document.getElementById('change-plan-select').value;
+  if (!plan || !_planChangeKey) return;
+  const r = await apiFetch('changePlan', { key: _planChangeKey, plan });
+  if (r.ok) {
+    closeModal('modal-plan');
+    await loadClients();
+    openClientDetail(_planChangeKey);
+  } else {
+    alert(r.error || 'Erro ao trocar plano.');
+  }
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btns = [...document.querySelectorAll('button')].filter(b => b.onclick?.toString().includes(text) || b.getAttribute('onclick')?.includes('copyText'));
+    btns.forEach(b => { const orig = b.textContent; b.textContent = 'Copiado!'; setTimeout(() => b.textContent = orig, 1500); });
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
+
+// ─── Snippet ──────────────────────────────────────────────────────────────────
+let _snippetKey = '', _snippetStore = '';
+
+function openSnippet(key, store) {
+  _snippetKey   = key;
+  _snippetStore = store;
+  document.getElementById('snippet-platform').value = 'shopify';
+  updateSnippet();
+  document.getElementById('modal-snippet').classList.add('open');
+}
+
+function updateSnippet() {
+  const platform = document.getElementById('snippet-platform').value;
+  const base  = window.location.origin;
+  const wUrl  = `${base}/widget/tryon-widget.js?v=6.0`;
+  const store = (_snippetStore || 'Minha Loja').replace(/'/g, "\\'");
+  const garments = {
+    shopify:       "{{ product.featured_image | img_url: 'master' }}",
+    nuvemshop:     '{product.featured_image.src}',
+    woocommerce:   '<?php echo get_the_post_thumbnail_url(get_the_ID(), "full"); ?>',
+    lojaintegrada: '{% if product.image %}{{ product.image.url }}{% endif %}',
+    vtexlegacy:    '$product.ImageURL',
+  };
+  let snippet;
+  if (platform === 'vtexio') {
+    snippet = `<script>\n  window.VTON_API_URL    = '${base}';\n  window.VTON_CLIENT_KEY = '${_snippetKey}';\n  window.VTON_STORE_NAME = '${store}';\n  window.addEventListener('load', function() {\n    var img = document.querySelector('[class*="productImageTag"]')\n           || document.querySelector('[class*="product-image"] img');\n    if (img) window.VTON_GARMENT_URL = img.src;\n  });\n<\/script>\n<div id="vton-anchor"><\/div>\n<script src="${wUrl}" defer><\/script>`;
+  } else {
+    snippet = `<script>\n  window.VTON_API_URL     = '${base}';\n  window.VTON_CLIENT_KEY  = '${_snippetKey}';\n  window.VTON_GARMENT_URL = '${garments[platform] || garments.shopify}';\n  window.VTON_STORE_NAME  = '${store}';\n<\/script>\n<div id="vton-anchor"><\/div>\n<script src="${wUrl}" defer><\/script>`;
+  }
+  document.getElementById('snippet-box').innerHTML =
+    `<button onclick="copySnippet()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Copiar</button>` +
+    escHtml(snippet);
+}
+
+function copySnippet() {
+  const raw = document.getElementById('snippet-box').innerText.replace(/^Copiar\n?/, '');
+  navigator.clipboard.writeText(raw).then(() => {
+    const btn = document.querySelector('#snippet-box button');
+    if (btn) { btn.textContent = 'Copiado!'; setTimeout(() => btn.textContent = 'Copiar', 1500); }
+  });
+}
+
+// ─── Modal helpers ────────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id)?.classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('open');
+}
+
+function closeModalBg(event, id) {
+  if (event.target === document.getElementById(id)) closeModal(id);
+}
+
+// ─── Utilitários ──────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function timeAgo(ts) {
+  if (!ts) return '-';
+  const diff = Date.now() - ts;
+  const min  = Math.floor(diff / 60000);
+  const h    = Math.floor(diff / 3600000);
+  const d    = Math.floor(diff / 86400000);
+  if (min < 2)   return 'agora';
+  if (min < 60)  return `${min}min atrás`;
+  if (h < 24)    return `${h}h atrás`;
+  if (d < 30)    return `${d}d atrás`;
+  return new Date(ts).toLocaleDateString('pt-BR');
+}
+
+</script>
+</body>
+</html>
