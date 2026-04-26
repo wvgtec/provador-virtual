@@ -135,24 +135,31 @@ export default async function handler(req, res) {
   await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, usageCount: Number(newCount) || 0 }));
 
   // ─── Cria job — só metadados, sem imagens inline ──────────────────────────
-  const jobId = randomUUID();
+  const jobId    = randomUUID();
+  const now      = Date.now();
 
-  await redis.set(
-    `job:${jobId}`,
-    JSON.stringify({
-      status:          'pending',
-      createdAt:       Date.now(),
-      projectId:       PROJECT_ID,
-      personImageUrl:  finalPersonUrl,
-      garmentImageUrl: finalGarmentUrl,
-      category:        safeCategory,
-      clientKey,
-      lead:            hasLead ? { name: leadName, email: leadEmail, whatsapp: leadWhatsapp } : null,
-      productUrl:      finalProductUrl,
-      productName:     productName ? String(productName).slice(0, 200) : '',
-    }),
-    { ex: 3600 }
-  );
+  await Promise.all([
+    redis.set(
+      `job:${jobId}`,
+      JSON.stringify({
+        status:          'pending',
+        createdAt:       now,
+        projectId:       PROJECT_ID,
+        personImageUrl:  finalPersonUrl,
+        garmentImageUrl: finalGarmentUrl,
+        category:        safeCategory,
+        clientKey,
+        lead:            hasLead ? { name: leadName, email: leadEmail, whatsapp: leadWhatsapp } : null,
+        productUrl:      finalProductUrl,
+        productName:     productName ? String(productName).slice(0, 200) : '',
+      }),
+      { ex: 3600 }
+    ),
+    // Índice por cliente: permite busca O(log n) em vez de scan global
+    redis.zadd(`jobs:${clientKey}`, { score: now, member: jobId }),
+    // TTL do índice: 90 dias (jobs individuais expiram em 1h, mas o índice fica para histórico)
+    redis.expire(`jobs:${clientKey}`, 60 * 60 * 24 * 90),
+  ]);
 
   await qstash.publishJSON({
     url:     `${process.env.APP_URL}/api/process`,

@@ -142,35 +142,51 @@ export default async function handler(req, res) {
     }
 
     // JOBS — lista jobs paginado com filtro opcional por status
+    // Usa índice jobs:{clientKey} (sorted set por timestamp) — O(log n) em vez de scan global
     if (action === 'jobs') {
       const page   = Math.max(1, Number(params.page)   || 1);
       const limit  = Math.min(100, Number(params.limit) || 30);
       const status = params.status || '';
 
-      const jobKeys = [];
-      let cursor = 0;
-      do {
-        const [next, keys] = await redis.scan(cursor, { match: 'job:*', count: 200 });
-        cursor = Number(next);
-        jobKeys.push(...keys);
-      } while (cursor !== 0);
+      // Total via índice
+      const total = await redis.zcard(`jobs:${clientKey}`);
+      if (!total) return res.json({ ok: true, jobs: [], total: 0, page, limit });
 
-      const raws = await Promise.all(jobKeys.map(k => redis.get(k)));
-      let jobs = raws
+      if (status) {
+        // Com filtro de status: busca os últimos 500 e filtra em memória
+        // (evita scan global mas ainda é limitado — melhoria futura: índice por status)
+        const allIds = await redis.zrange(`jobs:${clientKey}`, 0, 499, { rev: true });
+        const raws   = await Promise.all(allIds.map(id => redis.get(`job:${id}`)));
+        let jobs = raws
+          .map((r, i) => {
+            const obj = typeof r === 'string' ? JSON.parse(r) : r;
+            if (!obj) return null;
+            if (!obj.jobId) obj.jobId = allIds[i];
+            return obj;
+          })
+          .filter(Boolean)
+          .filter(j => j.status === status);
+
+        const start = (page - 1) * limit;
+        return res.json({ ok: true, jobs: jobs.slice(start, start + limit), total: jobs.length, page, limit });
+      }
+
+      // Sem filtro: paginação direta pelo índice
+      const start  = (page - 1) * limit;
+      const jobIds = await redis.zrange(`jobs:${clientKey}`, start, start + limit - 1, { rev: true });
+      if (!jobIds?.length) return res.json({ ok: true, jobs: [], total, page, limit });
+
+      const raws = await Promise.all(jobIds.map(id => redis.get(`job:${id}`)));
+      const jobs = raws
         .map((r, i) => {
           const obj = typeof r === 'string' ? JSON.parse(r) : r;
-          if (!obj || obj.clientKey !== clientKey) return null;
-          if (!obj.jobId) obj.jobId = jobKeys[i].replace('job:', '');
+          if (!obj) return null;
+          if (!obj.jobId) obj.jobId = jobIds[i];
           return obj;
         })
         .filter(Boolean);
 
-      if (status) jobs = jobs.filter(j => j.status === status);
-      jobs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-      const total = jobs.length;
-      const start = (page - 1) * limit;
-      return res.json({ ok: true, jobs: jobs.slice(start, start + limit), total, page, limit });
+      return res.json({ ok: true, jobs, total, page, limit });
     }
 
     // LEADS — via sorted set leads:${clientKey}
