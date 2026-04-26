@@ -77,6 +77,16 @@ export default async function handler(req, res) {
 
   const { action, clientKey, password, ...params } = req.body || {};
 
+  // ─── LIST PLANS — público, sem autenticação ──────────────────────────────
+  if (action === 'listPlans') {
+    const ids = await redis.smembers('plans:index').catch(() => []);
+    if (!ids?.length) return res.json({ ok: true, plans: [] });
+    const raws = await Promise.all(ids.map(id => redis.get(`plan:${id}`)));
+    const plans = raws.map(r => typeof r === 'string' ? JSON.parse(r) : r).filter(Boolean);
+    plans.sort((a, b) => (a.price || 0) - (b.price || 0));
+    return res.json({ ok: true, plans });
+  }
+
   // ─── LOGIN — sem auth prévia, recebe email + senha ────────────────────────
   if (action === 'login') {
     const { email } = params;

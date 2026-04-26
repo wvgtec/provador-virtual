@@ -63,15 +63,18 @@ async function authenticate(clientKey, password) {
   return client;
 }
 
+const PLAN_NAMES = { starter:'Starter', pro:'Pro', growth:'Growth', scale:'Scale', enterprise:'Enterprise' };
+
 async function getPlanLimits(planId) {
   // Tenta buscar plano customizado do Redis
   const raw = await redis.get(`plan:${planId}`).catch(() => null);
   if (raw) {
     const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return { limit: p.tryons === 0 ? Infinity : (Number(p.tryons) || 100), price: Number(p.price) || 0, overage: Number(p.overage) || 0 };
+    return { name: p.name || planId, limit: p.tryons === 0 ? Infinity : (Number(p.tryons) || 100), price: Number(p.price) || 0, overage: Number(p.overage) || 0 };
   }
   // Fallback para planos hardcoded
-  return PLAN_LIMITS[planId] ?? PLAN_LIMITS.starter;
+  const fp = PLAN_LIMITS[planId] ?? PLAN_LIMITS.starter;
+  return { name: PLAN_NAMES[planId] || planId, ...fp };
 }
 
 async function calcBilling(client) {
@@ -80,7 +83,7 @@ async function calcBilling(client) {
   const excess  = Math.max(0, usage - plan.limit);
   const overageAmt = +(excess * plan.overage).toFixed(2);
   const total   = +(plan.price + overageAmt).toFixed(2);
-  return { planPrice: plan.price, limit: plan.limit, overage: plan.overage, usage, excess, overageAmt, total };
+  return { planName: plan.name, planPrice: plan.price, limit: plan.limit, overage: plan.overage, usage, excess, overageAmt, total };
 }
 
 // Gera data da próxima cobrança (5 de cada mês)
