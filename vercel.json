@@ -67,26 +67,25 @@
   ],
 
   "rewrites": [
-    {
-      "source": "/",
-      "has": [
-        { "type": "host", "value": "app.mirageai.com.br" }
-      ],
-      "destination": "/painel-cliente.html"
-    },
-    {
-      "source": "/admin",
-      "has": [
-        { "type": "host", "value": "app.mirageai.com.br" }
-      ],
-      "destination": "/painel-admin.html"
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        { "type": "host", "value": "api.mirageai.com.br" }
-      ],
-      "destination": "/api/:path*"
-    }
-  ]
-}
+  {
+    "source": "/admin",
+    "destination": "/painel-admin.html",
+    "has": [
+      { "type": "host", "value": "app.mirageai.com.br" }
+    ]
+  },
+  {
+    "source": "/",
+    "destination": "/painel-cliente.html",
+    "has": [
+      { "type": "host", "value": "app.mirageai.com.br" }
+    ]
+  },
+  {
+    "source": "/(.*)",
+    "destination": "/api/$1",
+    "has": [
+      { "type": "host", "value": "api.mirageai.com.br" }
+    ]
+  }
+]
