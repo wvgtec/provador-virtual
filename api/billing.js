@@ -3,7 +3,7 @@
 // Se STRIPE_SECRET_KEY não estiver definido, retorna dados mock / Redis only.
 
 import { Redis } from '@upstash/redis';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, scryptSync } from 'crypto';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL,
@@ -38,18 +38,33 @@ function safeCompare(a, b) {
   } catch { return false; }
 }
 
+function verifyPassword(input, stored) {
+  if (!stored || !input) return false;
+  // Formato scrypt: "salt:hash"
+  if (stored.includes(':') && stored.length > 60) {
+    try {
+      const [salt, hash] = stored.split(':');
+      const inputHash = scryptSync(String(input), salt, 64).toString('hex');
+      return timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(inputHash, 'hex'));
+    } catch { return false; }
+  }
+  // Legado: secret base64url
+  return safeCompare(input, stored);
+}
+
 function isValidClientKey(key) {
   return typeof key === 'string' && /^pvk_[a-f0-9]{32}$/.test(key);
 }
 
-async function authenticate(clientKey, secret) {
+async function authenticate(clientKey, password) {
   if (!clientKey || !isValidClientKey(clientKey)) return null;
-  if (!secret || typeof secret !== 'string' || secret.length < 10) return null;
+  if (!password || typeof password !== 'string') return null;
   const raw = await redis.get(`client:${clientKey}`);
   if (!raw) return null;
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (!client.active) return null;
-  if (!safeCompare(secret, client.secret || '')) return null;
+  const stored = client.passwordHash || client.secret || '';
+  if (!verifyPassword(password, stored)) return null;
   return client;
 }
 
@@ -73,9 +88,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { action, clientKey, secret, ...params } = req.body || {};
+  const { action, clientKey, password, ...params } = req.body || {};
 
-  const client = await authenticate(clientKey, secret);
+  const client = await authenticate(clientKey, password);
   if (!client) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
   const stripeEnabled = !!stripe;
