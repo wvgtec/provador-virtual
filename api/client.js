@@ -185,8 +185,15 @@ export default async function handler(req, res) {
       const limit = Math.min(50, Number(params.limit) || 20);
       const raw   = await redis.zrange(`products:${clientKey}`, 0, limit - 1, { rev: true, withScores: true });
       const products = [];
+      const urls = [];
       for (let i = 0; i < (raw?.length || 0); i += 2) {
+        urls.push(raw[i]);
         products.push({ url: raw[i], count: Number(raw[i + 1]) });
+      }
+      // Busca nomes dos produtos
+      if (urls.length) {
+        const names = await redis.hmget(`product_names:${clientKey}`, ...urls);
+        products.forEach((p, i) => { p.name = names[i] || p.url; });
       }
       return res.json({ ok: true, products });
     }

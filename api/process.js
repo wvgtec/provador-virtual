@@ -3,10 +3,12 @@
 // NUNCA deve ser chamado diretamente pelo browser — só pelo QStash.
 
 import { Redis } from '@upstash/redis';
-import { Receiver } from '@upstash/qstash';
+import { Receiver, Client as QStashClient } from '@upstash/qstash';
 
-const redis  = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
-const BUCKET = process.env.GCS_BUCKET || 'mirage-tryon';
+const redis   = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
+const BUCKET  = process.env.GCS_BUCKET || 'mirage-tryon';
+const qstash  = new QStashClient({ token: process.env.QSTASH_TOKEN });
+const APP_URL = process.env.APP_URL || 'https://provador-virtual-brown.vercel.app';
 
 // ─── Google Auth ──────────────────────────────────────────────────────────────
 
@@ -151,9 +153,9 @@ export default async function processHandler(req, res) {
   const raw = await redis.get(`job:${jobId}`);
   if (!raw) return res.status(404).json({ error: 'Job não encontrado ou expirado' });
   const job = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  const { personImageUrl, garmentImageUrl, category, projectId, clientKey, lead, productUrl } = job;
+  const { personImageUrl, garmentImageUrl, category, projectId, clientKey, lead, productUrl, productName } = job;
 
-  await redis.set(`job:${jobId}`, JSON.stringify({ status: 'processing', startedAt: Date.now() }), { ex: 3600 });
+  await redis.set(`job:${jobId}`, JSON.stringify({ status: 'processing', startedAt: Date.now() }), { ex: 300 });
 
   try {
     // Token único para Vertex AI + GCS
@@ -167,33 +169,49 @@ export default async function processHandler(req, res) {
     const outputPath = `outputs/${jobId}.png`;
     const resultUrl  = await uploadToGCS(accessToken, outputPath, Buffer.from(imageBase64, 'base64'), 'image/png');
 
-    // Atualiza status com URL do resultado
+    // Atualiza status com URL do resultado — expira em 5 min
     await redis.set(
       `job:${jobId}`,
       JSON.stringify({ status: 'done', resultImage: resultUrl, completedAt: Date.now() }),
-      { ex: 3600 }
+      { ex: 300 }
     );
 
+    // Agenda exclusão da imagem no GCS em 3 minutos (180 segundos)
+    await qstash.publishJSON({
+      url:   `${APP_URL}/api/cleanup`,
+      body:  { jobId, objectPath: outputPath },
+      delay: 180,
+    }).catch(e => console.warn('[process] QStash cleanup schedule falhou:', e.message));
+
     // ─── Registra lead e analytics ────────────────────────────────────────
+    const ts = Date.now();
+    const finalProductUrl  = productUrl  || garmentImageUrl;
+    const finalProductName = productName || finalProductUrl;
+
     if (clientKey && lead) {
-      const ts = Date.now();
-      const finalProductUrl = productUrl || garmentImageUrl;
       await Promise.all([
-        // Índice de leads por cliente (sorted set, score = timestamp)
         redis.zadd(`leads:${clientKey}`, { score: ts, member: jobId }),
-        // Dados completos do lead
         redis.set(`lead:${jobId}`, JSON.stringify({
           name:        lead.name,
           email:       lead.email,
           whatsapp:    lead.whatsapp,
           productUrl:  finalProductUrl,
+          productName: finalProductName,
           resultUrl,
           jobId,
           completedAt: ts,
           clientKey,
-        }), { ex: 86400 * 90 }), // 90 dias
-        // Contador de produto por URL (sorted set, score = count)
-        redis.zincrby(`products:${clientKey}`, 1, finalProductUrl),
+        }), { ex: 86400 * 90 }),
+      ]);
+    }
+
+    // Analytics de produto (independente de lead)
+    if (clientKey) {
+      const productKey = finalProductUrl;
+      await Promise.all([
+        redis.zincrby(`products:${clientKey}`, 1, productKey),
+        // Armazena nome do produto para exibição no painel
+        redis.hset(`product_names:${clientKey}`, { [productKey]: finalProductName }),
       ]);
     }
 

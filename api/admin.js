@@ -192,12 +192,57 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // ─── GESTÃO DE PLANOS (Produtos) ────────────────────────────────────────
+
+    // LIST PLANS
+    if (action === 'listPlans') {
+      const ids = await redis.smembers('plans:index');
+      if (!ids?.length) return res.json({ ok: true, plans: [] });
+      const raws = await Promise.all(ids.map(id => redis.get(`plan:${id}`)));
+      const plans = raws.map(r => typeof r === 'string' ? JSON.parse(r) : r).filter(Boolean);
+      plans.sort((a, b) => (a.price || 0) - (b.price || 0));
+      return res.json({ ok: true, plans });
+    }
+
+    // CREATE PLAN
+    if (action === 'createPlan') {
+      const { name, tryons, price, overage } = body;
+      if (!name) return res.status(400).json({ error: 'name é obrigatório.' });
+      const id = name.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 32) + '_' + Date.now().toString(36);
+      const plan = { id, name, tryons: Number(tryons) || 0, price: Number(price) || 0, overage: Number(overage) || 0, createdAt: Date.now() };
+      await redis.set(`plan:${id}`, JSON.stringify(plan));
+      await redis.sadd('plans:index', id);
+      return res.status(201).json({ ok: true, plan });
+    }
+
+    // UPDATE PLAN
+    if (action === 'updatePlan') {
+      const { id, name, tryons, price, overage } = body;
+      if (!id) return res.status(400).json({ error: 'id é obrigatório.' });
+      const raw = await redis.get(`plan:${id}`);
+      if (!raw) return res.status(404).json({ error: 'Plano não encontrado.' });
+      const plan = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (name    !== undefined) plan.name    = name;
+      if (tryons  !== undefined) plan.tryons  = Number(tryons);
+      if (price   !== undefined) plan.price   = Number(price);
+      if (overage !== undefined) plan.overage = Number(overage);
+      await redis.set(`plan:${id}`, JSON.stringify(plan));
+      return res.json({ ok: true, plan });
+    }
+
+    // DELETE PLAN
+    if (action === 'deletePlan') {
+      const { id } = body;
+      if (!id) return res.status(400).json({ error: 'id é obrigatório.' });
+      await redis.del(`plan:${id}`);
+      await redis.srem('plans:index', id);
+      return res.json({ ok: true });
+    }
+
     // CHANGE PLAN
     if (action === 'changePlan') {
       const { key, plan } = body;
       if (!key || !isValidClientKey(key)) return res.status(400).json({ error: 'key inválida.' });
-      const validPlans = ['starter', 'pro', 'growth', 'scale', 'enterprise'];
-      if (!validPlans.includes(plan)) return res.status(400).json({ error: 'Plano inválido.' });
       const raw = await redis.get(`client:${key}`);
       if (!raw) return res.status(404).json({ error: 'Cliente não encontrado' });
       const client = typeof raw === 'string' ? JSON.parse(raw) : raw;

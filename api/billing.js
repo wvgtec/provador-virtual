@@ -12,11 +12,11 @@ const redis = new Redis({
 });
 
 const PLAN_LIMITS = {
-  starter:    { limit: 100,      price: 9,   overage: 0.15 },
-  pro:        { limit: 500,      price: 29,  overage: 0.08 },
-  growth:     { limit: 1000,     price: 49,  overage: 0.04 },
-  scale:      { limit: 5000,     price: 149, overage: 0.02 },
-  enterprise: { limit: Infinity, price: 499, overage: 0    },
+  starter:    { limit: 100,      price: 49,   overage: 0.75 },
+  pro:        { limit: 500,      price: 149,  overage: 0.40 },
+  growth:     { limit: 1000,     price: 249,  overage: 0.20 },
+  scale:      { limit: 5000,     price: 749,  overage: 0.10 },
+  enterprise: { limit: Infinity, price: 2499, overage: 0    },
 };
 
 // Stripe — ativo somente se a chave estiver configurada
@@ -63,8 +63,19 @@ async function authenticate(clientKey, password) {
   return client;
 }
 
-function calcBilling(client) {
-  const plan    = PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter;
+async function getPlanLimits(planId) {
+  // Tenta buscar plano customizado do Redis
+  const raw = await redis.get(`plan:${planId}`).catch(() => null);
+  if (raw) {
+    const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return { limit: p.tryons === 0 ? Infinity : (Number(p.tryons) || 100), price: Number(p.price) || 0, overage: Number(p.overage) || 0 };
+  }
+  // Fallback para planos hardcoded
+  return PLAN_LIMITS[planId] ?? PLAN_LIMITS.starter;
+}
+
+async function calcBilling(client) {
+  const plan    = await getPlanLimits(client.plan || 'starter');
   const usage   = Number(client.usageCount) || 0;
   const excess  = Math.max(0, usage - plan.limit);
   const overageAmt = +(excess * plan.overage).toFixed(2);
@@ -93,7 +104,7 @@ export default async function handler(req, res) {
   try {
     // SUMMARY — resumo de billing do mês atual
     if (action === 'summary') {
-      const billing = calcBilling(client);
+      const billing = await calcBilling(client);
       const nextDate = nextBillingDate();
 
       let paymentMethod = null;
@@ -155,7 +166,7 @@ export default async function handler(req, res) {
       }
 
       // Sem Stripe: gera histórico mock baseado em Redis
-      const billing = calcBilling(client);
+      const billing = await calcBilling(client);
       const mock = [];
       const now = new Date();
       for (let i = 0; i < 3; i++) {
@@ -219,21 +230,4 @@ export default async function handler(req, res) {
         }
       }
 
-      // Sem fatura real: cria PaymentIntent avulso
-      const billing = calcBilling(client);
-      const pi = await stripe.paymentIntents.create({
-        amount: Math.round(billing.total * 100),
-        currency: 'usd',
-        customer: customerId,
-        metadata: { clientKey },
-      });
-      return res.json({ ok: true, clientSecret: pi.client_secret, publishableKey: pubKey, amount: billing.total });
-    }
-
-    return res.status(400).json({ error: 'Ação inválida.' });
-
-  } catch (err) {
-    console.error('[billing] Erro:', err);
-    return res.status(500).json({ error: 'Erro interno de billing.' });
-  }
-}
+      // Sem fatura real: cria Paymen

@@ -59,6 +59,7 @@ export default async function handler(req, res) {
     clientKey,
     lead,            // { name, email, whatsapp }
     productUrl,      // URL da página do produto (analytics)
+    productName,     // Título da página do produto
   } = req.body || {};
 
   // ─── clientKey obrigatório ────────────────────────────────────────────────
@@ -148,6 +149,7 @@ export default async function handler(req, res) {
       clientKey,
       lead:            hasLead ? { name: leadName, email: leadEmail, whatsapp: leadWhatsapp } : null,
       productUrl:      finalProductUrl,
+      productName:     productName ? String(productName).slice(0, 200) : '',
     }),
     { ex: 3600 }
   );
