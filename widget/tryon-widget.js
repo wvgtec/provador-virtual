@@ -397,7 +397,7 @@
                 </svg>
                 Enviar foto
               </button>
-              <p class="nksw-upload-hint">JPG · PNG · ATÉ 12MB</p>
+              <p class="nksw-upload-hint">JPG · PNG · ATÉ 2MB</p>
             </div>
           </div>
 
