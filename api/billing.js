@@ -180,60 +180,54 @@ export default async function handler(req, res) {
       return res.json({ ok: true, invoices: mock, isMock: true });
     }
 
-    // CHECKOUT — cria sessão Stripe para pagar fatura ou fazer upgrade
-    if (action === 'checkout') {
-      if (!stripe) {
-        return res.status(503).json({ error: 'Stripe não configurado. Entre em contato com o suporte.' });
-      }
-      const { invoiceId, returnUrl } = params;
-      const origin = returnUrl || process.env.CLIENT_PANEL_URL || 'https://wvgtec.github.io/provador-virtual-landing/painel-cliente.html';
+    // Helper: garante customer Stripe
+    async function ensureCustomer() {
+      if (client.stripeCustomerId) return client.stripeCustomerId;
+      const customer = await stripe.customers.create({
+        email: client.email, name: client.name, metadata: { clientKey },
+      });
+      client.stripeCustomerId = customer.id;
+      await redis.set(`client:${clientKey}`, JSON.stringify(client));
+      return customer.id;
+    }
 
-      // Se for pagar uma fatura específica
+    const pubKey = process.env.STRIPE_PUBLISHABLE_KEY || '';
+
+    // SETUP_INTENT — salvar/trocar cartão inline
+    if (action === 'setup_intent') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const customerId = await ensureCustomer();
+      const si = await stripe.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+      });
+      return res.json({ ok: true, clientSecret: si.client_secret, publishableKey: pubKey });
+    }
+
+    // PAY_INVOICE — pagar fatura inline
+    if (action === 'pay_invoice') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const { invoiceId } = params;
+      const customerId = await ensureCustomer();
+
+      // Fatura real do Stripe
       if (invoiceId && !invoiceId.startsWith('mock_')) {
         const inv = await stripe.invoices.retrieve(invoiceId);
-        if (inv.hosted_invoice_url) {
-          return res.json({ ok: true, url: inv.hosted_invoice_url });
+        if (inv.payment_intent) {
+          const pi = await stripe.paymentIntents.retrieve(inv.payment_intent);
+          return res.json({ ok: true, clientSecret: pi.client_secret, publishableKey: pubKey, amount: inv.amount_due / 100 });
         }
       }
 
-      // Checkout genérico (upgrade / renovação)
-      let customerId = client.stripeCustomerId;
-      if (!customerId) {
-        const customer = await stripe.customers.create({ email: client.email, name: client.name, metadata: { clientKey } });
-        customerId = customer.id;
-        await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, stripeCustomerId: customerId }));
-      }
-
-      const session = await stripe.checkout.sessions.create({
+      // Sem fatura real: cria PaymentIntent avulso
+      const billing = calcBilling(client);
+      const pi = await stripe.paymentIntents.create({
+        amount: Math.round(billing.total * 100),
+        currency: 'usd',
         customer: customerId,
-        payment_method_types: ['card'],
-        mode: 'payment',
-        line_items: [{
-          price_data: {
-            currency: 'usd',
-            product_data: { name: `Mirage - Plano ${client.plan || 'starter'}` },
-            unit_amount: Math.round(calcBilling(client).total * 100),
-          },
-          quantity: 1,
-        }],
-        success_url: `${origin}?payment=success`,
-        cancel_url:  `${origin}?payment=cancel`,
+        metadata: { clientKey },
       });
-
-      return res.json({ ok: true, url: session.url });
-    }
-
-    // PORTAL — cria sessão do Customer Portal do Stripe
-    if (action === 'portal') {
-      if (!stripe || !client.stripeCustomerId) {
-        return res.status(503).json({ error: 'Portal Stripe não disponível.' });
-      }
-      const returnUrl = params.returnUrl || process.env.CLIENT_PANEL_URL || 'https://wvgtec.github.io/provador-virtual-landing/painel-cliente.html';
-      const session = await stripe.billingPortal.sessions.create({
-        customer: client.stripeCustomerId,
-        return_url: returnUrl,
-      });
-      return res.json({ ok: true, url: session.url });
+      return res.json({ ok: true, clientSecret: pi.client_secret, publishableKey: pubKey, amount: billing.total });
     }
 
     return res.status(400).json({ error: 'Ação inválida.' });
