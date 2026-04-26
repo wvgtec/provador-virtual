@@ -4,6 +4,7 @@
 
 import { Redis } from '@upstash/redis';
 import { timingSafeEqual, scryptSync } from 'crypto';
+import Stripe from 'stripe';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL,
@@ -18,16 +19,10 @@ const PLAN_LIMITS = {
   enterprise: { limit: Infinity, price: 499, overage: 0    },
 };
 
-// Stripe é opcional — só carrega se a chave existir
-let stripe = null;
-if (process.env.STRIPE_SECRET_KEY) {
-  try {
-    const { default: Stripe } = await import('stripe');
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' });
-  } catch (e) {
-    console.warn('[billing] Stripe não disponível:', e.message);
-  }
-}
+// Stripe — ativo somente se a chave estiver configurada
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+  : null;
 
 function safeCompare(a, b) {
   try {
