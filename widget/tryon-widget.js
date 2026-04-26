@@ -133,7 +133,7 @@
     .nksw-render-box {
       position: relative; border-radius: 14px; overflow: hidden;
       background: #0a0a0a; border: 1.5px solid #1a1a1a;
-      width: 100%; height: 320px;
+      width: 100%; aspect-ratio: 3 / 4;
     }
 
     .nksw-render-person {
@@ -290,7 +290,7 @@
     @media (max-width: 480px) {
       .nksw-modal { max-height: 100dvh; border-radius: 20px 20px 0 0; }
       .nksw-overlay { align-items: flex-end; padding: 0; }
-      .nksw-render-box { height: 280px; }
+      .nksw-render-box { aspect-ratio: 3 / 4; }
     }
   `;
 
