@@ -282,6 +282,9 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
             <div class="field"><label>Texto do botão</label><input id="cfgBtnText" value="Experimentar" oninput="buildSnippet()"></div>
             <div class="field"><label>Cor de fundo</label><input id="cfgBtnBg" type="color" value="#000000" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
             <div class="field"><label>Cor do texto</label><input id="cfgBtnColor" type="color" value="#ffffff" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
+            <div class="field"><label>Largura do botão</label><input id="cfgBtnWidth" value="100%" placeholder="ex: 100%, 240px" oninput="buildSnippet()"></div>
+            <div class="field"><label>Altura do botão</label><input id="cfgBtnHeight" value="52px" placeholder="ex: 52px, 44px" oninput="buildSnippet()"></div>
+            <div class="field"><label>Arredondamento</label><input id="cfgBtnRadius" value="12px" placeholder="ex: 12px, 6px, 0" oninput="buildSnippet()"></div>
           </div>
         </div>
         <div class="card">
@@ -680,9 +683,12 @@ function loadIntegracao() {
 }
 
 function buildSnippet() {
-  const btnText   = document.getElementById('cfgBtnText')?.value  || 'Experimentar';
-  const btnBg     = document.getElementById('cfgBtnBg')?.value    || '#000000';
-  const btnColor  = document.getElementById('cfgBtnColor')?.value || '#ffffff';
+  const btnText   = document.getElementById('cfgBtnText')?.value   || 'Experimentar';
+  const btnBg     = document.getElementById('cfgBtnBg')?.value     || '#000000';
+  const btnColor  = document.getElementById('cfgBtnColor')?.value  || '#ffffff';
+  const btnWidth  = document.getElementById('cfgBtnWidth')?.value  || '100%';
+  const btnHeight = document.getElementById('cfgBtnHeight')?.value || '52px';
+  const btnRadius = document.getElementById('cfgBtnRadius')?.value || '12px';
   const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/'/g, "\\'");
   const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
   const base      = window.location.origin;
@@ -690,7 +696,10 @@ function buildSnippet() {
   const optional  = `  /* Personalização opcional:
   window.VTON_BTN_TEXT   = '${btnText}';
   window.VTON_BTN_BG     = '${btnBg}';
-  window.VTON_BTN_COLOR  = '${btnColor}'; */`;
+  window.VTON_BTN_COLOR  = '${btnColor}';
+  window.VTON_BTN_WIDTH  = '${btnWidth}';
+  window.VTON_BTN_HEIGHT = '${btnHeight}';
+  window.VTON_BTN_RADIUS = '${btnRadius}'; */`;
 
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
