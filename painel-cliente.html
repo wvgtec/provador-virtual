@@ -1487,9 +1487,6 @@ async function openOverageModal() {
 function overageSelectTab(tab) {
   const isExtra = tab === 'extra';
   document.getElementById('overageTabExtraBody').style.display   = isExtra ? 'block' : 'none';
-function overageSelectTab(tab) {
-  const isExtra = tab === 'extra';
-  document.getElementById('overageTabExtraBody').style.display   = isExtra ? 'block' : 'none';
   document.getElementById('overageTabUpgradeBody').style.display = isExtra ? 'none' : 'block';
   const btnExtra   = document.getElementById('overageTabExtra');
   const btnUpgrade = document.getElementById('overageTabUpgrade');
