@@ -11,10 +11,6 @@ const receiver = new Receiver({
   nextSigningKey:    process.env.QSTASH_NEXT_SIGNING_KEY,
 });
 
-function pemToBuffer(pem) {
-  return Buffer.from(pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, ''), 'base64');
-}
-
 async function getGoogleAccessToken() {
   const sa  = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   const now = Math.floor(Date.now() / 1000);
@@ -26,7 +22,8 @@ async function getGoogleAccessToken() {
   const { createSign } = await import('crypto');
   const sign = createSign('RSA-SHA256');
   sign.update(`${header}.${payload}`);
-  const signature = sign.sign(pemToBuffer(sa.private_key)).toString('base64url');
+  const privateKey = sa.private_key.replace(/\\n/g, '\n');
+  const signature = sign.sign(privateKey).toString('base64url');
   const jwt = `${header}.${payload}.${signature}`;
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
