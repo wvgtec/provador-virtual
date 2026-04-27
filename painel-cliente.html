@@ -691,8 +691,8 @@ function buildSnippet() {
   const btnRadius = document.getElementById('cfgBtnRadius')?.value || '12px';
   const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/'/g, "\\'");
   const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
-  const base      = window.location.origin;
-  const wUrl      = `${base}/widget/tryon-widget.js?v=6.0`;
+  const base      = 'https://api.mirageai.com.br';
+  const wUrl      = `https://app.mirageai.com.br/widget/tryon-widget.js?v=6.0`;
   const optional  = `  window.VTON_BTN_TEXT   = '${btnText}';
   window.VTON_BTN_BG     = '${btnBg}';
   window.VTON_BTN_COLOR  = '${btnColor}';
