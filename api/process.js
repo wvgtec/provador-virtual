@@ -166,6 +166,20 @@ export default async function processHandler(req, res) {
     return res.status(200).json({ jobId, status: 'done', idempotent: true });
   }
 
+  // ─── Circuit breaker — Vertex AI pausado pelo admin ──────────────────────
+  const vertexPaused = await redis.get('vertex:paused');
+  if (vertexPaused) {
+    await redis.set(`job:${jobId}`, JSON.stringify({
+      ...job,
+      status:       'delayed',
+      delayedAt:    Date.now(),
+      delayReason:  'vertex_paused',
+    }), { ex: 3600 });
+    log('process_delayed_vertex_paused', { jobId });
+    // Retorna 200 para o QStash não fazer retry automático
+    return res.status(200).json({ jobId, status: 'delayed', reason: 'vertex_paused' });
+  }
+
   const { personImageUrl, garmentImageUrl, category, projectId, clientKey, lead, productUrl, productName, hash } = job;
   const startedAt = Date.now();
 

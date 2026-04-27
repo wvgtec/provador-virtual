@@ -569,6 +569,24 @@ export default async function handler(req, res) {
       return res.json({ ok: true, client: safeClient });
     }
 
+    // ─── Circuit breaker — Vertex AI ────────────────────────────────────────
+    if (action === 'vertexStatus') {
+      const paused = await redis.get('vertex:paused');
+      return res.json({ paused: !!paused });
+    }
+
+    if (action === 'pauseVertex') {
+      await redis.set('vertex:paused', '1');
+      console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'vertex_paused' }));
+      return res.json({ ok: true, paused: true });
+    }
+
+    if (action === 'resumeVertex') {
+      await redis.del('vertex:paused');
+      console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'vertex_resumed' }));
+      return res.json({ ok: true, paused: false });
+    }
+
     return res.status(400).json({ error: 'Ação inválida.' });
 
   } catch (err) {

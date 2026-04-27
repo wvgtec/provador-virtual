@@ -489,6 +489,23 @@ tbody tr:hover td { background: #fafbff; }
             </div>
           </div>
         </div>
+
+        <div class="card" style="max-width:640px;margin-top:16px">
+          <div class="card-header"><h3>Circuit Breaker — Vertex AI</h3></div>
+          <div style="padding:20px">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+              <div id="vertex-status-badge" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600">
+                <span id="vertex-status-dot" style="width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+                <span id="vertex-status-text">Carregando...</span>
+              </div>
+              <button id="vertex-toggle-btn" class="btn btn-sm" onclick="toggleVertex()" style="min-width:100px">...</button>
+            </div>
+            <p style="font-size:13px;color:var(--muted);margin:0">
+              Quando pausado, novos jobs entram em status <strong>delayed</strong> sem consumir cota do cliente e sem chamar o Vertex AI.
+              Use em caso de falha ou manutenção do Google Cloud.
+            </p>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -1313,6 +1330,56 @@ function renderSettings() {
       <div class="plan-detail">Limite: ${p.limit === Infinity ? 'Ilimitado' : p.limit.toLocaleString()} tryons • Excedente: R$ ${p.overage}/tryon</div>
       <div class="plan-price">R$ ${p.price}/mês</div>
     </div>`).join('');
+  loadVertexStatus();
+}
+
+// ─── Circuit Breaker — Vertex AI ────────────────────────────────────────────
+async function loadVertexStatus() {
+  const badge  = document.getElementById('vertex-status-badge');
+  const dot    = document.getElementById('vertex-status-dot');
+  const text   = document.getElementById('vertex-status-text');
+  const btn    = document.getElementById('vertex-toggle-btn');
+  if (!badge) return;
+
+  try {
+    const r = await apiFetch('vertexStatus');
+    const paused = r.paused;
+
+    if (paused) {
+      badge.style.background = '#FEF2F2';
+      badge.style.color      = '#DC2626';
+      dot.style.background   = '#DC2626';
+      text.textContent       = 'Pausado';
+      btn.textContent        = 'Retomar processamento';
+      btn.className          = 'btn btn-sm btn-primary';
+    } else {
+      badge.style.background = '#F0FDF4';
+      badge.style.color      = '#16A34A';
+      dot.style.background   = '#16A34A';
+      text.textContent       = 'Ativo';
+      btn.textContent        = 'Pausar Vertex AI';
+      btn.className          = 'btn btn-sm btn-danger';
+    }
+  } catch {
+    text.textContent = 'Erro ao carregar';
+  }
+}
+
+async function toggleVertex() {
+  const text   = document.getElementById('vertex-status-text');
+  const paused = text.textContent === 'Ativo';
+  const action = paused ? 'pauseVertex' : 'resumeVertex';
+  const btn    = document.getElementById('vertex-toggle-btn');
+  btn.disabled = true;
+  btn.textContent = 'Aguarde...';
+  try {
+    await apiFetch(action);
+    await loadVertexStatus();
+  } catch {
+    alert('Erro ao alterar status do Vertex AI.');
+    btn.disabled = false;
+    await loadVertexStatus();
+  }
 }
 
 // ─── Criar cliente ─────────────────────────────────────────────────────────────
