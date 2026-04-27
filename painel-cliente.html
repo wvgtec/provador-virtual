@@ -787,6 +787,13 @@ function copySnippet() {
 
 function renderBilling() {
   const b=st.billing; if (!b) { loadBillingData().then(renderBilling); return; }
+
+  // Remove banner se a conta está ativa (pagamento processado)
+  if (b.subscriptionStatus === 'active' || st.client?.active) {
+    const banner = document.getElementById('suspended-banner');
+    if (banner) { banner.remove(); document.getElementById('app').style.paddingTop = ''; }
+    st.suspended = false;
+  }
   const planName = b.planName || b.plan || 'Plano';
   const planPrice = b.planPrice || 0;
   const planColor = '#635BFF';
@@ -947,6 +954,7 @@ async function confirmStripePayment() {
       closeModal('paymentModal');
       await loadBillingData();
       renderBilling();
+      await refreshAccountStatus();
       return;
     }
 
@@ -972,6 +980,7 @@ async function confirmStripePayment() {
       closeModal('paymentModal');
       await loadBillingData();
       renderBilling();
+      await refreshAccountStatus();
     }
   } catch(e) {
     errEl.textContent = 'Erro inesperado. Tente novamente.';
@@ -996,6 +1005,32 @@ async function removeCard() {
 
 function closePaymentModal(e) {
   if (e.target === document.getElementById('paymentModal')) closeModal('paymentModal');
+}
+
+// Recarrega o estado da conta após pagamento e remove o banner se estiver ativa
+async function refreshAccountStatus() {
+  try {
+    // Aguarda 1.5s para o webhook processar o pagamento
+    await new Promise(r => setTimeout(r, 1500));
+
+    const data = await api('client', 'me', {});
+    if (!data.ok) return;
+
+    st.client = data.client;
+    const isActive = !!data.client.active;
+
+    if (isActive) {
+      st.suspended = false;
+      // Remove banner de suspensão
+      const banner = document.getElementById('suspended-banner');
+      if (banner) {
+        banner.remove();
+        document.getElementById('app').style.paddingTop = '';
+      }
+      // Libera navegação completa
+      document.querySelectorAll('.nav-item').forEach(n => n.style.pointerEvents = '');
+    }
+  } catch (_) {}
 }
 
 // ─── Modal helpers ────────────────────────────────────────────────────────────
