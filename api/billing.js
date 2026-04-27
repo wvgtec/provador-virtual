@@ -132,10 +132,19 @@ export default async function handler(req, res) {
         }
       }
 
+      // Redis é a fonte da verdade — se o admin suspendeu, prevalece sobre o Stripe
+      if (!client.active) {
+        subscriptionStatus = client.suspendedReason === 'quota_exceeded'
+          ? 'quota_exceeded'
+          : 'suspended';
+      }
+
       return res.json({
         ok: true,
         stripeEnabled,
-        plan: client.plan || 'starter',
+        plan:       client.plan || 'starter',
+        active:     !!client.active,
+        suspendedReason: client.suspendedReason || null,
         ...billing,
         nextDate,
         paymentMethod,

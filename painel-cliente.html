@@ -633,6 +633,23 @@ async function startApp() {
   } else {
     loadDashboard();
   }
+
+  // Polling a cada 60s — espelha alterações do admin (suspend/reativar) em tempo real
+  setInterval(async () => {
+    try {
+      const r = await api('client', 'me', {});
+      if (!r.ok) return;
+      const wasActive = !st.suspended;
+      const isActive  = !!r.client.active;
+      if (wasActive === isActive) return; // sem mudança
+      st.client    = r.client;
+      st.suspended = !isActive;
+      // Recarrega billing para refletir novo status
+      st.billing = null;
+      await loadBillingData();
+      renderBilling();
+    } catch (_) {}
+  }, 60000);
 }
 
 function showSuspendedBanner() {
@@ -884,11 +901,14 @@ function copySnippet() {
 function renderBilling() {
   const b=st.billing; if (!b) { loadBillingData().then(renderBilling); return; }
 
-  // Remove banner se a conta está ativa (pagamento processado)
-  if (b.subscriptionStatus === 'active' || st.client?.active) {
+  // Sincroniza flag de suspensão com o que veio da API (fonte da verdade = Redis via billing)
+  if (b.active === false) {
+    st.suspended = true;
+    if (!document.getElementById('suspended-banner')) showSuspendedBanner();
+  } else if (b.active === true) {
+    st.suspended = false;
     const banner = document.getElementById('suspended-banner');
     if (banner) { banner.remove(); document.getElementById('app').style.paddingTop = ''; }
-    st.suspended = false;
   }
   const planName = b.planName || b.plan || 'Plano';
   const planPrice = b.planPrice || 0;
@@ -905,8 +925,16 @@ function renderBilling() {
   document.getElementById('billingLimit').textContent = b.limit===Infinity?'Ilimitado':b.limit.toLocaleString('pt-BR');
   document.getElementById('billingPrice').textContent = `R$ ${planPrice}/mês`;
   document.getElementById('billingOverageRate').textContent = b.overage>0?`R$ ${b.overage} por geração`:'Sem cobrança extra';
-  const smap={active:['badge-success','Ativo'],past_due:['badge-error','Atrasado'],canceled:['badge-error','Cancelado'],trialing:['badge-warning','Trial']};
-  const [sc,sl]=smap[b.subscriptionStatus]||['badge-success','Ativo'];
+  const smap={
+    active:         ['badge-success','Ativo'],
+    trialing:       ['badge-warning','Trial'],
+    past_due:       ['badge-error','Atrasado'],
+    canceled:       ['badge-error','Cancelado'],
+    unpaid:         ['badge-error','Inadimplente'],
+    suspended:      ['badge-error','Suspenso'],
+    quota_exceeded: ['badge-error','Limite atingido'],
+  };
+  const [sc,sl]=smap[b.subscriptionStatus]||['badge-error','Suspenso'];
   document.getElementById('billingSubStatus').className='badge '+sc;
   document.getElementById('billingSubStatus').textContent=sl;
   document.getElementById('billingTotal').textContent=`R$ ${b.total}`;
