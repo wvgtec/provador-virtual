@@ -410,39 +410,39 @@
         <div class="panel">
           <h3>Catálogo · 6 peças</h3>
           <div class="prod-grid" id="garment-grid">
-            <div class="prod active" data-url="bikini1.webp" data-name="Biquíni 1" onclick="selectGarment(this)">
-              <img src="bikini1.webp" alt="Biquíni 1">
+            <div class="prod active" data-url="roupa1.webp" data-name="Roupa 1" onclick="selectGarment(this)">
+              <img src="roupa1.webp" alt="Roupa 1">
               <span class="prod-label">Peça 1</span>
               <span class="check-badge">✓</span>
             </div>
-            <div class="prod" data-url="bikini2.webp" data-name="Biquíni 2" onclick="selectGarment(this)">
-              <img src="bikini2.webp" alt="Biquíni 2">
+            <div class="prod" data-url="roupa2.webp" data-name="Roupa 2" onclick="selectGarment(this)">
+              <img src="roupa2.webp" alt="Roupa 2">
               <span class="prod-label">Peça 2</span>
               <span class="check-badge">✓</span>
             </div>
-            <div class="prod" data-url="bikini3.webp" data-name="Biquíni 3" onclick="selectGarment(this)">
-              <img src="bikini3.webp" alt="Biquíni 3">
+            <div class="prod" data-url="roupa3.webp" data-name="Roupa 3" onclick="selectGarment(this)">
+              <img src="roupa3.webp" alt="Roupa 3">
               <span class="prod-label">Peça 3</span>
               <span class="check-badge">✓</span>
             </div>
-            <div class="prod" data-url="bikini4.webp" data-name="Biquíni 4" onclick="selectGarment(this)">
-              <img src="bikini4.webp" alt="Biquíni 4">
+            <div class="prod" data-url="roupa4.jpg" data-name="Roupa 4" onclick="selectGarment(this)">
+              <img src="roupa4.jpg" alt="Roupa 4">
               <span class="prod-label">Peça 4</span>
               <span class="check-badge">✓</span>
             </div>
-            <div class="prod" data-url="bikini5.webp" data-name="Biquíni 5" onclick="selectGarment(this)">
-              <img src="bikini5.webp" alt="Biquíni 5">
+            <div class="prod" data-url="roupa5.webp" data-name="Roupa 5" onclick="selectGarment(this)">
+              <img src="roupa5.webp" alt="Roupa 5">
               <span class="prod-label">Peça 5</span>
               <span class="check-badge">✓</span>
             </div>
-            <div class="prod" data-url="bikini6.webp" data-name="Biquíni 6" onclick="selectGarment(this)">
-              <img src="bikini6.webp" alt="Biquíni 6">
+            <div class="prod" data-url="roupa6.webp" data-name="Roupa 6" onclick="selectGarment(this)">
+              <img src="roupa6.webp" alt="Roupa 6">
               <span class="prod-label">Peça 6</span>
               <span class="check-badge">✓</span>
             </div>
           </div>
           <div style="margin-top:14px;padding-top:14px;border-top:1px dashed rgba(10,10,10,0.12);display:flex;justify-content:space-between;align-items:baseline">
-            <div style="font-weight:600;font-size:14px;letter-spacing:-0.02em" id="selected-name">Biquíni 1</div>
+            <div style="font-weight:600;font-size:14px;letter-spacing:-0.02em" id="selected-name">Roupa 1</div>
             <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">selecionada</div>
           </div>
         </div>
@@ -482,7 +482,7 @@
                 <div class="hud-chip">v4.2</div>
               </div>
               <div class="result-meta-wrap">
-                <span id="garment-label">BIQUÍNI 1</span>
+                <span id="garment-label">ROUPA 1</span>
                 <span id="fit-score-tag" style="display:none">FIT SCORE · –</span>
               </div>
             </div>
@@ -812,7 +812,7 @@
 <script>
   const API_URL = 'https://provador-virtual-brown.vercel.app';
   const CLIENT_KEY = 'pvk_609c700a03c793cc63aef696046c5cc6';
-  let selectedGarmentUrl = 'bikini1.webp';
+  let selectedGarmentUrl = 'roupa1.webp';
   let personB64 = null;
 
   function dataURItoBlob(dataURI) {

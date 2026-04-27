@@ -92,20 +92,23 @@
     /* Garment Upload Panel */
     .garment-drop {
       border: 2px dashed var(--ink); border-radius: 14px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 10px; padding: 24px 16px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+      gap: 0; padding: 20px 16px; text-align: center;
       cursor: pointer; transition: all .2s; background: var(--paper-2);
-      aspect-ratio: 3/4; position: relative;
+      aspect-ratio: 3/4; position: relative; overflow: hidden;
     }
     .garment-drop:hover, .garment-drop.drag { background: var(--yellow-soft); border-color: var(--ink); }
-    .garment-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .garment-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 2; }
     .garment-drop .gd-icon {
-      width: 48px; height: 48px; border-radius: 50%; background: var(--yellow);
+      width: 64px; height: 64px; border-radius: 50%; background: var(--yellow);
       border: 1.5px solid var(--ink); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
-    .garment-drop .gd-title { font-weight: 700; font-size: 14px; }
-    .garment-drop .gd-hint { font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .garment-drop .gd-btn { background: var(--ink); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; pointer-events: none; }
+    .garment-drop .gd-icon svg { width: 30px; height: 30px; }
+    .garment-drop .gd-title { font-weight: 700; font-size: 16px; margin: 0; }
+    .garment-drop .gd-sub { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 0; max-width: 180px; }
+    .garment-drop .gd-hint { font-family: "JetBrains Mono", monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .garment-drop .gd-btn { background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; pointer-events: none; flex-shrink: 0; }
 
     /* Garment preview */
     .garment-preview { display: none; flex-direction: column; gap: 10px; }
@@ -280,23 +283,22 @@
           <div class="garment-drop" id="garment-drop"
             ondragover="event.preventDefault();this.classList.add('drag')"
             ondragleave="this.classList.remove('drag')"
-            ondrop="handleGarmentDrop(event)"
-            onclick="document.getElementById('garment-file').click()">
-            <input type="file" id="garment-file" accept="image/*" onchange="onGarmentUpload(event)" style="display:none">
+            ondrop="handleGarmentDrop(event)">
+            <input type="file" id="garment-file" accept="image/*" onchange="onGarmentUpload(event)">
             <div class="gd-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <circle cx="8.5" cy="8.5" r="1.5"/>
                 <polyline points="21 15 16 10 5 21"/>
               </svg>
             </div>
             <p class="gd-title">Foto da peça</p>
-            <p style="font-size:13px;color:var(--muted);line-height:1.4">Envie a foto do produto que deseja experimentar</p>
+            <p class="gd-sub">Envie a foto do produto que deseja experimentar</p>
             <span class="gd-btn">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Enviar foto
             </span>
-            <span class="gd-hint">JPG · PNG · até 12MB</span>
+            <span class="gd-hint">JPG · PNG · até 2MB</span>
           </div>
 
           <!-- Estado: com imagem -->
@@ -318,19 +320,19 @@
             </div>
             <h4>Sua prova começa aqui</h4>
             <p>Envie uma foto sua de corpo inteiro para experimentar a peça selecionada.</p>
-            <div class="drop" id="drop-zone"
+            <div class="drop" id="drop-zone" style="position:relative;overflow:hidden;"
               ondragover="event.preventDefault();this.classList.add('drag')"
               ondragleave="this.classList.remove('drag')"
-              ondrop="handlePersonDrop(event)"
-              onclick="document.getElementById('person-file').click()">
+              ondrop="handlePersonDrop(event)">
+              <input type="file" id="person-file" accept="image/*" onchange="onPersonUpload(event)"
+                     style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v12M6 10l6-6 6 6M4 18h16"/></svg>
               <span class="drop-cta">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v12M6 10l6-6 6 6M4 18h16"/></svg>
                 Enviar minha foto
               </span>
-              <span class="hint">JPG · PNG · até 12MB</span>
+              <span class="hint">JPG · PNG · até 2MB</span>
             </div>
-            <input type="file" id="person-file" accept="image/*" onchange="onPersonUpload(event)" style="display:none">
           </div>
 
           <div class="result-wrap" id="result-wrap">
@@ -491,7 +493,7 @@
     return new Blob([arr], { type: mime });
   }
 
-  function compressImage(file, maxPx = 1200) {
+  function compressImage(file, maxPx = 1024) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = ev => {
@@ -601,6 +603,8 @@
     document.getElementById('result-cta').style.display = 'none';
     document.getElementById('save-btn').style.display = 'none';
     document.getElementById('fit-score-tag').style.display = 'none';
+    // Garante que scan está parado ao trocar foto
+    document.getElementById('scan-line').classList.remove('active');
     setStep(0); setMetrics(0, 0, 0);
   }
 
@@ -676,14 +680,23 @@
 
     btn.disabled = true; btn.classList.remove('ready');
     errorEl.style.display = 'none';
+
+    // Reseta estado visual para nova geração
     document.getElementById('hud-status').textContent = 'ANALYZING';
     document.getElementById('hud-chip').className = 'hud-chip dark';
-    document.getElementById('scan-line').classList.add('active');
     document.getElementById('person-preview').style.display = 'block';
     document.getElementById('result-img').style.display = 'none';
     document.getElementById('result-cta').style.display = 'none';
     document.getElementById('save-btn').style.display = 'none';
     document.getElementById('fit-score-tag').style.display = 'none';
+    setMetrics(0, 0, 0);
+
+    // Força restart da animação de scanline
+    const scanEl = document.getElementById('scan-line');
+    scanEl.classList.remove('active');
+    void scanEl.offsetWidth; // reflow para reiniciar animação CSS
+    scanEl.classList.add('active');
+
     setStep(1);
 
     try {
