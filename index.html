@@ -647,12 +647,12 @@
               <input type="text" id="lf-name" placeholder="Como devemos te chamar?" required>
             </div>
             <div class="field">
-              <label>02 · E-mail de trabalho</label>
-              <input type="email" id="lf-email" placeholder="voce@sualoja.com" required>
+              <label>02 · Telefone</label>
+              <input type="tel" id="lf-phone" placeholder="(11) 9 0000-0000" required>
             </div>
             <div class="field">
-              <label>03 · URL da loja (opcional)</label>
-              <input type="text" id="lf-shop" placeholder="sualoja.com.br">
+              <label>03 · URL da loja</label>
+              <input type="text" id="lf-shop" placeholder="sualoja.com.br" required>
             </div>
             <div class="field">
               <label>04 · Volume mensal</label>
@@ -665,7 +665,6 @@
               </select>
             </div>
             <button type="submit" class="lf-submit">Quero minha demo →</button>
-            <p class="lf-mini">Resposta em até 1 dia útil · sem spam</p>
           </form>
         </div>
       </div>
@@ -752,22 +751,63 @@
         <input type="text" id="lead-name" required placeholder="Nome completo">
       </div>
       <div class="form-field">
-        <label>Email</label>
-        <input type="email" id="lead-email" required placeholder="seu@email.com">
+        <label>Telefone</label>
+        <input type="tel" id="lead-phone" required placeholder="(11) 9 0000-0000">
       </div>
       <div class="form-field">
-        <label>Nome da sua loja Shopify</label>
-        <input type="text" id="lead-store" required placeholder="minhaloja.myshopify.com">
+        <label>URL da loja</label>
+        <input type="text" id="lead-store" required placeholder="sualoja.com.br">
       </div>
       <div class="form-field">
-        <label>Mensagem (opcional)</label>
-        <textarea id="lead-message" placeholder="Conte sobre sua loja..."></textarea>
+        <label>Volume mensal</label>
+        <select id="lead-volume">
+          <option value="">Selecione…</option>
+          <option>Até 500 pedidos</option>
+          <option>500 – 5.000 pedidos</option>
+          <option>5.000 – 50.000 pedidos</option>
+          <option>Mais de 50.000</option>
+        </select>
       </div>
       <button type="submit" class="form-submit">Enviar solicitação</button>
-      <p class="form-note">Respondemos em até 24h por email.</p>
     </form>
   </div>
 </div>
+
+<!-- WHATSAPP WIDGET -->
+<a href="https://wa.me/5511951929619" target="_blank" rel="noopener" id="whatsapp-btn" title="Falar pelo WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+</a>
+
+<style>
+  #whatsapp-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    background: #25D366;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(37,211,102,0.45);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+  }
+  #whatsapp-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(37,211,102,0.6);
+  }
+  @keyframes whatsapp-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(37,211,102,0.5); }
+    70%  { box-shadow: 0 0 0 14px rgba(37,211,102,0); }
+    100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
+  }
+  #whatsapp-btn { animation: whatsapp-pulse 2.5s infinite; }
+</style>
 
 <script>
   const API_URL = 'https://provador-virtual-brown.vercel.app';
@@ -1020,11 +1060,11 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source:  'modal',
-          name:    document.getElementById('lead-name').value,
-          email:   document.getElementById('lead-email').value,
-          message: document.getElementById('lead-message').value,
-          shop:    document.getElementById('lead-store').value,
+          source: 'modal',
+          name:   document.getElementById('lead-name').value,
+          phone:  document.getElementById('lead-phone').value,
+          shop:   document.getElementById('lead-store').value,
+          volume: document.getElementById('lead-volume').value,
         }),
       });
       const data = await res.json();
@@ -1052,14 +1092,14 @@
         body: JSON.stringify({
           source: 'demo',
           name:   document.getElementById('lf-name').value,
-          email:  document.getElementById('lf-email').value,
+          phone:  document.getElementById('lf-phone').value,
           shop:   document.getElementById('lf-shop').value,
           volume: document.getElementById('lf-volume').value,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.detail || 'Erro desconhecido');
-      document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Um especialista vai te contatar em até 24h com um render de amostra do seu catálogo.</p></div>';
+      document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Em breve entraremos em contato pelo WhatsApp.</p></div>';
     } catch (err) {
       console.error('[submitLeadForm]', err);
       btn.disabled = false;

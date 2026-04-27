@@ -9,10 +9,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { name, email, phone, shop, volume, message, source } = req.body;
+  const { name, phone, shop, volume, source } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ error: 'email é obrigatório' });
+  if (!name && !phone) {
+    return res.status(400).json({ error: 'nome ou telefone é obrigatório' });
   }
 
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -41,14 +41,10 @@ export default async function handler(req, res) {
             <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #999; width: 120px; text-transform: uppercase; letter-spacing: 0.05em;">Nome</td>
             <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; color: #111; font-weight: 500;">${name}</td>
           </tr>` : ''}
-          <tr>
-            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.05em;">Email</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; color: #111; font-weight: 500;"><a href="mailto:${email}" style="color: #0a0a0a;">${email}</a></td>
-          </tr>
           ${phone ? `
           <tr>
-            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.05em;">WhatsApp</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; color: #111; font-weight: 500;">${phone}</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.05em;">Telefone</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; color: #111; font-weight: 500;"><a href="https://wa.me/55${phone.replace(/\D/g,'')}" style="color: #25D366;">${phone} (WhatsApp)</a></td>
           </tr>` : ''}
           ${shop ? `
           <tr>
@@ -57,13 +53,8 @@ export default async function handler(req, res) {
           </tr>` : ''}
           ${volume ? `
           <tr>
-            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.05em;">Volume</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 15px; color: #111; font-weight: 500;">${volume}</td>
-          </tr>` : ''}
-          ${message ? `
-          <tr>
-            <td style="padding: 10px 0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.05em; vertical-align: top;">Mensagem</td>
-            <td style="padding: 10px 0; font-size: 15px; color: #111;">${message}</td>
+            <td style="padding: 10px 0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.05em;">Volume</td>
+            <td style="padding: 10px 0; font-size: 15px; color: #111; font-weight: 500;">${volume}</td>
           </tr>` : ''}
         </table>
       </div>
@@ -77,9 +68,8 @@ export default async function handler(req, res) {
     const payload = {
       from: 'Mirage <leads@mirageai.com.br>',
       to: [process.env.LEAD_EMAIL || 'wlissesv@gmail.com'],
-      subject: `Novo lead Mirage — ${name || email}`,
+      subject: `Novo lead Mirage — ${name || phone || 'Sem nome'}`,
       html: htmlBody,
-      reply_to: email,
     };
 
     console.log('[lead] Enviando para Resend:', JSON.stringify({ to: payload.to, subject: payload.subject }));
