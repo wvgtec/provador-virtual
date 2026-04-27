@@ -89,11 +89,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Autenticação admin simples
-  const adminSecret = process.env.ADMIN_SECRET;
-  if (adminSecret) {
-    const auth = req.headers['x-admin-secret'] || req.query?.secret;
-    if (auth !== adminSecret) return res.status(401).json({ error: 'Não autorizado' });
+  // Autenticação — aceita Bearer token (mesmo padrão do /api/admin)
+  const adminPass = process.env.ADMIN_SECRET;
+  if (adminPass) {
+    const auth   = req.headers['authorization'] || '';
+    const token  = auth.replace(/^Bearer\s+/i, '').trim();
+    if (token !== adminPass) return res.status(401).json({ error: 'Não autorizado' });
   }
 
   const saEnv = process.env.GOOGLE_SERVICE_ACCOUNT;
