@@ -1010,15 +1010,47 @@
     if (!e || e.target === document.getElementById('modal'))
       document.getElementById('modal').classList.remove('open');
   }
-  function submitLead(e) {
+  async function submitLead(e) {
     e.preventDefault();
-    const name = document.getElementById('lead-name').value;
-    alert('Obrigado, ' + name + '! Vamos entrar em contato em breve.');
+    const btn = e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    try {
+      await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source:  'modal',
+          name:    document.getElementById('lead-name').value,
+          email:   document.getElementById('lead-email').value,
+          message: document.getElementById('lead-message').value,
+          shop:    document.getElementById('lead-store').value,
+        }),
+      });
+    } catch (_) {}
     e.target.reset();
     closeModal();
+    alert('Obrigado! Entraremos em contato em breve.');
   }
-  function submitLeadForm(e) {
+
+  async function submitLeadForm(e) {
     e.preventDefault();
+    const btn = e.target.querySelector('[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    try {
+      await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'demo',
+          name:   document.getElementById('lf-name').value,
+          email:  document.getElementById('lf-email').value,
+          shop:   document.getElementById('lf-shop').value,
+          volume: document.getElementById('lf-volume').value,
+        }),
+      });
+    } catch (_) {}
     document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Um especialista vai te contatar em até 24h com um render de amostra do seu catálogo.</p></div>';
   }
   function toggleFaq(el) { el.classList.toggle('open'); }
