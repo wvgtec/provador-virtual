@@ -172,6 +172,18 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('[billing-gcp]', err.message);
+
+    // Tabela ainda não existe — export ativado recentemente, aguardar até 24h
+    if (err.message.includes('does not match any table') || err.message.includes('Not found')) {
+      return res.status(200).json({
+        pending: true,
+        mes: new Date().toISOString().slice(0, 7),
+        totais: { bruto: 0, creditos: 0, liquido: 0 },
+        servicos: [],
+        creditos_utilizados: [],
+      });
+    }
+
     return res.status(500).json({ error: err.message });
   }
 }
