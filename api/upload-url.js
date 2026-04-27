@@ -113,7 +113,7 @@ export default async function handler(req, res) {
   const raw = await redis.get(`client:${clientKey}`);
   if (!raw) return res.status(403).json({ error: 'Chave de cliente inválida.' });
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  if (!client.active) return res.status(403).json({ error: 'Acesso suspenso.' });
+  if (!client.active) return res.status(403).json({ error: 'Plano suspenso. Regularize o pagamento em app.mirageai.com.br', suspended: true });
 
   // ─── Validação de origem (espelha submit.js) ──────────────────────────────
   if (client.store) {

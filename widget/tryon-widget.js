@@ -775,7 +775,25 @@
           body:    JSON.stringify({ clientKey, contentType: 'image/jpeg' }),
         });
         const urlData = await urlRes.json();
-        if (!urlRes.ok) throw new Error(urlData.error || 'Erro ao gerar URL de upload.');
+        if (!urlRes.ok) {
+          if (urlData.suspended) {
+            // Conta suspensa — mostra mensagem com link para o painel
+            const errMsg = document.getElementById('nksw-error');
+            if (errMsg) {
+              errMsg.innerHTML = `Plano suspenso. <a href="https://app.mirageai.com.br/painel-cliente.html" target="_blank" style="color:#635BFF;text-decoration:underline;">Regularize o pagamento →</a>`;
+              errMsg.classList.add('visible');
+            }
+            // Restaura estado
+            scanLine.classList.remove('active');
+            renderCanvas.classList.remove('visible');
+            previewWrap.classList.add('visible');
+            generateBtn.classList.remove('nksw-hidden');
+            generateBtn.disabled = false;
+            loadingArea.classList.remove('visible');
+            return;
+          }
+          throw new Error(urlData.error || 'Erro ao gerar URL de upload.');
+        }
         setProgress(25);
 
         // 2. Upload para o GCS via PUT

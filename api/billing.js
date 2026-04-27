@@ -289,14 +289,14 @@ export default async function handler(req, res) {
       return res.json({ ok: true, url: link.url });
     }
 
-    // PAY_WITH_SAVED — paga fatura usando o cartão já salvo (sem pedir dados de novo)
+    // PAY_WITH_SAVED — paga fatura usando o cartão já salvo e ativa a conta imediatamente
     if (action === 'pay_with_saved') {
       if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
       const { invoiceId } = params;
       if (!invoiceId) return res.status(400).json({ error: 'invoiceId obrigatório.' });
       if (!client.stripeCustomerId) return res.json({ ok: false, error: 'Nenhum cliente Stripe associado.' });
       try {
-        // Busca o payment method padrão do customer
+        // Busca o payment method do customer
         const methods = await stripe.paymentMethods.list({
           customer: client.stripeCustomerId,
           type: 'card',
@@ -305,13 +305,59 @@ export default async function handler(req, res) {
         if (!methods.data.length) return res.json({ ok: false, error: 'Nenhum cartão cadastrado.' });
         const pmId = methods.data[0].id;
 
-        // Define como default no customer para evitar o erro
+        // Define como default no customer
         await stripe.customers.update(client.stripeCustomerId, {
           invoice_settings: { default_payment_method: pmId },
         });
 
-        // Paga a fatura com o payment method explícito
+        // Paga a fatura
         const inv = await stripe.invoices.pay(invoiceId, { payment_method: pmId });
+
+        if (inv.paid) {
+          // ── Ativa a conta IMEDIATAMENTE — não espera o webhook ──────────────
+          client.active       = true;
+          client.stripeStatus = 'active';
+          client.usageCount   = 0;
+          await Promise.all([
+            redis.set(`client:${client.key}`, JSON.stringify(client)),
+            redis.set(`usage:${client.key}`, '0'),
+          ]);
+
+          // Notificação ao admin
+          const RESEND_KEY   = process.env.RESEND_API_KEY;
+          const ADMIN_EMAIL  = process.env.ADMIN_NOTIFY_EMAIL || 'wlissesv@gmail.com';
+          const APP_URL      = process.env.APP_URL || 'https://app.mirageai.com.br';
+          const valorPago    = `R$ ${(inv.amount_paid / 100).toFixed(2).replace('.', ',')}`;
+          if (RESEND_KEY) {
+            fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from:    'Mirage Sistema <pagamentos@mirageai.com.br>',
+                to:      [ADMIN_EMAIL],
+                subject: `✅ Pagamento recebido — ${client.name || client.email}`,
+                html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+                  <div style="background:#0a0a0a;padding:20px 28px;border-radius:12px 12px 0 0">
+                    <img src="${APP_URL}/logo-mirage.png" alt="Mirage" height="28" style="filter:invert(1)">
+                  </div>
+                  <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:24px 28px;border-radius:0 0 12px 12px">
+                    <h2 style="margin:0 0 16px;font-size:18px;color:#16a34a">✅ Plano ativado automaticamente</h2>
+                    <table style="width:100%;border-collapse:collapse">
+                      <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;width:120px">Cliente</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${client.name || '—'}</td></tr>
+                      <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Email</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px">${client.email || '—'}</td></tr>
+                      <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Plano</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${client.plan || '—'}</td></tr>
+                      <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Valor pago</td><td style="padding:8px 0;font-size:13px;font-weight:600;color:#16a34a">${valorPago}</td></tr>
+                    </table>
+                    <p style="margin:16px 0 0;font-size:12px;color:#9ca3af">
+                      Acesso liberado automaticamente. <a href="${APP_URL}/painel-admin.html" style="color:#635bff">Ver admin →</a>
+                    </p>
+                  </div>
+                </div>`,
+              }),
+            }).catch(() => {});
+          }
+        }
+
         return res.json({ ok: true, status: inv.status, paid: inv.paid });
       } catch (e) {
         return res.json({ ok: false, error: e.message });

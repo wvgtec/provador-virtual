@@ -10,6 +10,28 @@ import {
   sendInvoiceFailedEmail,
 } from './emails.js';
 
+const ADMIN_EMAIL  = process.env.ADMIN_NOTIFY_EMAIL || 'wlissesv@gmail.com';
+const RESEND_KEY   = process.env.RESEND_API_KEY;
+const APP_URL      = process.env.APP_URL || 'https://app.mirageai.com.br';
+
+async function notifyAdmin(subject, html) {
+  if (!RESEND_KEY) return;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Mirage Sistema <pagamentos@mirageai.com.br>',
+        to:   [ADMIN_EMAIL],
+        subject,
+        html,
+      }),
+    });
+  } catch (e) {
+    log('webhook_admin_email_error', { error: e.message });
+  }
+}
+
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -122,6 +144,30 @@ async function handleInvoicePaid(stripe, invoice) {
     redis.set(`usage:${clientKey}`, '0'),
   ]);
   log('webhook_invoice_paid', { clientKey, plan });
+
+  // Notificação ao admin — plano ativado
+  const valorPago = invoice.amount_paid ? `R$ ${(invoice.amount_paid / 100).toFixed(2).replace('.', ',')}` : '';
+  await notifyAdmin(
+    `✅ Plano ativado — ${client.name || client.email}`,
+    `<div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#0a0a0a;padding:20px 28px;border-radius:12px 12px 0 0">
+        <img src="${APP_URL}/logo-mirage.png" alt="Mirage" height="28" style="filter:invert(1)">
+      </div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:24px 28px;border-radius:0 0 12px 12px">
+        <h2 style="margin:0 0 16px;font-size:18px;color:#16a34a">✅ Plano liberado</h2>
+        <table style="width:100%;border-collapse:collapse">
+          <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;width:120px">Cliente</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${client.name || '—'}</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Email</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px">${client.email || '—'}</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Plano</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${plan}</td></tr>
+          ${valorPago ? `<tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Valor pago</td><td style="padding:8px 0;font-size:13px;font-weight:600;color:#16a34a">${valorPago}</td></tr>` : ''}
+        </table>
+        <p style="margin:16px 0 0;font-size:12px;color:#9ca3af">
+          Acesso ao provador virtual ativado automaticamente.
+          <a href="${APP_URL}/painel-admin.html" style="color:#635bff">Ver admin →</a>
+        </p>
+      </div>
+    </div>`
+  ).catch(() => {});
 
   // Email de confirmação de pagamento
   if (client.email) {
