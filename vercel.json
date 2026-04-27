@@ -61,7 +61,7 @@
       "memory": 256
     },
     "api/stripe-webhook.js": {
-      "maxDuration": 15,
+      "maxDuration": 20,
       "memory": 256
     },
     "api/create-checkout.js": {

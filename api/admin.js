@@ -5,6 +5,9 @@
 import { Redis } from '@upstash/redis';
 import { randomBytes, timingSafeEqual, scryptSync } from 'crypto';
 import Stripe from 'stripe';
+import { sendWelcomeEmail } from './emails.js';
+
+const APP_URL = process.env.APP_URL || 'https://mirageai.com.br';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL,
@@ -133,7 +136,7 @@ export default async function handler(req, res) {
 
     // CREATE
     if (action === 'create') {
-      const { name, email, store, plan, password } = body;
+      const { name, email, store, plan, password, trialDays } = body;
       if (!name || !email) return res.status(400).json({ error: 'name e email são obrigatórios' });
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Formato de email inválido.' });
 
@@ -141,23 +144,114 @@ export default async function handler(req, res) {
       const existingKey = await redis.get(`client_email:${email.toLowerCase()}`);
       if (existingKey) return res.status(409).json({ error: 'Este email já está cadastrado em outra conta.' });
 
+      const planId = plan || 'demonstracao';
+
+      // Carrega dados do plano do Redis
+      let planData = null;
+      try {
+        const planRaw = await redis.get(`plan:${planId}`);
+        if (planRaw) planData = typeof planRaw === 'string' ? JSON.parse(planRaw) : planRaw;
+      } catch (_) {}
+
+      const hasPaidPlan   = planData?.stripePriceId;
+      const trialDaysNum  = parseInt(trialDays) || 0;
+      const isTrial       = trialDaysNum > 0;
+
       const key    = generateKey();
       const secret = generateSecret();
       const client = {
         key, secret, name, email,
         store:      store || '',
-        plan:       plan  || 'starter',
-        active:     true,
+        plan:       planId,
+        active:     !hasPaidPlan || isTrial,   // trial ou demo = ativo; pago sem trial = suspenso até pagar
         usageCount: 0,
         createdAt:  Date.now(),
+        ...(isTrial && { trialEndsAt: Date.now() + trialDaysNum * 86400000 }),
       };
       if (password && password.length >= 6) {
         client.passwordHash = hashPassword(password);
       }
+
+      let invoiceUrl  = null;
+      let stripeError = null;
+
+      // ── Cobrança automática Stripe (plano pago sem trial ou com trial futuro) ──
+      if (hasPaidPlan && stripe) {
+        try {
+          // 1. Cria ou reutiliza customer Stripe
+          let customerId = null;
+          const existing = await stripe.customers.list({ email, limit: 1 });
+          if (existing.data.length) {
+            customerId = existing.data[0].id;
+          } else {
+            const customer = await stripe.customers.create({
+              name, email,
+              metadata: { clientKey: key },
+            });
+            customerId = customer.id;
+          }
+          client.stripeCustomerId = customerId;
+
+          // Índice de busca rápida no webhook
+          await redis.set(`stripe:customer:${customerId}`, key);
+
+          if (isTrial) {
+            // 2a. Cria assinatura com trial — cobrança só começa após o trial
+            const trialEnd = Math.floor((Date.now() + trialDaysNum * 86400000) / 1000);
+            const sub = await stripe.subscriptions.create({
+              customer:         customerId,
+              items:            [{ price: planData.stripePriceId }],
+              trial_end:        trialEnd,
+              payment_behavior: 'default_incomplete',
+              expand:           ['latest_invoice.hosted_invoice_url'],
+            });
+            client.stripeSubscriptionId = sub.id;
+            client.stripeStatus         = sub.status;
+            // Trial = ativo até o fim do período
+            client.active = true;
+          } else {
+            // 2b. Plano pago direto — cria assinatura sem trial e suspende até pagar
+            const sub = await stripe.subscriptions.create({
+              customer:         customerId,
+              items:            [{ price: planData.stripePriceId }],
+              payment_behavior: 'default_incomplete',
+              expand:           ['latest_invoice.hosted_invoice_url'],
+            });
+            client.stripeSubscriptionId = sub.id;
+            client.stripeStatus         = 'pending_payment';
+            client.active               = false;
+            invoiceUrl = sub.latest_invoice?.hosted_invoice_url || null;
+          }
+        } catch (e) {
+          stripeError = e.message;
+          console.error('[admin] Stripe create error:', e.message);
+          // Cria o cliente mesmo assim, sem Stripe — admin pode resolver depois
+        }
+      }
+
       await redis.set(`client:${key}`, JSON.stringify(client));
       await redis.set(`client_email:${email.toLowerCase()}`, key);
+
+      // Email de boas-vindas + link de pagamento (se houver)
+      try {
+        await sendWelcomeEmail({
+          name,
+          email,
+          planName:      planData?.name || planId,
+          invoiceUrl,
+          clientPortalUrl: `${APP_URL}/painel-cliente.html`,
+        });
+      } catch (e) {
+        console.error('[admin] Email welcome error:', e.message);
+      }
+
       const { secret: _s, passwordHash: _ph, ...safeClient } = client;
-      return res.status(201).json({ ok: true, key, secret, client: safeClient });
+      return res.status(201).json({
+        ok: true, key, secret,
+        client: safeClient,
+        invoiceUrl,
+        ...(stripeError && { stripeWarning: stripeError }),
+      });
     }
 
     // SET PASSWORD — admin define/redefine a senha do cliente

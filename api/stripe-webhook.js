@@ -5,6 +5,10 @@
 
 import Stripe from 'stripe';
 import { Redis } from '@upstash/redis';
+import {
+  sendInvoicePaidEmail,
+  sendInvoiceFailedEmail,
+} from './emails.js';
 
 const redis = new Redis({
   url:   process.env.UPSTASH_REDIS_REST_URL,
@@ -118,6 +122,23 @@ async function handleInvoicePaid(stripe, invoice) {
     redis.set(`usage:${clientKey}`, '0'),
   ]);
   log('webhook_invoice_paid', { clientKey, plan });
+
+  // Email de confirmação de pagamento
+  if (client.email) {
+    try {
+      await sendInvoicePaidEmail({
+        name:         client.name  || client.email,
+        email:        client.email,
+        planName:     plan,
+        amount:       invoice.amount_paid || 0,
+        invoiceNumber: invoice.number || null,
+        periodEnd:    invoice.period_end   || null,
+        invoiceUrl:   invoice.hosted_invoice_url || null,
+      });
+    } catch (e) {
+      log('webhook_email_error', { event: 'invoice_paid', error: e.message });
+    }
+  }
 }
 
 // customer.subscription.updated — troca de plano, renovação, inadimplência
@@ -172,6 +193,50 @@ async function handleSubscriptionDeleted(stripe, subscription) {
   log('webhook_sub_deleted', { clientKey });
 }
 
+// invoice.payment_failed — suspende conta e envia email de aviso
+async function handleInvoicePaymentFailed(stripe, invoice) {
+  const clientKey = await getClientKey(stripe, invoice.customer);
+  if (!clientKey) {
+    log('webhook_invoice_failed_no_client', { customerId: invoice.customer });
+    return;
+  }
+
+  const client = await getClient(clientKey);
+  if (!client) return;
+
+  // Suspende a conta
+  client.stripeStatus = 'past_due';
+  client.active       = false;
+  await saveClient(clientKey, client);
+  log('webhook_invoice_payment_failed', { clientKey, attempt: invoice.attempt_count });
+
+  // Email de aviso
+  if (client.email) {
+    try {
+      // Tenta descobrir o nome do plano
+      let planName = client.plan || 'starter';
+      try {
+        const planRaw = await redis.get(`plan:${client.plan}`);
+        if (planRaw) {
+          const p = typeof planRaw === 'string' ? JSON.parse(planRaw) : planRaw;
+          planName = p.name || planName;
+        }
+      } catch (_) {}
+
+      await sendInvoiceFailedEmail({
+        name:         client.name  || client.email,
+        email:        client.email,
+        planName,
+        amount:       invoice.amount_due || 0,
+        invoiceUrl:   invoice.hosted_invoice_url || null,
+        attemptCount: invoice.attempt_count || 1,
+      });
+    } catch (e) {
+      log('webhook_email_error', { event: 'invoice_failed', error: e.message });
+    }
+  }
+}
+
 // ─── Handler principal ────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -209,6 +274,10 @@ export default async function handler(req, res) {
     switch (event.type) {
       case 'invoice.paid':
         await handleInvoicePaid(stripe, event.data.object);
+        break;
+
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(stripe, event.data.object);
         break;
 
       case 'customer.subscription.updated':
