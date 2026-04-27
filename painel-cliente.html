@@ -326,6 +326,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
               <div class="field"><label>Texto do botão</label><input id="ob-btn-text" value="Experimentar virtualmente" oninput="obPreview()"></div>
               <div class="field"><label>Cor de fundo</label><input id="ob-btn-bg" type="color" value="#111111" oninput="obPreview()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
               <div class="field"><label>Cor do texto</label><input id="ob-btn-color" type="color" value="#ffffff" oninput="obPreview()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
+              <div class="field"><label>Largura</label><input id="ob-btn-width" value="100%" placeholder="ex: 100%, 240px" oninput="obPreview()"></div>
+              <div class="field"><label>Altura</label><input id="ob-btn-height" value="52px" placeholder="ex: 52px, 44px" oninput="obPreview()"></div>
               <div class="field"><label>Arredondamento</label><input id="ob-btn-radius" value="12px" placeholder="ex: 12px, 6px, 0" oninput="obPreview()"></div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);border-radius:10px;padding:28px;gap:16px">
@@ -358,7 +360,7 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           <div id="ob-platform-hint" style="margin-bottom:14px;padding:12px 14px;background:var(--primary-light);border:1px solid #d4d1ff;border-radius:8px;font-size:12px;color:var(--primary);line-height:1.6"></div>
           <div class="code-block" style="margin-bottom:16px"><button class="code-copy-btn" onclick="obCopySnippet()">Copiar</button><pre id="ob-snippet" style="white-space:pre-wrap;word-break:break-all;font-size:12px;"></pre></div>
           <div style="background:var(--warning-light);border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:12px;color:#92400e;margin-bottom:16px">
-            <strong>Onde colar:</strong> antes da tag <code>&lt;/body&gt;</code> em cada página de produto da sua loja.
+            Cole esse código onde você quer que o botão fique posicionado, de preferência abaixo do botão comprar ou adicionar ao carrinho.
           </div>
           <div style="display:flex;justify-content:space-between">
             <button class="btn btn-secondary" onclick="obBack(3)">← Voltar</button>
@@ -390,16 +392,26 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           </div>
           <div class="card">
             <div class="card-header"><div class="card-title">Personalização do botão</div></div>
-            <div class="field"><label>Texto do botão</label><input id="cfgBtnText" value="Experimentar" oninput="buildSnippet()"></div>
-            <div class="field"><label>Cor de fundo</label><input id="cfgBtnBg" type="color" value="#000000" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
-            <div class="field"><label>Cor do texto</label><input id="cfgBtnColor" type="color" value="#ffffff" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
-            <div class="field"><label>Largura do botão</label><input id="cfgBtnWidth" value="100%" placeholder="ex: 100%, 240px" oninput="buildSnippet()"></div>
-            <div class="field"><label>Altura do botão</label><input id="cfgBtnHeight" value="52px" placeholder="ex: 52px, 44px" oninput="buildSnippet()"></div>
-            <div class="field"><label>Arredondamento</label><input id="cfgBtnRadius" value="12px" placeholder="ex: 12px, 6px, 0" oninput="buildSnippet()"></div>
+            <div class="section-grid" style="margin-bottom:0">
+              <div>
+                <div class="field"><label>Texto do botão</label><input id="cfgBtnText" value="Experimentar" oninput="buildSnippet()"></div>
+                <div class="field"><label>Cor de fundo</label><input id="cfgBtnBg" type="color" value="#000000" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
+                <div class="field"><label>Cor do texto</label><input id="cfgBtnColor" type="color" value="#ffffff" oninput="buildSnippet()" style="height:36px;padding:2px 4px;width:100%;cursor:pointer;border-radius:6px;"></div>
+                <div class="field"><label>Largura do botão</label><input id="cfgBtnWidth" value="100%" placeholder="ex: 100%, 240px" oninput="buildSnippet()"></div>
+                <div class="field"><label>Altura do botão</label><input id="cfgBtnHeight" value="52px" placeholder="ex: 52px, 44px" oninput="buildSnippet()"></div>
+                <div class="field"><label>Arredondamento</label><input id="cfgBtnRadius" value="12px" placeholder="ex: 12px, 6px, 0" oninput="buildSnippet()"></div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);border-radius:10px;padding:28px;gap:16px">
+                <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Pré-visualização</div>
+                <button id="cfg-preview-btn" style="padding:14px 28px;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:inherit;border:none;cursor:pointer;transition:opacity .2s;width:100%;max-width:280px;background:#000;color:#fff;border-radius:12px">
+                  Experimentar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><div><div class="card-title">Snippet de instalação</div><div class="card-sub">Cole antes do &lt;/body&gt; em cada página de produto</div></div></div>
+          <div class="card-header"><div><div class="card-title">Snippet de instalação</div><div class="card-sub">Cole esse código onde você quer que o botão fique posicionado, de preferência abaixo do botão comprar ou adicionar ao carrinho.</div></div></div>
           <div class="field" style="margin-bottom:12px;">
             <label>Plataforma</label>
             <select id="snippetPlatform" onchange="buildSnippet()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
@@ -976,9 +988,11 @@ function obSetStep(step) {
 function obPreview() {
   const btn = document.getElementById('ob-preview-btn');
   if (!btn) return;
-  btn.textContent   = document.getElementById('ob-btn-text')?.value || 'Experimentar virtualmente';
-  btn.style.background    = document.getElementById('ob-btn-bg')?.value    || '#111';
-  btn.style.color         = document.getElementById('ob-btn-color')?.value || '#fff';
+  btn.textContent         = document.getElementById('ob-btn-text')?.value   || 'Experimentar virtualmente';
+  btn.style.background    = document.getElementById('ob-btn-bg')?.value     || '#111';
+  btn.style.color         = document.getElementById('ob-btn-color')?.value  || '#fff';
+  btn.style.width         = document.getElementById('ob-btn-width')?.value  || '100%';
+  btn.style.height        = document.getElementById('ob-btn-height')?.value || '52px';
   btn.style.borderRadius  = document.getElementById('ob-btn-radius')?.value || '12px';
 }
 
@@ -986,6 +1000,8 @@ function obBuildSnippet() {
   const btnText   = document.getElementById('ob-btn-text')?.value   || 'Experimentar virtualmente';
   const btnBg     = document.getElementById('ob-btn-bg')?.value     || '#111111';
   const btnColor  = document.getElementById('ob-btn-color')?.value  || '#ffffff';
+  const btnWidth  = document.getElementById('ob-btn-width')?.value  || '100%';
+  const btnHeight = document.getElementById('ob-btn-height')?.value || '52px';
   const btnRadius = document.getElementById('ob-btn-radius')?.value || '12px';
   const storeName = (st.client?.name || document.getElementById('ob-name')?.value || 'Minha Loja').replace(/'/g, "\\'");
   const platform  = document.getElementById('ob-platform')?.value || 'shopify';
@@ -1011,6 +1027,8 @@ function obBuildSnippet() {
   const optional = `  window.VTON_BTN_TEXT   = '${btnText}';
   window.VTON_BTN_BG     = '${btnBg}';
   window.VTON_BTN_COLOR  = '${btnColor}';
+  window.VTON_BTN_WIDTH  = '${btnWidth}';
+  window.VTON_BTN_HEIGHT = '${btnHeight}';
   window.VTON_BTN_RADIUS = '${btnRadius}';`;
 
   let snippet;
@@ -1160,6 +1178,16 @@ ${optional}
 
   document.getElementById('snippetCode').textContent = snippet;
   document.getElementById('snippetHint').innerHTML = hints[platform] || '';
+
+  const prev = document.getElementById('cfg-preview-btn');
+  if (prev) {
+    prev.textContent         = btnText;
+    prev.style.background    = btnBg;
+    prev.style.color         = btnColor;
+    prev.style.width         = btnWidth;
+    prev.style.height        = btnHeight;
+    prev.style.borderRadius  = btnRadius;
+  }
 }
 
 function copySnippet() {
@@ -1459,376 +1487,4 @@ async function openOverageModal() {
 function overageSelectTab(tab) {
   const isExtra = tab === 'extra';
   document.getElementById('overageTabExtraBody').style.display   = isExtra ? 'block' : 'none';
-  document.getElementById('overageTabUpgradeBody').style.display = isExtra ? 'none' : 'block';
-  const btnExtra   = document.getElementById('overageTabExtra');
-  const btnUpgrade = document.getElementById('overageTabUpgrade');
-  btnExtra.style.background   = isExtra ? 'var(--primary)' : '';
-  btnExtra.style.color        = isExtra ? '#fff' : '';
-  btnExtra.style.borderColor  = isExtra ? 'var(--primary)' : '';
-  btnUpgrade.style.background = !isExtra ? 'var(--primary)' : '';
-  btnUpgrade.style.color      = !isExtra ? '#fff' : '';
-  btnUpgrade.style.borderColor = !isExtra ? 'var(--primary)' : '';
-}
-
-function updateOverageCalc() {
-  if (!_overageInfo) return;
-  const slider = document.getElementById('overageSlider');
-  const input  = document.getElementById('overageQty');
-  // Sincroniza slider ↔ input
-  if (document.activeElement === slider) input.value = slider.value;
-  else if (document.activeElement === input) slider.value = Math.min(500, Math.max(10, input.value));
-
-  const qty   = parseInt(input.value) || 0;
-  const rate  = Number(_overageInfo.overageRate) || 0;
-  const total = qty * rate;
-  const newLim = (_overageInfo.totalLimit === Infinity ? Infinity : (_overageInfo.totalLimit || 0)) + qty;
-
-  document.getElementById('overageTotal').textContent    = `R$ ${total.toFixed(2).replace('.', ',')}`;
-  document.getElementById('overageNewLimit').textContent =
-    newLim === Infinity ? '∞ tryons' : `${newLim.toLocaleString()} tryons`;
-}
-
-async function overageShowElements() {
-  const qty  = parseInt(document.getElementById('overageQty').value) || 50;
-  const r    = await api('billing', 'buy_overage_intent', { quantity: qty });
-  if (!r.ok || !r.clientSecret) {
-    document.getElementById('overageError').textContent = r.error || 'Erro ao iniciar pagamento.';
-    document.getElementById('overageError').style.display = 'block';
-    return;
-  }
-  document.getElementById('overageSavedCardBox').style.display = 'none';
-  document.getElementById('overageElementsBox').style.display  = 'block';
-  _overageStripe   = Stripe(r.publishableKey);
-  _overageElements = _overageStripe.elements({
-    clientSecret: r.clientSecret,
-    appearance: { theme: 'stripe', variables: { colorPrimary: '#6366f1', borderRadius: '8px' } },
-  });
-  _overageElements.create('payment').mount('#overage-payment-element');
-}
-
-async function overagePaySaved() {
-  const btn = document.getElementById('overagePaySavedBtn');
-  const qty = parseInt(document.getElementById('overageQty').value) || 0;
-  if (!qty) { alert('Informe a quantidade de gerações.'); return; }
-  btn.disabled = true; btn.textContent = 'Processando...';
-  document.getElementById('overageError').style.display = 'none';
-
-  const r = await api('billing', 'buy_overage_saved', { quantity: qty });
-  btn.disabled = false; btn.textContent = 'Confirmar e pagar';
-  if (!r.ok) {
-    document.getElementById('overageError').textContent = r.error || 'Pagamento falhou.';
-    document.getElementById('overageError').style.display = 'block';
-    return;
-  }
-  closeModal('overageModal');
-  await loadBillingData(); renderBilling();
-  alert(`✅ ${qty} gerações extras ativadas! Seu novo limite: ${(r.newExtraTryons + (_overageInfo?.totalLimit || 0)).toLocaleString()} tryons.`);
-}
-
-async function overagePayNew() {
-  const btn = document.getElementById('overagePayNewBtn');
-  btn.disabled = true; btn.textContent = 'Processando...';
-  document.getElementById('overageError').style.display = 'none';
-
-  const result = await _overageStripe.confirmPayment({
-    elements: _overageElements,
-    redirect: 'if_required',
-    confirmParams: { return_url: window.location.href },
-  });
-  if (result.error) {
-    btn.disabled = false; btn.textContent = 'Confirmar e pagar';
-    document.getElementById('overageError').textContent = result.error.message;
-    document.getElementById('overageError').style.display = 'block';
-    return;
-  }
-
-  // Pagamento confirmado — ativa conta via API (não depende do webhook)
-  const qty = parseInt(document.getElementById('overageQty').value) || 0;
-  const piId = result.paymentIntent?.id;
-  if (piId) {
-    const r = await api('billing', 'activate_overage', { quantity: qty, paymentIntentId: piId });
-    if (!r.ok) {
-      btn.disabled = false; btn.textContent = 'Confirmar e pagar';
-      document.getElementById('overageError').textContent = r.error || 'Erro ao ativar. Contate o suporte.';
-      document.getElementById('overageError').style.display = 'block';
-      return;
-    }
-  }
-
-  btn.disabled = false;
-  closeModal('overageModal');
-  await loadBillingData(); renderBilling();
-  await refreshAccountStatus();
-  alert(`✅ ${qty} gerações extras ativadas! Seu plano foi reativado.`);
-}
-
-async function overageDoUpgrade(planId) {
-  const r = await api('billing', 'payment_link', { planId });
-  if (!r.ok || !r.url) { alert(r.error || 'Erro ao gerar link.'); return; }
-  window.open(r.url, '_blank');
-}
-
-async function overageDecline() {
-  if (!confirm('Tem certeza? Seu plano será suspenso e você não poderá usar o provador virtual.')) return;
-  const r = await api('billing', 'decline_overage', {});
-  if (!r.ok) { alert(r.error || 'Erro.'); return; }
-  closeModal('overageModal');
-  st.suspended = true;
-  showSuspendedBanner();
-  alert('Seu plano foi suspenso. Entre em contato quando quiser reativar.');
-}
-
-// Recarrega o estado da conta após pagamento e remove o banner se estiver ativa
-async function refreshAccountStatus() {
-  try {
-    // Aguarda 1.5s para o webhook processar o pagamento
-    await new Promise(r => setTimeout(r, 1500));
-
-    const data = await api('client', 'me', {});
-    if (!data.ok) return;
-
-    st.client = data.client;
-    const isActive = !!data.client.active;
-
-    if (isActive) {
-      st.suspended = false;
-      // Remove banner de suspensão
-      const banner = document.getElementById('suspended-banner');
-      if (banner) {
-        banner.remove();
-        document.getElementById('app').style.paddingTop = '';
-      }
-      // Libera navegação completa
-      document.querySelectorAll('.nav-item').forEach(n => n.style.pointerEvents = '');
-    }
-  } catch (_) {}
-}
-
-// ─── Modal helpers ────────────────────────────────────────────────────────────
-function closeModal(id) {
-  document.getElementById(id)?.classList.remove('open');
-}
-
-function payInvoice(invoiceId) {
-  openPaymentModal('pay', invoiceId);
-}
-
-function showInvoiceDetail(invoiceId) {
-  const inv = st.invoices.find(i => i.id === invoiceId);
-  if (!inv) return;
-  document.getElementById('invoiceModalTitle').textContent  = `Fatura ${inv.number || fmtDate(inv.date)}`;
-  document.getElementById('invoiceModalPeriod').textContent = inv.periodStart ? `${fmtDate(inv.periodStart)} - ${fmtDate(inv.periodEnd)}` : '';
-  const scm = {paid:'badge-success',pending:'badge-warning',open:'badge-warning',uncollectible:'badge-error',void:'badge-muted'};
-  const slm = {paid:'Pago',pending:'Pendente',open:'Pendente',uncollectible:'Falhou',void:'Cancelado'};
-  const lines = (inv.lines||[]).map(l=>`<div class="info-row"><span class="info-row-label">${esc(l.description)}</span><span class="info-row-value">R$ ${l.amount}</span></div>`).join('');
-  document.getElementById('invoiceModalBody').innerHTML = `
-    <div class="info-row"><span class="info-row-label">Valor</span><span class="info-row-value fw-600">R$ ${inv.amount}</span></div>
-    <div class="info-row"><span class="info-row-label">Status</span><span class="badge ${scm[inv.status]||'badge-muted'}">${slm[inv.status]||inv.status}</span></div>
-    ${lines}`;
-  const acts = document.getElementById('invoiceModalActions');
-  acts.innerHTML = '';
-  if (inv.pdfUrl) acts.innerHTML += `<a href="${esc(inv.pdfUrl)}" target="_blank" class="btn btn-secondary btn-sm">Baixar PDF</a>`;
-  if (inv.hostedUrl) acts.innerHTML += `<a href="${esc(inv.hostedUrl)}" target="_blank" class="btn btn-secondary btn-sm">Ver online</a>`;
-  acts.innerHTML += `<button class="btn btn-secondary btn-sm" onclick="closeModal('invoiceModal')" style="margin-left:auto;">Fechar</button>`;
-  document.getElementById('invoiceModal').classList.add('open');
-}
-
-async function upgradePlan() {
-  // Recarrega planos se necessário
-  if (!st.plans.length) {
-    const r = await fetch(`${API_URL}/api/client`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'listPlans'}) }).then(r=>r.json()).catch(()=>({ok:false,plans:[]}));
-    if (r.ok && r.plans?.length) st.plans = r.plans;
-  }
-  // Filtra planos internos (demo, teste, etc.)
-  const HIDDEN_KEYWORDS = ['demo', 'demonstra', 'teste', 'test', 'interno', 'trial'];
-  const plans = st.plans.filter(p => {
-    const n = (p.name || '').toLowerCase();
-    return !HIDDEN_KEYWORDS.some(k => n.includes(k));
-  });
-  const currentPlanId = st.billing?.plan || st.client?.plan || '';
-  const currentPrice  = st.billing?.planPrice || 0;
-  const body = document.getElementById('upgradePlansBody');
-
-  if (!plans.length) {
-    body.innerHTML = '<div class="text-muted" style="text-align:center;padding:20px;">Nenhum plano disponível. Entre em contato com o suporte.</div>';
-    document.getElementById('upgradeModal').classList.add('open');
-    return;
-  }
-
-  body.innerHTML = plans.map(p => {
-    const isCurrent = p.id === currentPlanId || (p.price === currentPrice);
-    const isDisabled = p.price < currentPrice && !isCurrent;
-    const limitStr = p.tryons === 0 ? 'Ilimitado' : `${Number(p.tryons).toLocaleString('pt-BR')} tryons/mês`;
-    const overageStr = p.overage > 0 ? `R$ ${Number(p.overage).toFixed(2)} por geração extra` : 'Sem cobrança extra';
-    return `<div style="border:2px solid ${isCurrent ? 'var(--primary)' : 'var(--border)'};border-radius:12px;padding:16px;background:${isCurrent ? 'var(--primary-light)' : 'var(--card)'};opacity:${isDisabled?0.5:1};">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div style="font-weight:700;font-size:15px;">${esc(p.name)} ${isCurrent?'<span class="badge badge-primary" style="font-size:10px;margin-left:6px;">Plano atual</span>':''}</div>
-        <div style="font-size:18px;font-weight:800;color:var(--primary);">R$ ${Number(p.price).toFixed(2)}<span style="font-size:12px;font-weight:400;color:var(--muted)">/mês</span></div>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${limitStr} · ${overageStr}</div>
-      ${isCurrent ? '<div class="btn btn-secondary btn-sm btn-full" style="cursor:default;opacity:0.6;">Plano atual</div>' :
-        isDisabled ? '' :
-        `<button class="btn btn-primary btn-sm btn-full" onclick="selectUpgradePlan('${esc(p.id)}','${esc(p.name)}',${p.price})">Selecionar este plano</button>`
-      }
-    </div>`;
-  }).join('');
-
-  document.getElementById('upgradeModal').classList.add('open');
-}
-
-async function selectUpgradePlan(planId, planName, price) {
-  closeModal('upgradeModal');
-
-  // Verifica se o plano tem stripePriceId (sincronizado com Stripe)
-  const plan = st.plans.find(p => p.id === planId);
-  if (!plan?.stripePriceId) {
-    toast('Este plano ainda não foi sincronizado com o Stripe. Contate o suporte.', 'error');
-    return;
-  }
-
-  // Mostra feedback visual enquanto gera o checkout
-  toast('Redirecionando para o pagamento...', 'info');
-
-  try {
-    const r = await fetch(`${API_URL}/api/create-checkout`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ clientKey: st.clientKey, password: st.password, planId }),
-    }).then(res => res.json());
-
-    if (!r.ok) {
-      toast(r.error || 'Não foi possível iniciar o checkout. Tente novamente.', 'error');
-      return;
-    }
-
-    // Redireciona para o Stripe Checkout — após pagar, volta para painel-cliente.html?checkout=success
-    window.location.href = r.url;
-  } catch (e) {
-    toast('Erro de conexão. Tente novamente.', 'error');
-  }
-}
-let _upgradeTarget = null;
-
-async function saveConfig() {
-  const name  = document.getElementById('cfgName').value.trim();
-  const email = document.getElementById('cfgEmail').value.trim();
-  const store = document.getElementById('cfgStore').value.trim();
-  const msgEl = document.getElementById('cfgMsg');
-  msgEl.textContent = 'Salvando...'; msgEl.style.color = 'var(--muted)';
-  const r = await api('client','update',{name,email,store});
-  if (r.ok) {
-    st.client = r.client;
-    msgEl.textContent = 'Alterações salvas.'; msgEl.style.color = 'var(--success)';
-    document.getElementById('sidebarStoreName').textContent = r.client.name || r.client.store || 'Minha loja';
-  } else {
-    msgEl.textContent = r.error || 'Erro ao salvar.'; msgEl.style.color = 'var(--error)';
-  }
-  setTimeout(()=>msgEl.textContent='', 4000);
-}
-
-async function saveBillingAddress() {
-  const billingName = document.getElementById('cfgBillingName').value.trim();
-  const taxId       = document.getElementById('cfgTax').value.trim();
-  const address     = document.getElementById('cfgAddress').value.trim();
-  const msgEl       = document.getElementById('cfgAddrMsg');
-  msgEl.textContent = 'Salvando...'; msgEl.style.color = 'var(--muted)';
-  const r = await api('client','update',{billingName,taxId,address});
-  if (r.ok) {
-    st.client = r.client;
-    msgEl.textContent = 'Endereço salvo.'; msgEl.style.color = 'var(--success)';
-  } else {
-    msgEl.textContent = r.error || 'Erro ao salvar.'; msgEl.style.color = 'var(--error)';
-  }
-  setTimeout(()=>msgEl.textContent='', 4000);
-}
-
-async function changePassword() {
-  const currentPwd = document.getElementById('cfgCurrentPassword').value;
-  const newPwd     = document.getElementById('cfgNewPassword').value;
-  const confirmPwd = document.getElementById('cfgConfirmPassword').value;
-  const msgEl      = document.getElementById('cfgPwdMsg');
-  msgEl.textContent = ''; msgEl.style.color = 'var(--muted)';
-  if (!currentPwd) { msgEl.textContent = 'Informe a senha atual.'; msgEl.style.color = 'var(--error)'; return; }
-  if (newPwd.length < 6) { msgEl.textContent = 'A nova senha deve ter ao menos 6 caracteres.'; msgEl.style.color = 'var(--error)'; return; }
-  if (newPwd !== confirmPwd) { msgEl.textContent = 'As senhas não coincidem.'; msgEl.style.color = 'var(--error)'; return; }
-  if (currentPwd === newPwd) { msgEl.textContent = 'A nova senha deve ser diferente da atual.'; msgEl.style.color = 'var(--error)'; return; }
-  msgEl.textContent = 'Alterando...'; msgEl.style.color = 'var(--muted)';
-  const r = await api('client','changePassword',{currentPassword:currentPwd, newPassword:newPwd});
-  if (r.ok) {
-    st.password = newPwd;
-    sessionStorage.setItem('cpSession', JSON.stringify({clientKey:st.clientKey, password:newPwd}));
-    msgEl.textContent = 'Senha alterada com sucesso.'; msgEl.style.color = 'var(--success)';
-    document.getElementById('cfgCurrentPassword').value = '';
-    document.getElementById('cfgNewPassword').value     = '';
-    document.getElementById('cfgConfirmPassword').value = '';
-  } else {
-    msgEl.textContent = r.error || 'Erro ao alterar senha.'; msgEl.style.color = 'var(--error)';
-  }
-  setTimeout(()=>msgEl.textContent='', 5000);
-}
-
-// ─── Utilitários ──────────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function fmtDate(s) {
-  if (!s) return '-';
-  try { const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; } catch { return s; }
-}
-function fmtTs(ts) {
-  if (!ts) return '-';
-  try { return new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch { return '-'; }
-}
-function renderPag(elId, page, total, limit, cb) {
-  const pages = Math.ceil(total/limit);
-  const el    = document.getElementById(elId);
-  if (!el || pages<=1) { if(el) el.innerHTML=''; return; }
-  let html = '';
-  if (page>1) html += `<button class="btn btn-secondary btn-sm" onclick="(${cb.toString()})(${page-1})">‹ Anterior</button>`;
-  html += `<span style="font-size:12px;color:var(--muted);align-self:center;">${page} / ${pages}</span>`;
-  if (page<pages) html += `<button class="btn btn-secondary btn-sm" onclick="(${cb.toString()})(${page+1})">Próxima ›</button>`;
-  el.innerHTML = html;
-}
-
-// ─── Restaura sessão salva ────────────────────────────────────────────────────
-(async function init() {
-  const saved = sessionStorage.getItem('cpSession');
-  if (!saved) return;
-  try {
-    const { clientKey, password } = JSON.parse(saved);
-    if (!clientKey || !password) return;
-    const r = await fetch(`${API_URL}/api/client`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'me', clientKey, password }),
-    });
-    const data = await r.json();
-    if (data.ok) {
-      st.clientKey = clientKey;
-      st.password  = password;
-      st.client    = data.client;
-      startApp();
-
-      // Detecta retorno do Stripe Checkout
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('checkout') === 'success') {
-        // Remove o parâmetro da URL sem recarregar a página
-        window.history.replaceState({}, '', window.location.pathname);
-        // Aguarda o webhook processar (até 3s) e recarrega billing
-        setTimeout(async () => {
-          await loadBillingData();
-          nav('billing');
-          toast('Pagamento confirmado! Seu plano será atualizado em instantes.', 'success');
-        }, 3000);
-      } else if (params.get('checkout') === 'canceled') {
-        window.history.replaceState({}, '', window.location.pathname);
-        nav('billing');
-        toast('Checkout cancelado. Você pode tentar novamente quando quiser.', 'info');
-      }
-    } else {
-      sessionStorage.removeItem('cpSession');
-    }
-  } catch { sessionStorage.removeItem('cpSession'); }
-})();
-</script>
-</body>
-</html>
+  document.getElementById('overageTabUpgradeBody').style.display = isExtra ? 'none' : 'bl
