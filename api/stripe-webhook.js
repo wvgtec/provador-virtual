@@ -112,7 +112,11 @@ async function handleInvoicePaid(stripe, invoice) {
   client.usageCount       = 0;     // reset do ciclo mensal
   if (subId) client.stripeSubscriptionId = subId;
 
-  await saveClient(clientKey, client);
+  // Zera também a chave atômica de cota — mantém sincronia com o objeto do cliente
+  await Promise.all([
+    saveClient(clientKey, client),
+    redis.set(`usage:${clientKey}`, '0'),
+  ]);
   log('webhook_invoice_paid', { clientKey, plan });
 }
 

@@ -102,7 +102,9 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Muitas requisições. Aguarde.' });
   }
 
-  const { clientKey, contentType = 'image/jpeg' } = req.body || {};
+  const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const { clientKey, contentType: rawContentType } = req.body || {};
+  const contentType = ALLOWED_TYPES.includes(rawContentType) ? rawContentType : 'image/jpeg';
 
   if (!clientKey || !isValidClientKey(clientKey)) {
     return res.status(400).json({ error: 'clientKey inválido.' });
@@ -112,6 +114,22 @@ export default async function handler(req, res) {
   if (!raw) return res.status(403).json({ error: 'Chave de cliente inválida.' });
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (!client.active) return res.status(403).json({ error: 'Acesso suspenso.' });
+
+  // ─── Validação de origem (espelha submit.js) ──────────────────────────────
+  if (client.store) {
+    const origin = req.headers.origin || req.headers.referer || '';
+    const normalize = (s) =>
+      s.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0].replace(/^www\./, '');
+    const allowed = normalize(client.store);
+    if (!origin) {
+      return res.status(403).json({ error: 'Origem obrigatória para esta chave.' });
+    }
+    const incoming  = normalize(origin);
+    const isAllowed = incoming === allowed || incoming.endsWith('.' + allowed);
+    if (allowed && !isAllowed) {
+      return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
+    }
+  }
 
   const fileId     = randomUUID();
   const objectPath = `inputs/${fileId}.jpg`;

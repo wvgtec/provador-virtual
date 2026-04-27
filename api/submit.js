@@ -97,30 +97,23 @@ export default async function handler(req, res) {
     });
   }
 
-  // ─── Verificação de quota ─────────────────────────────────────────────────
-  const planLimit    = PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter;
-  const currentUsage = Number(client.usageCount) || 0;
-  if (currentUsage >= planLimit) {
-    return res.status(429).json({
-      error: `Limite do plano "${client.plan || 'starter'}" atingido (${planLimit} tryons). Faça upgrade para continuar.`,
-      code:  'QUOTA_EXCEEDED',
-      limit: planLimit,
-      usage: currentUsage,
-    });
-  }
-
-  // ─── Validação de domínio ─────────────────────────────────────────────────
+  // ─── Validação de domínio (obrigatória quando store está configurado) ────────
+  // Origin é sempre enviado pelo browser em requests cross-origin.
+  // Ausência de Origin com store configurado = request server-side suspeito.
   if (client.store) {
     const origin = req.headers.origin || req.headers.referer || '';
-    if (origin) {
-      const normalize = (s) =>
-        s.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0].replace(/^www\./, '');
-      const allowed  = normalize(client.store);
-      const incoming = normalize(origin);
-      const isAllowed = incoming === allowed || incoming.endsWith('.' + allowed);
-      if (allowed && !isAllowed) {
-        return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
-      }
+    const normalize = (s) =>
+      s.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0].replace(/^www\./, '');
+    const allowed = normalize(client.store);
+    if (!origin) {
+      log('submit_origin_missing', { clientKey, ip });
+      return res.status(403).json({ error: 'Origem obrigatória para esta chave.' });
+    }
+    const incoming  = normalize(origin);
+    const isAllowed = incoming === allowed || incoming.endsWith('.' + allowed);
+    if (allowed && !isAllowed) {
+      log('submit_origin_blocked', { clientKey, incoming, allowed });
+      return res.status(403).json({ error: 'Origem não autorizada para esta chave.' });
     }
   }
 
@@ -169,9 +162,29 @@ export default async function handler(req, res) {
     });
   }
 
-  // ─── Contagem de uso (total + diário) ────────────────────────────────────
-  const newCount = await redis.incr(`usage:${clientKey}`);
-  await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, usageCount: Number(newCount) || 0 }));
+  // ─── Cota atômica — sem race condition ───────────────────────────────────
+  // Garante que usage:${clientKey} existe e não está atrás do objeto do cliente.
+  // Necessário para clientes criados antes da cota atômica ou após reset de billing.
+  const planLimit = PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter;
+  const rawUsage  = await redis.get(`usage:${clientKey}`);
+  if (rawUsage === null || Number(rawUsage) < Number(client.usageCount || 0)) {
+    await redis.set(`usage:${clientKey}`, String(Number(client.usageCount) || 0));
+  }
+
+  // INCR é atômico: apenas um request ganha o slot exato do limite.
+  const newCount  = await redis.incr(`usage:${clientKey}`);
+  if (newCount > planLimit) {
+    // Reverte o incremento e rejeita — nenhum job é criado
+    await redis.decr(`usage:${clientKey}`);
+    log('submit_quota_exceeded', { clientKey, plan: client.plan, usage: newCount - 1, limit: planLimit });
+    return res.status(429).json({
+      error: `Limite do plano "${client.plan || 'starter'}" atingido (${planLimit} tryons). Faça upgrade para continuar.`,
+      code:  'QUOTA_EXCEEDED',
+      limit: planLimit,
+      usage: newCount - 1,
+    });
+  }
+  await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, usageCount: newCount }));
 
   // Contador diário para rate limit e analytics por dia
   const dayKey   = `usage:${clientKey}:${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
