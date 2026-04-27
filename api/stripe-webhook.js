@@ -135,8 +135,9 @@ async function handleInvoicePaid(stripe, invoice) {
   client.plan             = plan;
   client.stripeStatus     = 'active';
   client.active           = true;
-  client.suspendedReason  = null;   // remove qualquer suspensão por cota ou pagamento
-  client.usageCount       = 0;     // reset do ciclo mensal
+  client.suspendedReason  = null;
+  client.usageCount       = 0;      // reset mensal
+  client.extraTryons      = 0;      // extras não acumulam para o próximo mês
   if (subId) client.stripeSubscriptionId = subId;
 
   // Zera cota, warn80 e flags de suspensão — novo ciclo mensal

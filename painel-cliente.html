@@ -666,11 +666,11 @@ function showSuspendedBanner() {
   banner.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px">
       <span style="font-size:18px">⚠️</span>
-      <span style="color:#991B1B;font-weight:600">Conta suspensa — pagamento pendente.</span>
-      <span style="color:#B91C1C">Efetue o pagamento para reativar seu acesso ao provador virtual.</span>
+      <span style="color:#991B1B;font-weight:600">Provador virtual suspenso.</span>
+      <span style="color:#B91C1C">Seus dados de produtos e leads continuam disponíveis. Regularize para reativar as gerações.</span>
     </div>
-    <button onclick="nav('billing')" style="background:#DC2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">
-      Ver fatura →
+    <button onclick="nav('billing')" style="background:#DC2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">
+      Regularizar →
     </button>
   `;
   document.body.prepend(banner);

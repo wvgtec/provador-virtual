@@ -138,9 +138,17 @@ export default async function handler(req, res) {
   }
 
   // ─── Demais ações — requer clientKey + senha ──────────────────────────────
-  // Ações de billing são permitidas mesmo com conta suspensa
-  const BILLING_ACTIONS = ['me', 'summary', 'invoices', 'setup_intent', 'pay_invoice', 'payment_link'];
-  const isBillingAction = BILLING_ACTIONS.includes(action);
+  // Ações permitidas mesmo com conta suspensa:
+  // billing (pagar/ver faturas), leitura de dados históricos (produtos, leads, jobs)
+  const ALLOWED_WHEN_SUSPENDED = [
+    'me',
+    // billing
+    'summary', 'invoices', 'setup_intent', 'pay_invoice', 'payment_link',
+    'overage_info', 'buy_overage_saved', 'buy_overage_intent', 'activate_overage', 'decline_overage',
+    // dados históricos — visíveis mesmo suspenso
+    'jobs', 'products', 'leads', 'listPlans',
+  ];
+  const isBillingAction = ALLOWED_WHEN_SUSPENDED.includes(action);
   const client = await authenticate(clientKey, password, isBillingAction);
   if (!client) return res.status(401).json({ error: 'Não autorizado.' });
 
