@@ -323,7 +323,10 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
           <div class="card">
             <div class="card-header"><div class="card-title">Forma de pagamento</div></div>
             <div id="billingPayMethod"><div class="text-muted" style="font-size:13px;padding:6px 0;">Nenhum cartão cadastrado</div></div>
-            <button class="btn btn-secondary btn-sm mt-8" onclick="openPaymentModal('card')">Gerenciar pagamento</button>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="openPaymentModal('card')">Trocar cartão</button>
+              <button class="btn btn-danger btn-sm" id="removeCardBtn" onclick="removeCard()" style="display:none">Excluir cartão</button>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -392,22 +395,28 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
       <button class="modal-close" onclick="closeModal('paymentModal')">&times;</button>
     </div>
 
-    <!-- Seletor de método -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button class="btn btn-secondary btn-sm" id="tabCard" onclick="selectPayTab('card')" style="flex:1">💳 Cartão de crédito</button>
-      <button class="btn btn-secondary btn-sm" id="tabLink" onclick="selectPayTab('link')" style="flex:1">🏦 Boleto / PIX</button>
+    <!-- Conteúdo dinâmico do modal -->
+    <div id="paymentModalLoading" style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Carregando...</div>
+
+    <!-- Pagar com cartão salvo -->
+    <div id="paySavedBox" style="display:none">
+      <div id="paySavedInfo" style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
+        <span style="font-size:24px">💳</span>
+        <div>
+          <div id="paySavedCardLabel" style="font-weight:600;font-size:14px"></div>
+          <div id="paySavedCardExp" style="font-size:12px;color:var(--muted)"></div>
+        </div>
+      </div>
+      <div id="paySavedAmount" style="font-size:13px;color:var(--muted);margin-bottom:16px;text-align:center"></div>
     </div>
 
-    <div id="paymentModalLoading" style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">Carregando...</div>
+    <!-- Adicionar / trocar cartão via Stripe Elements -->
     <div id="payment-element" style="margin:4px 0 16px;"></div>
-    <div id="payLinkBox" style="display:none;padding:16px;background:var(--primary-light);border-radius:10px;text-align:center;margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Link de pagamento gerado</div>
-      <a id="payLinkUrl" href="#" target="_blank" class="btn btn-primary btn-sm">Abrir link de pagamento</a>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">Aceita cartão de crédito, boleto e PIX</div>
-    </div>
+
     <div id="paymentModalError" style="color:#ef4444;font-size:13px;margin-bottom:12px;padding:10px 12px;background:#fef2f2;border-radius:8px;display:none;"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;">
+    <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap">
       <button class="btn btn-secondary" onclick="closeModal('paymentModal')">Fechar</button>
+      <button class="btn btn-secondary btn-sm" id="payChangeCardBtn" onclick="payForceNewCard()" style="display:none;font-size:12px">Usar outro cartão</button>
       <button class="btn btn-primary" id="paymentModalBtn" onclick="confirmStripePayment()" style="display:none;">Pagar agora</button>
     </div>
     <!-- Stripe + segurança -->
@@ -810,10 +819,15 @@ function renderBilling() {
   document.getElementById('billingNextDate').textContent=fmtDate(b.nextDate);
   document.getElementById('billingNextAmt').textContent=`R$ ${b.total}`;
   const pmEl=document.getElementById('billingPayMethod');
+  const removeBtn=document.getElementById('removeCardBtn');
   if (b.paymentMethod) {
-    const {brand,last4,expMonth,expYear}=b.paymentMethod;
+    const {id,brand,last4,expMonth,expYear}=b.paymentMethod;
     pmEl.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;"><span style="font-size:22px;">💳</span><div><div class="fw-600" style="text-transform:capitalize;">${brand} terminando em ${last4}</div><div class="text-muted" style="font-size:12px;">Expira ${String(expMonth).padStart(2,'0')}/${expYear}</div></div></div>`;
-  } else { pmEl.innerHTML='<div class="text-muted" style="font-size:13px;padding:6px 0;">Nenhum cartão cadastrado</div>'; }
+    if (removeBtn) { removeBtn.style.display='inline-flex'; removeBtn.dataset.pmId=id||''; }
+  } else {
+    pmEl.innerHTML='<div class="text-muted" style="font-size:13px;padding:6px 0;">Nenhum cartão cadastrado</div>';
+    if (removeBtn) removeBtn.style.display='none';
+  }
   if (st.invoicesMock) document.getElementById('billingMockNote').style.display='inline';
   const tbody=document.getElementById('invoicesTbody'), emptyEl=document.getElementById('invoicesEmpty');
   if (!st.invoices.length) { tbody.innerHTML=''; emptyEl.style.display='block'; return; }
@@ -833,69 +847,61 @@ function renderBilling() {
 // ─── Stripe Elements inline ──────────────────────────────────────────────────
 let _stripe = null, _stripeElements = null, _payMode = 'card', _payInvoiceId = null;
 
+function _resetPayModal() {
+  document.getElementById('payment-element').innerHTML        = '';
+  document.getElementById('paySavedBox').style.display        = 'none';
+  document.getElementById('paymentModalLoading').style.display = 'block';
+  document.getElementById('paymentModalError').style.display  = 'none';
+  document.getElementById('paymentModalBtn').style.display    = 'none';
+  document.getElementById('payChangeCardBtn').style.display   = 'none';
+}
+
 async function openPaymentModal(mode = 'card', invoiceId = null) {
   _payMode      = mode;
   _payInvoiceId = invoiceId;
-
-  // Reseta o modal
-  document.getElementById('payment-element').innerHTML = '';
-  document.getElementById('payLinkBox').style.display          = 'none';
-  document.getElementById('paymentModalLoading').style.display = 'block';
-  document.getElementById('paymentModalError').style.display   = 'none';
-  document.getElementById('paymentModalBtn').style.display     = 'none';
+  _resetPayModal();
+  document.getElementById('paymentModalTitle').textContent = mode === 'card' ? 'Formas de pagamento' : 'Pagar fatura';
   document.getElementById('paymentModal').classList.add('open');
 
-  // Sempre mostra as 3 abas
-  const title = mode === 'card' ? 'Gerenciar pagamento' : 'Pagar fatura';
-  document.getElementById('paymentModalTitle').textContent = title;
+  const hasSaved = !!st.billing?.paymentMethod;
 
-  // Aba padrão: cartão
-  await selectPayTab('card');
+  if (mode === 'pay' && hasSaved) {
+    // Tem cartão salvo → mostrar UI de confirmação sem pedir dados de novo
+    await _showPayWithSaved();
+  } else {
+    // Salvar/trocar cartão ou sem cartão → mostrar Stripe Elements
+    const action = invoiceId ? 'pay_invoice' : 'setup_intent';
+    await _loadStripeCard(action, invoiceId ? { invoiceId } : {});
+  }
 }
 
-async function selectPayTab(tab) {
-  const data = _payInvoiceId ? { invoiceId: _payInvoiceId } : {};
+async function _showPayWithSaved() {
+  const pm = st.billing.paymentMethod;
+  const inv = st.invoices.find(i => i.id === _payInvoiceId);
+  const amount = inv ? `R$ ${inv.amount}` : '';
 
-  // Destaca aba ativa (apenas card e link)
-  ['card','link'].forEach(t => {
-    const el = document.getElementById('tab' + (t === 'card' ? 'Card' : 'Link'));
-    if (!el) return;
-    const active = t === tab;
-    el.style.background  = active ? 'var(--primary)' : '';
-    el.style.color       = active ? '#fff' : '';
-    el.style.borderColor = active ? 'var(--primary)' : '';
-  });
+  document.getElementById('paymentModalLoading').style.display = 'none';
+  document.getElementById('paySavedCardLabel').textContent =
+    (pm.brand.charAt(0).toUpperCase() + pm.brand.slice(1)) + ' terminando em ' + pm.last4;
+  document.getElementById('paySavedCardExp').textContent =
+    'Expira ' + String(pm.expMonth).padStart(2,'0') + '/' + pm.expYear;
+  document.getElementById('paySavedAmount').textContent =
+    amount ? `Será cobrado ${amount} neste cartão.` : '';
+  document.getElementById('paySavedBox').style.display      = 'block';
+  document.getElementById('payChangeCardBtn').style.display = 'inline-flex';
+  document.getElementById('paymentModalBtn').textContent    = amount ? `Pagar ${amount}` : 'Confirmar pagamento';
+  document.getElementById('paymentModalBtn').style.display  = 'inline-flex';
+  _payMode = 'pay_saved';
+}
 
-  document.getElementById('payment-element').innerHTML         = '';
-  document.getElementById('payLinkBox').style.display          = 'none';
-  document.getElementById('paymentModalBtn').style.display     = 'none';
-  document.getElementById('paymentModalError').style.display   = 'none';
+async function payForceNewCard() {
+  // Usuário quer usar outro cartão — carrega Elements
+  _payMode = 'pay';
+  document.getElementById('paySavedBox').style.display      = 'none';
+  document.getElementById('payChangeCardBtn').style.display = 'none';
+  document.getElementById('paymentModalBtn').style.display  = 'none';
   document.getElementById('paymentModalLoading').style.display = 'block';
-
-  // Aba "Boleto / PIX" gera um link de pagamento Stripe (suporta boleto, pix e cartão)
-  if (tab === 'link') {
-    const r = await api('billing', 'payment_link', data);
-    document.getElementById('paymentModalLoading').style.display = 'none';
-    if (!r.ok) {
-      document.getElementById('paymentModalError').textContent = r.error || 'Não foi possível gerar o link. Entre em contato com o suporte.';
-      document.getElementById('paymentModalError').style.display = 'block';
-      return;
-    }
-    const linkEl = document.getElementById('payLinkUrl');
-    linkEl.href = r.url;
-    linkEl.textContent = 'Pagar com Boleto ou PIX';
-    document.getElementById('payLinkBox').innerHTML = `
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Link gerado com sucesso</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Clique para pagar via boleto, PIX ou cartão</div>
-      <a id="payLinkUrl" href="${r.url}" target="_blank" class="btn btn-primary btn-sm">Abrir link de pagamento</a>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">O link expira em 24 horas</div>`;
-    document.getElementById('payLinkBox').style.display = 'block';
-    return;
-  }
-
-  // Aba Cartão: setup_intent (salvar cartão) ou pay_invoice (pagar com cartão)
-  const action = (_payMode === 'card' && !_payInvoiceId) ? 'setup_intent' : 'pay_invoice';
-  await _loadStripeCard(action, data);
+  await _loadStripeCard('pay_invoice', { invoiceId: _payInvoiceId });
 }
 
 async function _loadStripeCard(action, data) {
@@ -926,7 +932,25 @@ async function confirmStripePayment() {
   btn.disabled = true;
   btn.textContent = 'Processando...';
   errEl.style.display = 'none';
+
   try {
+    // Pagar com cartão salvo (sem Elements)
+    if (_payMode === 'pay_saved') {
+      const r = await api('billing', 'pay_with_saved', { invoiceId: _payInvoiceId });
+      if (!r.ok) {
+        errEl.textContent = r.error || 'Pagamento recusado. Tente outro cartão.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Tentar novamente';
+        return;
+      }
+      closeModal('paymentModal');
+      await loadBillingData();
+      renderBilling();
+      return;
+    }
+
+    // Pagar com Stripe Elements (cartão novo ou setup)
     let result;
     if (_payMode === 'pay') {
       result = await _stripe.confirmPayment({
@@ -954,7 +978,20 @@ async function confirmStripePayment() {
     errEl.style.display = 'block';
   }
   btn.disabled = false;
-  btn.textContent = _payMode === 'pay' ? 'Pagar agora' : 'Salvar cartão';
+  btn.textContent = _payMode === 'pay_saved' ? 'Tentar novamente' : (_payMode === 'pay' ? 'Pagar agora' : 'Salvar cartão');
+}
+
+async function removeCard() {
+  const btn = document.getElementById('removeCardBtn');
+  const pmId = btn?.dataset?.pmId;
+  if (!pmId) { alert('ID do cartão não encontrado.'); return; }
+  if (!confirm('Excluir este cartão? Você precisará cadastrar um novo para pagar faturas.')) return;
+  btn.disabled = true;
+  const r = await api('billing', 'remove_card', { paymentMethodId: pmId });
+  btn.disabled = false;
+  if (!r.ok) { alert(r.error || 'Erro ao excluir cartão.'); return; }
+  await loadBillingData();
+  renderBilling();
 }
 
 function closePaymentModal(e) {

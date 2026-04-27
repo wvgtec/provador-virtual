@@ -121,8 +121,9 @@ export default async function handler(req, res) {
             limit: 1,
           });
           if (methods.data.length) {
-            const card = methods.data[0].card;
-            paymentMethod = { brand: card.brand, last4: card.last4, expMonth: card.exp_month, expYear: card.exp_year };
+            const pm   = methods.data[0];
+            const card = pm.card;
+            paymentMethod = { id: pm.id, brand: card.brand, last4: card.last4, expMonth: card.exp_month, expYear: card.exp_year };
           }
           const subs = await stripe.subscriptions.list({ customer: client.stripeCustomerId, limit: 1 });
           if (subs.data.length) subscriptionStatus = subs.data[0].status;
@@ -286,6 +287,33 @@ export default async function handler(req, res) {
         metadata: { clientKey },
       });
       return res.json({ ok: true, url: link.url });
+    }
+
+    // PAY_WITH_SAVED — paga fatura usando o cartão já salvo (sem pedir dados de novo)
+    if (action === 'pay_with_saved') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const { invoiceId } = params;
+      if (!invoiceId) return res.status(400).json({ error: 'invoiceId obrigatório.' });
+      try {
+        const inv = await stripe.invoices.pay(invoiceId, { expand: ['payment_intent'] });
+        return res.json({ ok: true, status: inv.status, paid: inv.paid });
+      } catch (e) {
+        // Se o cartão foi recusado, retorna o erro para o cliente
+        return res.json({ ok: false, error: e.message });
+      }
+    }
+
+    // REMOVE_CARD — desvincula o cartão salvo do cliente
+    if (action === 'remove_card') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const { paymentMethodId } = params;
+      if (!paymentMethodId) return res.status(400).json({ error: 'paymentMethodId obrigatório.' });
+      try {
+        await stripe.paymentMethods.detach(paymentMethodId);
+        return res.json({ ok: true });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
     }
 
     return res.status(400).json({ error: 'Ação inválida.' });
