@@ -1016,7 +1016,7 @@
     btn.disabled = true;
     btn.textContent = 'Enviando...';
     try {
-      await fetch('/api/lead', {
+      const res = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1027,10 +1027,17 @@
           shop:    document.getElementById('lead-store').value,
         }),
       });
-    } catch (_) {}
-    e.target.reset();
-    closeModal();
-    alert('Obrigado! Entraremos em contato em breve.');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.detail || 'Erro desconhecido');
+      e.target.reset();
+      closeModal();
+      alert('Obrigado! Entraremos em contato em breve.');
+    } catch (err) {
+      console.error('[submitLead]', err);
+      btn.disabled = false;
+      btn.textContent = 'Enviar solicitação';
+      alert('Erro ao enviar: ' + err.message);
+    }
   }
 
   async function submitLeadForm(e) {
@@ -1039,7 +1046,7 @@
     btn.disabled = true;
     btn.textContent = 'Enviando...';
     try {
-      await fetch('/api/lead', {
+      const res = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1050,8 +1057,15 @@
           volume: document.getElementById('lf-volume').value,
         }),
       });
-    } catch (_) {}
-    document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Um especialista vai te contatar em até 24h com um render de amostra do seu catálogo.</p></div>';
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.detail || 'Erro desconhecido');
+      document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Um especialista vai te contatar em até 24h com um render de amostra do seu catálogo.</p></div>';
+    } catch (err) {
+      console.error('[submitLeadForm]', err);
+      btn.disabled = false;
+      btn.textContent = 'Quero minha demo →';
+      alert('Erro ao enviar: ' + err.message);
+    }
   }
   function toggleFaq(el) { el.classList.toggle('open'); }
 </script>

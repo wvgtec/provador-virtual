@@ -74,19 +74,23 @@ export default async function handler(req, res) {
   `;
 
   try {
+    const payload = {
+      from: 'Mirage <leads@mirageai.com.br>',
+      to: [process.env.LEAD_EMAIL || 'wlissesv@gmail.com'],
+      subject: `Novo lead Mirage — ${name || email}`,
+      html: htmlBody,
+      reply_to: email,
+    };
+
+    console.log('[lead] Enviando para Resend:', JSON.stringify({ to: payload.to, subject: payload.subject }));
+
     const sendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: 'Mirage Leads <onboarding@resend.dev>',
-        to: ['wlissesv@gmail.com'],
-        subject: `🎯 Novo lead Mirage — ${name || email}`,
-        html: htmlBody,
-        reply_to: email,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const sendData = await sendRes.json();
