@@ -311,7 +311,7 @@ export default async function handler(req, res) {
   ]);
 
   await qstash.publishJSON({
-    url:     `${process.env.APP_URL}/api/process`,
+    url:     process.env.WORKER_URL || `${process.env.APP_URL}/api/process`,
     body:    { jobId },
     retries: 3,
   });
