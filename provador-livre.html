@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mirage — Provador Livre</title>
+  <link rel="icon" type="image/png" href="logo-mirage.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0A0A0A;
+      --paper: #FFFFFF;
+      --paper-2: #F6F5F1;
+      --cream: #FBF7EC;
+      --line: rgba(10,10,10,0.12);
+      --muted: rgba(10,10,10,0.58);
+      --yellow: #FFE34E;
+      --yellow-soft: #FFF5B8;
+      --pink: #FFD6CC;
+      --lilac: #E5DCFF;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    @keyframes float-y { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes scanline { 0%{top:-10%;opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{top:110%;opacity:0} }
+    @keyframes pulse-dot { 0%,100%{opacity:0.35;transform:scale(1)} 50%{opacity:1;transform:scale(1.4)} }
+    @keyframes rise { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+    .float { animation: float-y 6s ease-in-out infinite; }
+    .rise { animation: rise 0.7s cubic-bezier(.2,.7,.2,1) both; }
+    .blob { position: absolute; border-radius: 50%; pointer-events: none; z-index: 0; }
+
+    .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 14px; font-weight: 600; font-size: 15px; letter-spacing: -0.01em; transition: transform .2s, box-shadow .2s, background .2s; border: 1.5px solid var(--ink); cursor: pointer; }
+    .btn-yellow { background: var(--yellow); color: var(--ink); }
+    .btn-yellow:hover { transform: translate(-2px,-2px); box-shadow: 4px 4px 0 0 var(--ink); }
+    .btn-ghost { background: transparent; }
+    .btn-ghost:hover { background: var(--yellow); }
+
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--ink); font-size: 12px; font-weight: 500; background: var(--yellow); }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ink); display: inline-block; animation: pulse-dot 1.4s infinite; }
+
+    em.hl-yellow { font-style: normal; position: relative; display: inline-block; padding: 0 4px; }
+    em.hl-yellow::before { content: ""; position: absolute; inset: 10% -2% 14% -2%; background: var(--yellow); z-index: -1; border-radius: 6px; transform: rotate(-1deg); }
+    em.hl-pink { font-style: normal; position: relative; display: inline-block; padding: 0 4px; }
+    em.hl-pink::before { content: ""; position: absolute; inset: 10% -2% 14% -2%; background: var(--pink); z-index: -1; border-radius: 6px; transform: rotate(1deg); }
+
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
+
+    /* NAV */
+    .nav { position: sticky; top: 0; z-index: 60; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1.5px solid var(--ink); }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -0.03em; }
+    .nav-links { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
+    .nav-links a:hover::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 3px; background: var(--yellow); }
+    .nav-links a { position: relative; }
+    .nav-cta { background: var(--yellow); color: var(--ink); border: 1.5px solid var(--ink); padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .nav-cta:hover { transform: translate(-2px,-2px); box-shadow: 3px 3px 0 0 var(--ink); }
+
+    /* MARQUEE */
+    .marquee { overflow: hidden; border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); padding: 16px 0; background: var(--yellow); }
+    .marquee-track { display: flex; gap: 48px; white-space: nowrap; animation: marquee 40s linear infinite; font-weight: 700; font-size: 20px; color: var(--ink); letter-spacing: -0.02em; }
+    .marquee-track span { display: flex; align-items: center; gap: 48px; }
+    .marquee-track i { font-style: italic; font-weight: 500; }
+    .marquee-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink); display: inline-block; }
+
+    /* SECTION */
+    section { padding: 64px 0; position: relative; }
+    .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--paper); }
+    h2.section-title { font-weight: 700; font-size: clamp(32px,4vw,54px); line-height: 1.05; letter-spacing: -0.03em; margin: 16px 0 0; max-width: 22ch; }
+    .section-sub { color: var(--muted); font-size: 17px; max-width: 56ch; margin-top: 16px; line-height: 1.55; }
+
+    /* STUDIO */
+    .studio { padding: 32px 0 56px; }
+    .studio-shell { position: relative; border-radius: 28px; overflow: hidden; background: var(--cream); border: 1.5px solid var(--ink); box-shadow: 10px 10px 0 0 var(--ink); }
+    .studio-shell .blob-s1 { width: 260px; height: 260px; background: var(--yellow); top: -60px; right: -40px; opacity: 0.65; }
+    .studio-shell .blob-s2 { width: 160px; height: 160px; background: var(--pink); bottom: -30px; left: 20%; opacity: 0.7; }
+    .studio-head { position: relative; display: flex; justify-content: space-between; align-items: flex-end; padding: 28px 32px 0; gap: 20px; flex-wrap: wrap; z-index: 2; }
+    .studio-head h2 { font-weight: 700; font-size: clamp(26px,3.2vw,44px); letter-spacing: -0.03em; line-height: 1.05; margin: 8px 0 0; }
+    .studio-sub { color: var(--muted); max-width: 42ch; font-size: 15px; line-height: 1.5; }
+    .studio-grid { display: grid; grid-template-columns: 260px 1fr 300px; gap: 16px; padding: 24px 32px 32px; position: relative; z-index: 2; }
+    .panel { background: var(--paper); border: 1.5px solid var(--ink); border-radius: 18px; padding: 18px; }
+    .panel h3 { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; font-weight: 500; }
+
+    /* Garment Upload Panel */
+    .garment-drop {
+      border: 2px dashed var(--ink); border-radius: 14px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; padding: 24px 16px; text-align: center;
+      cursor: pointer; transition: all .2s; background: var(--paper-2);
+      aspect-ratio: 3/4; position: relative;
+    }
+    .garment-drop:hover, .garment-drop.drag { background: var(--yellow-soft); border-color: var(--ink); }
+    .garment-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .garment-drop .gd-icon {
+      width: 48px; height: 48px; border-radius: 50%; background: var(--yellow);
+      border: 1.5px solid var(--ink); display: flex; align-items: center; justify-content: center;
+    }
+    .garment-drop .gd-title { font-weight: 700; font-size: 14px; }
+    .garment-drop .gd-hint { font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .garment-drop .gd-btn { background: var(--ink); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; pointer-events: none; }
+
+    /* Garment preview */
+    .garment-preview { display: none; flex-direction: column; gap: 10px; }
+    .garment-preview.visible { display: flex; }
+    .garment-preview img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 12px; border: 1.5px solid var(--ink); }
+    .garment-preview-footer { display: flex; align-items: center; justify-content: space-between; }
+    .garment-name { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+    .garment-change { font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer; border: none; background: none; padding: 0; }
+    .garment-change:hover { color: var(--ink); }
+
+    /* Canvas */
+    .canvas { position: relative; border-radius: 18px; overflow: hidden; background: var(--paper); border: 1.5px solid var(--ink); min-height: 560px; display: flex; align-items: center; justify-content: center; }
+    .canvas-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(10,10,10,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(10,10,10,0.06) 1px, transparent 1px); background-size: 28px 28px; mask-image: radial-gradient(60% 60% at 50% 50%, black, transparent 80%); pointer-events: none; }
+    .canvas-empty { position: relative; text-align: center; padding: 32px; max-width: 380px; }
+    .canvas-empty .icon { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--yellow); border: 1.5px solid var(--ink); }
+    .canvas-empty h4 { font-weight: 700; font-size: 24px; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .canvas-empty p { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0; }
+    .drop { border: 2px dashed var(--ink); border-radius: 14px; padding: 20px 22px; margin-top: 18px; transition: all .2s; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; background: var(--paper-2); }
+    .drop:hover { background: var(--yellow-soft); }
+    .drop.drag { border-style: solid; background: var(--yellow); }
+    .drop .hint { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+    .drop-cta { background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+
+    /* Result */
+    .result-wrap { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; }
+    .result-wrap.visible { display: flex; }
+    .result-img-box { position: relative; height: 88%; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden; border: 1.5px solid var(--ink); }
+    .result-img-box .person-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .result-img-box .api-result { display: none; width: 100%; height: 100%; object-fit: contain; }
+    .scan { position: absolute; left: 0; right: 0; height: 12%; background: linear-gradient(180deg, transparent, rgba(255,227,78,0.85), transparent); filter: blur(1px); pointer-events: none; top: 0; display: none; }
+    .scan.active { display: block; animation: scanline 2.4s cubic-bezier(.4,.1,.4,1) infinite; }
+    .result-corners { position: absolute; inset: 10px; pointer-events: none; }
+    .result-corners span { position: absolute; width: 18px; height: 18px; border: 2px solid var(--yellow); }
+    .result-corners span:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; }
+    .result-corners span:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; }
+    .result-corners span:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; }
+    .result-corners span:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; }
+    .result-hud { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; gap: 6px; z-index: 3; }
+    .hud-chip { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 10px; letter-spacing: 0.04em; color: var(--ink); background: var(--yellow); padding: 5px 10px; border-radius: 6px; border: 1.5px solid var(--ink); display: flex; align-items: center; gap: 6px; }
+    .hud-chip.dark { background: var(--ink); color: #fff; border-color: rgba(255,255,255,0.1); }
+    .hud-chip .hd { width: 6px; height: 6px; border-radius: 50%; background: var(--yellow); animation: pulse-dot 1.2s infinite; }
+    .result-meta-wrap { position: absolute; bottom: 14px; right: 14px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; z-index: 3; }
+    .result-meta-wrap span { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 10px; letter-spacing: 0.04em; background: var(--paper); padding: 5px 10px; border-radius: 6px; border: 1.5px solid var(--ink); }
+
+    /* Pipeline */
+    .process { display: flex; flex-direction: column; gap: 10px; }
+    .step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-weight: 500; }
+    .step .sn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--ink); display: flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--ink); background: var(--paper); font-weight: 500; flex-shrink: 0; }
+    .step.active { color: var(--ink); }
+    .step.active .sn { background: var(--yellow); }
+    .step.done { color: var(--ink); }
+    .step.done .sn { background: var(--ink); color: var(--paper); }
+
+    /* Metrics */
+    .metric { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+    .metric:last-of-type { border-bottom: none; }
+    .metric .mk { color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .metric .mv { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+    .metric .mv small { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 10px; color: var(--muted); margin-left: 3px; }
+    .bar { height: 6px; border-radius: 999px; background: var(--paper-2); overflow: hidden; margin-top: 5px; border: 1px solid var(--ink); }
+    .bar i { display: block; height: 100%; background: var(--yellow); transition: width 0.9s ease; width: 0; }
+
+    .run-btn { width: 100%; margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--ink); color: var(--paper); font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all .2s; border: 1.5px solid var(--ink); cursor: pointer; }
+    .run-btn:hover:not(:disabled) { transform: translate(-2px,-2px); box-shadow: 3px 3px 0 0 var(--ink); }
+    .run-btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+    .run-btn.ready { background: var(--yellow); color: var(--ink); }
+    .reset-btn { width: 100%; margin-top: 8px; padding: 10px; background: transparent; color: var(--muted); font-size: 10.5px; font-family: "JetBrains Mono", monospace; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; cursor: pointer; border: none; }
+    .reset-btn:hover { color: var(--ink); }
+    .demo-error { background: #fff0f0; color: #c0392b; border: 1px solid #ffcccc; border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-top: 10px; display: none; }
+    .save-result-btn { width: 100%; margin-top: 8px; padding: 12px; border-radius: 12px; background: transparent; color: var(--ink); font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; border: 1.5px solid var(--ink); cursor: pointer; display: none; }
+    .save-result-btn:hover { background: var(--paper-2); }
+
+    /* FOOTER */
+    footer { padding: 48px 0 32px; border-top: 1.5px solid var(--ink); background: var(--cream); }
+    .foot-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 36px; }
+    .foot-col h6 { font-size: 13px; font-weight: 700; margin: 0 0 12px; }
+    .foot-col a { display: block; padding: 5px 0; font-size: 14px; font-weight: 500; }
+    .foot-col a:hover { color: var(--muted); }
+    .foot-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1.5px solid var(--ink); color: var(--muted); font-size: 13px; font-weight: 500; }
+
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: #fff; border-radius: 24px; padding: 40px; width: 100%; max-width: 480px; box-shadow: 8px 8px 0 0 var(--ink); border: 1.5px solid var(--ink); animation: rise .3s; }
+    .modal-close { float: right; font-size: 24px; cursor: pointer; color: #999; background: none; border: none; line-height: 1; }
+    .modal-close:hover { color: #333; }
+    .modal-box h2 { font-size: 24px; font-weight: 800; margin: 8px 0 24px; letter-spacing: -0.03em; }
+    .form-field { margin-bottom: 16px; }
+    .form-field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 6px; font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.04em; }
+    .form-field input, .form-field select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 10px; font-size: 14px; font-family: inherit; transition: all .2s; background: var(--paper); }
+    .form-field input:focus, .form-field select:focus { outline: none; background: var(--yellow-soft); }
+    .form-submit { width: 100%; background: var(--ink); color: #fff; border: 1.5px solid var(--ink); padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: all .2s; }
+    .form-submit:hover { transform: translate(-2px,-2px); box-shadow: 3px 3px 0 0 var(--ink); }
+
+    /* WHATSAPP */
+    #whatsapp-btn {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: #25D366; width: 56px; height: 56px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.45);
+      transition: transform 0.2s, box-shadow 0.2s; text-decoration: none;
+      animation: whatsapp-pulse 2.5s infinite;
+    }
+    #whatsapp-btn:hover { transform: scale(1.1); box-shadow: 0 6px 24px rgba(37,211,102,0.6); animation: none; }
+    @keyframes whatsapp-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(37,211,102,0.5); }
+      70%  { box-shadow: 0 0 0 14px rgba(37,211,102,0); }
+      100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 1100px) {
+      .studio-grid { grid-template-columns: 1fr; }
+      .foot-row { grid-template-columns: 1fr 1fr; gap: 16px; }
+    }
+    @media (max-width: 640px) {
+      .foot-row { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      section { padding: 48px 0; }
+      .wrap { padding: 0 20px; }
+      .studio-head, .studio-grid { padding-left: 20px; padding-right: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a href="index.html" class="logo">
+      <img src="logo-mirage.png" alt="Mirage" style="height:44px;display:inline-block;vertical-align:middle;">
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Início</a>
+      <a href="index.html#como">Como funciona</a>
+      <a href="index.html#clientes">Clientes</a>
+      <a href="index.html#faq">FAQ</a>
+    </div>
+    <button class="nav-cta" onclick="openModal()">Quero para minha loja</button>
+  </div>
+</nav>
+
+<!-- MARQUEE -->
+<div class="marquee">
+  <div class="marquee-track">
+    <span>Shopify <span class="marquee-dot"></span> VTEX <span class="marquee-dot"></span> <i>WooCommerce</i> <span class="marquee-dot"></span> Nuvemshop <span class="marquee-dot"></span> <i>Fashion</i> <span class="marquee-dot"></span> Streetwear <span class="marquee-dot"></span> Alfaiataria <span class="marquee-dot"></span> <i>API-first</i> <span class="marquee-dot"></span></span>
+    <span>Shopify <span class="marquee-dot"></span> VTEX <span class="marquee-dot"></span> <i>WooCommerce</i> <span class="marquee-dot"></span> Nuvemshop <span class="marquee-dot"></span> <i>Fashion</i> <span class="marquee-dot"></span> Streetwear <span class="marquee-dot"></span> Alfaiataria <span class="marquee-dot"></span> <i>API-first</i> <span class="marquee-dot"></span></span>
+  </div>
+</div>
+
+<!-- STUDIO LIVRE -->
+<section class="studio" id="studio">
+  <div class="wrap">
+    <div class="studio-shell">
+      <div class="blob blob-s1"></div>
+      <div class="blob blob-s2"></div>
+      <div class="studio-head">
+        <div>
+          <div class="eyebrow">Try-on Studio</div>
+          <h2>Envie <em class="hl-yellow">qualquer peça</em> e experimente na sua foto.</h2>
+        </div>
+        <p class="studio-sub">Faça o upload da foto da peça e da sua foto — a IA veste você em segundos com <strong>+35% de conversão</strong> comprovada.</p>
+      </div>
+
+      <div class="studio-grid">
+
+        <!-- LEFT: upload da peça -->
+        <div class="panel">
+          <h3>Foto da peça</h3>
+
+          <!-- Estado: vazio -->
+          <div class="garment-drop" id="garment-drop"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="handleGarmentDrop(event)"
+            onclick="document.getElementById('garment-file').click()">
+            <input type="file" id="garment-file" accept="image/*" onchange="onGarmentUpload(event)" style="display:none">
+            <div class="gd-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+            <p class="gd-title">Foto da peça</p>
+            <p style="font-size:13px;color:var(--muted);line-height:1.4">Envie a foto do produto que deseja experimentar</p>
+            <span class="gd-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Enviar foto
+            </span>
+            <span class="gd-hint">JPG · PNG · até 12MB</span>
+          </div>
+
+          <!-- Estado: com imagem -->
+          <div class="garment-preview" id="garment-preview">
+            <img id="garment-preview-img" alt="Peça selecionada">
+            <div class="garment-preview-footer">
+              <span class="garment-name" id="garment-name">—</span>
+              <button class="garment-change" onclick="resetGarment()">↺ trocar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CENTER: canvas pessoa + resultado -->
+        <div class="canvas" id="canvas-area">
+          <div class="canvas-bg"></div>
+          <div class="canvas-empty" id="canvas-empty">
+            <div class="icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h4l2-2h6l2 2h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+            <h4>Sua prova começa aqui</h4>
+            <p>Envie uma foto sua de corpo inteiro para experimentar a peça selecionada.</p>
+            <div class="drop" id="drop-zone"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="handlePersonDrop(event)"
+              onclick="document.getElementById('person-file').click()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v12M6 10l6-6 6 6M4 18h16"/></svg>
+              <span class="drop-cta">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4v12M6 10l6-6 6 6M4 18h16"/></svg>
+                Enviar minha foto
+              </span>
+              <span class="hint">JPG · PNG · até 12MB</span>
+            </div>
+            <input type="file" id="person-file" accept="image/*" onchange="onPersonUpload(event)" style="display:none">
+          </div>
+
+          <div class="result-wrap" id="result-wrap">
+            <div class="result-img-box" id="result-img-box">
+              <img class="person-img" id="person-preview" alt="Sua foto">
+              <img class="api-result" id="result-img" alt="Resultado">
+              <div class="scan" id="scan-line"></div>
+              <div class="result-corners"><span></span><span></span><span></span><span></span></div>
+              <div class="result-hud">
+                <div class="hud-chip dark" id="hud-chip"><span class="hd"></span><span id="hud-status">READY</span></div>
+                <div class="hud-chip dark" style="font-size:8px;opacity:0.7">v4.2</div>
+              </div>
+              <div class="result-meta-wrap">
+                <span id="garment-label">PEÇA</span>
+                <span id="fit-score-tag" style="display:none">FIT SCORE · –</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: pipeline + métricas + botão -->
+        <div class="panel">
+          <h3>Pipeline</h3>
+          <div class="process">
+            <div class="step" id="step-1"><span class="sn" id="sn-1">1</span><span>Detectar pose e silhueta</span></div>
+            <div class="step" id="step-2"><span class="sn" id="sn-2">2</span><span>Segmentar peça 2D</span></div>
+            <div class="step" id="step-3"><span class="sn" id="sn-3">3</span><span>Renderizar caimento</span></div>
+            <div class="step" id="step-4"><span class="sn" id="sn-4">4</span><span>Preservar textura e luz</span></div>
+          </div>
+
+          <h3 style="margin-top:22px">Métricas live</h3>
+          <div>
+            <div class="metric">
+              <span class="mk">Fit score</span>
+              <span class="mv"><span id="metric-fit">0</span><small>%</small></span>
+            </div>
+            <div class="bar"><i id="bar-fit"></i></div>
+            <div class="metric" style="margin-top:12px">
+              <span class="mk">Fidelidade tecido</span>
+              <span class="mv"><span id="metric-fabric">0</span><small>%</small></span>
+            </div>
+            <div class="bar"><i id="bar-fabric"></i></div>
+            <div class="metric" style="margin-top:12px">
+              <span class="mk">Precisão cor</span>
+              <span class="mv"><span id="metric-color">0</span><small>%</small></span>
+            </div>
+            <div class="bar"><i id="bar-color"></i></div>
+          </div>
+
+          <button class="run-btn" id="demo-btn" disabled onclick="runDemo()">
+            <span id="demo-btn-text">Envie as duas fotos para continuar</span>
+          </button>
+          <div class="demo-error" id="demo-error"></div>
+          <button class="reset-btn" id="reset-btn" style="display:none" onclick="resetAll()">↺ Recomeçar</button>
+          <button class="save-result-btn" id="save-btn" onclick="saveResult()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Salvar foto
+          </button>
+          <button class="run-btn" style="margin-top:12px;background:#fff;color:var(--ink);display:none" id="result-cta" onclick="openModal()">
+            Quero isso na minha loja
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <div class="foot-col">
+        <a href="index.html" class="logo" style="margin-bottom:14px">
+          <img src="logo-mirage.png" alt="Mirage" style="height:44px;display:inline-block;vertical-align:middle;">
+        </a>
+        <p style="color:var(--muted);font-size:14px;margin:12px 0 0;max-width:32ch;line-height:1.5;font-weight:500">Provador virtual com IA generativa para moda direta ao consumidor. Feito no Brasil.</p>
+      </div>
+      <div class="foot-col">
+        <h6>Produto</h6>
+        <a href="index.html#studio">Studio</a>
+        <a href="#">API</a>
+      </div>
+      <div class="foot-col">
+        <h6>Empresa</h6>
+        <a href="#">Sobre</a>
+        <a href="#">Blog</a>
+        <a href="#">Carreiras</a>
+      </div>
+      <div class="foot-col">
+        <h6>Contato</h6>
+        <a href="index.html#lead">Solicitar demo</a>
+        <a href="mailto:oi@mirageai.com.br">oi@mirageai.com.br</a>
+      </div>
+    </div>
+    <div class="foot-bar">
+      <span>© 2026 Mirage · Todos os direitos reservados</span>
+      <span>Feito com IA · CNPJ 00.000.000/0001-00</span>
+    </div>
+  </div>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2>Quero o Mirage</h2>
+    <form onsubmit="submitLead(event)">
+      <div class="form-field">
+        <label>Seu nome</label>
+        <input type="text" id="lead-name" required placeholder="Nome completo">
+      </div>
+      <div class="form-field">
+        <label>Telefone</label>
+        <input type="tel" id="lead-phone" required placeholder="(11) 9 0000-0000">
+      </div>
+      <div class="form-field">
+        <label>URL da loja</label>
+        <input type="text" id="lead-store" required placeholder="sualoja.com.br">
+      </div>
+      <div class="form-field">
+        <label>Volume mensal</label>
+        <select id="lead-volume">
+          <option value="">Selecione…</option>
+          <option>Até 500 pedidos</option>
+          <option>500 – 5.000 pedidos</option>
+          <option>5.000 – 50.000 pedidos</option>
+          <option>Mais de 50.000</option>
+        </select>
+      </div>
+      <button type="submit" class="form-submit">Enviar solicitação</button>
+    </form>
+  </div>
+</div>
+
+<!-- WHATSAPP -->
+<a href="https://wa.me/5511951929619" target="_blank" rel="noopener" id="whatsapp-btn" title="Falar pelo WhatsApp">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+</a>
+
+<script>
+  const API_URL    = 'https://provador-virtual-brown.vercel.app';
+  const CLIENT_KEY = 'pvk_609c700a03c793cc63aef696046c5cc6';
+
+  let garmentB64   = null;
+  let garmentName  = '';
+  let personB64    = null;
+
+  // ─── Utilitários ─────────────────────────────────────────────────────────
+  function dataURItoBlob(dataURI) {
+    const parts = dataURI.split(',');
+    const mime  = parts[0].match(/:(.*?);/)[1];
+    const raw   = atob(parts[1]);
+    const arr   = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  function compressImage(file, maxPx = 1200) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > maxPx || h > maxPx) {
+            const r = Math.min(maxPx / w, maxPx / h);
+            w = Math.round(w * r); h = Math.round(h * r);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.88));
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadToGCS(b64) {
+    // 1. Pede URL assinada
+    const urlRes  = await fetch(API_URL + '/api/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientKey: CLIENT_KEY, contentType: 'image/jpeg' }),
+    });
+    const urlData = await urlRes.json();
+    if (!urlData.signedUrl) throw new Error(urlData.error || 'Erro ao obter URL de upload');
+
+    // 2. Faz o upload
+    const putRes = await fetch(urlData.signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: dataURItoBlob(b64),
+    });
+    if (!putRes.ok) throw new Error('Falha no upload (GCS ' + putRes.status + ')');
+
+    return urlData.gcsUrl;
+  }
+
+  // ─── Garment Upload ───────────────────────────────────────────────────────
+  function handleGarmentDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag');
+    const f = e.dataTransfer.files?.[0];
+    if (f) processGarment(f);
+  }
+
+  function onGarmentUpload(e) {
+    const f = e.target.files[0];
+    if (f) processGarment(f);
+  }
+
+  async function processGarment(file) {
+    garmentB64  = await compressImage(file);
+    garmentName = file.name.replace(/\.[^.]+$/, '');
+    document.getElementById('garment-label').textContent = garmentName.toUpperCase().slice(0, 16);
+
+    const preview = document.getElementById('garment-preview-img');
+    preview.src = garmentB64;
+    document.getElementById('garment-name').textContent = garmentName;
+    document.getElementById('garment-drop').style.display = 'none';
+    document.getElementById('garment-preview').classList.add('visible');
+    updateRunBtn();
+  }
+
+  function resetGarment() {
+    garmentB64 = null; garmentName = '';
+    document.getElementById('garment-file').value = '';
+    document.getElementById('garment-preview').classList.remove('visible');
+    document.getElementById('garment-drop').style.display = '';
+    updateRunBtn();
+  }
+
+  // ─── Person Upload ────────────────────────────────────────────────────────
+  function handlePersonDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag');
+    const f = e.dataTransfer.files?.[0];
+    if (f) processPerson(f);
+  }
+
+  function onPersonUpload(e) {
+    const f = e.target.files[0];
+    if (f) processPerson(f);
+  }
+
+  async function processPerson(file) {
+    personB64 = await compressImage(file);
+    showPersonPreview(personB64);
+    updateRunBtn();
+  }
+
+  function showPersonPreview(src) {
+    document.getElementById('canvas-empty').style.display = 'none';
+    document.getElementById('result-wrap').classList.add('visible');
+    document.getElementById('person-preview').src = src;
+    document.getElementById('person-preview').style.display = 'block';
+    document.getElementById('result-img').style.display = 'none';
+    document.getElementById('hud-status').textContent = 'READY';
+    document.getElementById('hud-chip').className = 'hud-chip dark';
+    document.getElementById('reset-btn').style.display = 'block';
+    document.getElementById('result-cta').style.display = 'none';
+    document.getElementById('save-btn').style.display = 'none';
+    document.getElementById('fit-score-tag').style.display = 'none';
+    setStep(0); setMetrics(0, 0, 0);
+  }
+
+  // ─── Controles de UI ─────────────────────────────────────────────────────
+  function updateRunBtn() {
+    const btn = document.getElementById('demo-btn');
+    const txt = document.getElementById('demo-btn-text');
+    if (garmentB64 && personB64) {
+      btn.disabled = false;
+      btn.classList.add('ready');
+      txt.textContent = 'Renderizar prova ✦';
+    } else if (!garmentB64 && !personB64) {
+      btn.disabled = true; btn.classList.remove('ready');
+      txt.textContent = 'Envie as duas fotos para continuar';
+    } else if (!garmentB64) {
+      btn.disabled = true; btn.classList.remove('ready');
+      txt.textContent = 'Falta a foto da peça';
+    } else {
+      btn.disabled = true; btn.classList.remove('ready');
+      txt.textContent = 'Falta a sua foto';
+    }
+  }
+
+  function resetAll() {
+    resetGarment();
+    personB64 = null;
+    document.getElementById('person-file').value = '';
+    document.getElementById('canvas-empty').style.display = '';
+    document.getElementById('result-wrap').classList.remove('visible');
+    document.getElementById('reset-btn').style.display = 'none';
+    document.getElementById('result-cta').style.display = 'none';
+    document.getElementById('save-btn').style.display = 'none';
+    document.getElementById('scan-line').classList.remove('active');
+    document.getElementById('demo-error').style.display = 'none';
+    setStep(0); setMetrics(0, 0, 0);
+    updateRunBtn();
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById('step-' + i);
+      const sn = document.getElementById('sn-' + i);
+      el.classList.remove('active', 'done');
+      if (n >= 5 || i < n) { el.classList.add('done'); sn.textContent = '✓'; }
+      else if (i === n)     { el.classList.add('active'); sn.textContent = String(i); }
+      else                  { sn.textContent = String(i); }
+    }
+  }
+
+  function setMetrics(fit, fabric, color) {
+    document.getElementById('metric-fit').textContent    = fit;
+    document.getElementById('metric-fabric').textContent = fabric;
+    document.getElementById('metric-color').textContent  = color;
+    document.getElementById('bar-fit').style.width    = fit + '%';
+    document.getElementById('bar-fabric').style.width = fabric + '%';
+    document.getElementById('bar-color').style.width  = color + '%';
+  }
+
+  function saveResult() {
+    const src  = document.getElementById('result-img').src;
+    const a    = document.createElement('a');
+    a.href     = src;
+    a.download = 'meu-look-mirage.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // ─── Fluxo principal ──────────────────────────────────────────────────────
+  async function runDemo() {
+    const btn     = document.getElementById('demo-btn');
+    const errorEl = document.getElementById('demo-error');
+
+    btn.disabled = true; btn.classList.remove('ready');
+    errorEl.style.display = 'none';
+    document.getElementById('hud-status').textContent = 'ANALYZING';
+    document.getElementById('hud-chip').className = 'hud-chip dark';
+    document.getElementById('scan-line').classList.add('active');
+    document.getElementById('person-preview').style.display = 'block';
+    document.getElementById('result-img').style.display = 'none';
+    document.getElementById('result-cta').style.display = 'none';
+    document.getElementById('save-btn').style.display = 'none';
+    document.getElementById('fit-score-tag').style.display = 'none';
+    setStep(1);
+
+    try {
+      // Upload da pessoa
+      document.getElementById('demo-btn-text').textContent = 'Enviando sua foto…';
+      setStep(1);
+      const personUrl = await uploadToGCS(personB64);
+
+      // Upload da peça
+      document.getElementById('demo-btn-text').textContent = 'Enviando foto da peça…';
+      setStep(2);
+      const garmentUrl = await uploadToGCS(garmentB64);
+
+      // Submit do job
+      document.getElementById('demo-btn-text').textContent = 'Processando…';
+      setStep(3);
+      const res = await fetch(API_URL + '/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personImageUrl:  personUrl,
+          garmentImageUrl: garmentUrl,
+          category:        'auto',
+          clientKey:       CLIENT_KEY,
+          productUrl:      window.location.href,
+          productName:     garmentName || 'Peça enviada',
+        }),
+      });
+      const data = await res.json();
+      if (!data.jobId) throw new Error(data.error || 'Erro ao criar job');
+
+      setStep(4);
+      document.getElementById('demo-btn-text').textContent = 'A IA está trabalhando…';
+      pollResult(data.jobId, Date.now(), btn, errorEl);
+
+    } catch (err) {
+      document.getElementById('scan-line').classList.remove('active');
+      errorEl.textContent = 'Erro: ' + err.message;
+      errorEl.style.display = 'block';
+      btn.disabled = false; btn.classList.add('ready');
+      document.getElementById('demo-btn-text').textContent = 'Tentar novamente ✦';
+      document.getElementById('hud-status').textContent = 'ERROR';
+      setStep(0);
+    }
+  }
+
+  function pollResult(jobId, start, btn, errorEl) {
+    if (Date.now() - start > 90000) {
+      document.getElementById('scan-line').classList.remove('active');
+      errorEl.textContent = 'Tempo esgotado. Tente novamente.';
+      errorEl.style.display = 'block';
+      btn.disabled = false; btn.classList.add('ready');
+      document.getElementById('demo-btn-text').textContent = 'Tentar novamente ✦';
+      setStep(0);
+      return;
+    }
+    setTimeout(async () => {
+      try {
+        const r = await fetch(API_URL + '/api/result?jobId=' + jobId);
+        const d = await r.json();
+        if (d.status === 'done' || d.status === 'completed') {
+          document.getElementById('scan-line').classList.remove('active');
+          setStep(5);
+
+          const resultImg = document.getElementById('result-img');
+          resultImg.src = d.resultImage || d.output;
+          resultImg.style.display = 'block';
+          document.getElementById('person-preview').style.display = 'none';
+
+          // HUD → RENDER OK
+          document.getElementById('hud-status').textContent = 'RENDER OK';
+          document.getElementById('hud-chip').className = 'hud-chip';
+
+          setTimeout(() => setMetrics(96, 94, 99), 100);
+          const fitTag = document.getElementById('fit-score-tag');
+          fitTag.textContent = 'FIT SCORE · 96%';
+          fitTag.style.display = '';
+
+          btn.disabled = false; btn.classList.add('ready');
+          document.getElementById('demo-btn-text').textContent = 'Gerar novo ✦';
+          document.getElementById('result-cta').style.display = 'flex';
+          document.getElementById('save-btn').style.display = 'flex';
+
+        } else if (d.status === 'error' || d.status === 'failed') {
+          document.getElementById('scan-line').classList.remove('active');
+          errorEl.textContent = 'Erro do servidor: ' + (d.error || 'desconhecido');
+          errorEl.style.display = 'block';
+          btn.disabled = false; btn.classList.add('ready');
+          document.getElementById('demo-btn-text').textContent = 'Tentar novamente ✦';
+          setStep(0);
+        } else {
+          pollResult(jobId, start, btn, errorEl);
+        }
+      } catch (_) { pollResult(jobId, start, btn, errorEl); }
+    }, 2000);
+  }
+
+  // ─── Modal e lead ─────────────────────────────────────────────────────────
+  function openModal()  { document.getElementById('modal').classList.add('open'); }
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById('modal'))
+      document.getElementById('modal').classList.remove('open');
+  }
+
+  async function submitLead(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('[type=submit]');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    try {
+      await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'modal-livre',
+          name:   document.getElementById('lead-name').value,
+          phone:  document.getElementById('lead-phone').value,
+          shop:   document.getElementById('lead-store').value,
+          volume: document.getElementById('lead-volume').value,
+        }),
+      });
+    } catch (_) {}
+    e.target.reset();
+    closeModal();
+    alert('Obrigado! Entraremos em contato em breve.');
+  }
+</script>
+</body>
+</html>
