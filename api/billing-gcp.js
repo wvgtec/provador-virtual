@@ -71,7 +71,17 @@ async function queryBigQuery(token, sql) {
   );
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || 'Erro no BigQuery');
+
+  // Erro HTTP direto
+  if (!res.ok) {
+    const msg = data.error?.message || JSON.stringify(data);
+    throw new Error(msg);
+  }
+
+  // Erro dentro do job (retorna 200 mas com errorResult)
+  const jobErr = data.status?.errorResult;
+  if (jobErr) throw new Error(jobErr.message || JSON.stringify(jobErr));
+
   if (!data.jobComplete) throw new Error('Query ainda não completou (timeout)');
 
   const fields = data.schema?.fields?.map(f => f.name) || [];
@@ -171,10 +181,20 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('[billing-gcp]', err.message);
+    const msg = err.message || '';
 
-    // Tabela ainda não existe — export ativado recentemente, aguardar até 24h
-    if (err.message.includes('does not match any table') || err.message.includes('Not found')) {
+    // Tabela ainda não existe — BigQuery export ativado há menos de 24h
+    const isPending =
+      msg.includes('does not match any table') ||
+      msg.includes('notFound')                 ||
+      msg.includes('Not found')                ||
+      msg.includes('NOT_FOUND')                ||
+      msg.includes('not found')                ||
+      msg.includes('gcp_billing_export');
+
+    if (isPending) {
+      // Loga como info, não como erro — é comportamento esperado
+      console.log('[billing-gcp] tabela ainda não existe — aguardando export (até 24h)');
       return res.status(200).json({
         pending: true,
         mes: new Date().toISOString().slice(0, 7),
@@ -184,6 +204,7 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(500).json({ error: err.message });
+    console.error('[billing-gcp] erro inesperado:', msg);
+    return res.status(500).json({ error: msg });
   }
 }
