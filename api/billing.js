@@ -418,7 +418,9 @@ export default async function handler(req, res) {
 
       if (pi.status === 'succeeded') {
         const newExtra = (Number(client.extraTryons) || 0) + qty;
-        client.extraTryons = newExtra;
+        client.extraTryons     = newExtra;
+        client.active          = true;   // reativa conta suspensa por cota
+        client.suspendedReason = null;
         await redis.set(`client:${client.key}`, JSON.stringify(client));
 
         // Notifica admin
@@ -482,6 +484,60 @@ export default async function handler(req, res) {
 
       return res.json({ ok: true, clientSecret: pi.id ? pi.client_secret : null,
         publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', amountBRL: +(qty * overageRate).toFixed(2) });
+    }
+
+    // ACTIVATE_OVERAGE — ativa conta após pagamento de gerações extras com cartão novo
+    if (action === 'activate_overage') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const { quantity, paymentIntentId } = params;
+      const qty = parseInt(quantity);
+      if (!qty || !paymentIntentId) return res.status(400).json({ error: 'quantity e paymentIntentId obrigatórios.' });
+
+      // Verifica se o PaymentIntent foi realmente pago
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (pi.status !== 'succeeded') {
+        return res.json({ ok: false, error: `Pagamento não confirmado (${pi.status}).` });
+      }
+
+      const newExtra = (Number(client.extraTryons) || 0) + qty;
+      client.extraTryons     = newExtra;
+      client.active          = true;
+      client.suspendedReason = null;
+      await redis.set(`client:${client.key}`, JSON.stringify(client));
+
+      // Notifica admin
+      const RESEND_KEY  = process.env.RESEND_API_KEY;
+      const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'wlissesv@gmail.com';
+      const APP_URL     = process.env.APP_URL || 'https://app.mirageai.com.br';
+      const planData    = await getPlanLimits(client.plan || 'starter');
+      const amountBRL   = (pi.amount_received / 100).toFixed(2).replace('.', ',');
+      if (RESEND_KEY) {
+        fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from:    'Mirage Sistema <pagamentos@mirageai.com.br>',
+            to:      [ADMIN_EMAIL],
+            subject: `✅ Excedente pago — ${client.name || client.email} — ${qty} gerações`,
+            html: `<div style="font-family:sans-serif;max-width:520px">
+              <div style="background:#0a0a0a;padding:20px 28px;border-radius:12px 12px 0 0">
+                <img src="${APP_URL}/logo-mirage.png" alt="Mirage" height="28" style="filter:invert(1)">
+              </div>
+              <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:24px 28px;border-radius:0 0 12px 12px">
+                <h2 style="margin:0 0 16px;font-size:18px;color:#16a34a">✅ Gerações extras pagas — plano reativado</h2>
+                <table style="width:100%;border-collapse:collapse">
+                  <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;width:120px">Cliente</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${client.name || '—'}</td></tr>
+                  <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Plano</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px">${planData.name}</td></tr>
+                  <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Qtde extra</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${qty} gerações</td></tr>
+                  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Valor</td><td style="padding:8px 0;font-size:13px;font-weight:600;color:#16a34a">R$ ${amountBRL}</td></tr>
+                </table>
+                <p style="margin:16px 0 0;font-size:12px;color:#9ca3af">Novo limite: ${planData.limit + newExtra} tryons · <a href="${APP_URL}/painel-admin.html" style="color:#635bff">Ver admin →</a></p>
+              </div>
+            </div>`,
+          }),
+        }).catch(() => {});
+      }
+      return res.json({ ok: true, quantity: qty, newExtraTryons: newExtra });
     }
 
     // DECLINE_OVERAGE — cliente recusou ambas opções: suspende conta e notifica admin

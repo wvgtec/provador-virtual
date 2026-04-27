@@ -1232,20 +1232,37 @@ async function overagePayNew() {
   const btn = document.getElementById('overagePayNewBtn');
   btn.disabled = true; btn.textContent = 'Processando...';
   document.getElementById('overageError').style.display = 'none';
+
   const result = await _overageStripe.confirmPayment({
     elements: _overageElements,
     redirect: 'if_required',
     confirmParams: { return_url: window.location.href },
   });
-  btn.disabled = false; btn.textContent = 'Confirmar e pagar';
   if (result.error) {
+    btn.disabled = false; btn.textContent = 'Confirmar e pagar';
     document.getElementById('overageError').textContent = result.error.message;
     document.getElementById('overageError').style.display = 'block';
     return;
   }
+
+  // Pagamento confirmado — ativa conta via API (não depende do webhook)
+  const qty = parseInt(document.getElementById('overageQty').value) || 0;
+  const piId = result.paymentIntent?.id;
+  if (piId) {
+    const r = await api('billing', 'activate_overage', { quantity: qty, paymentIntentId: piId });
+    if (!r.ok) {
+      btn.disabled = false; btn.textContent = 'Confirmar e pagar';
+      document.getElementById('overageError').textContent = r.error || 'Erro ao ativar. Contate o suporte.';
+      document.getElementById('overageError').style.display = 'block';
+      return;
+    }
+  }
+
+  btn.disabled = false;
   closeModal('overageModal');
   await loadBillingData(); renderBilling();
-  alert('✅ Pagamento confirmado! Suas gerações extras foram ativadas.');
+  await refreshAccountStatus();
+  alert(`✅ ${qty} gerações extras ativadas! Seu plano foi reativado.`);
 }
 
 async function overageDoUpgrade(planId) {

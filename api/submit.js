@@ -177,14 +177,61 @@ export default async function handler(req, res) {
   if (newCount > planLimit) {
     // Reverte o incremento e rejeita — nenhum job é criado
     await redis.decr(`usage:${clientKey}`);
-    log('submit_quota_exceeded', { clientKey, plan: client.plan, usage: newCount - 1, limit: planLimit });
+
+    // ── Suspende a conta imediatamente ──────────────────────────────────────
+    const wasAlreadySuspended = client.suspendedReason === 'quota_exceeded';
+    if (!wasAlreadySuspended) {
+      const suspended = { ...client, active: false, suspendedReason: 'quota_exceeded' };
+      await redis.set(`client:${clientKey}`, JSON.stringify(suspended));
+
+      // ── Notifica o admin ───────────────────────────────────────────────────
+      const RESEND_KEY  = process.env.RESEND_API_KEY;
+      const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'wlissesv@gmail.com';
+      const APP_URL     = process.env.APP_URL || 'https://app.mirageai.com.br';
+      if (RESEND_KEY) {
+        fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from:    'Mirage Sistema <pagamentos@mirageai.com.br>',
+            to:      [ADMIN_EMAIL],
+            subject: `🔴 Plano bloqueado — ${client.name || client.email} atingiu a cota`,
+            html: `<div style="font-family:sans-serif;max-width:520px">
+              <div style="background:#0a0a0a;padding:20px 28px;border-radius:12px 12px 0 0">
+                <img src="${APP_URL}/logo-mirage.png" alt="Mirage" height="28" style="filter:invert(1)">
+              </div>
+              <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:24px 28px;border-radius:0 0 12px 12px">
+                <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626">🔴 Plano suspenso automaticamente</h2>
+                <table style="width:100%;border-collapse:collapse">
+                  <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;width:120px">Cliente</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${client.name || '—'}</td></tr>
+                  <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Email</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px">${client.email || '—'}</td></tr>
+                  <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Plano</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${client.plan || '—'}</td></tr>
+                  <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Cota</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px">${planLimit} tryons usados</td></tr>
+                  <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Motivo</td><td style="padding:8px 0;font-size:13px;font-weight:600;color:#dc2626">Limite do plano atingido</td></tr>
+                </table>
+                <p style="margin:16px 0 0;font-size:12px;color:#9ca3af">
+                  O cliente foi notificado para comprar gerações extras ou fazer upgrade.<br>
+                  <a href="${APP_URL}/painel-admin.html" style="color:#635bff">Reativar manualmente no admin →</a>
+                </p>
+              </div>
+            </div>`,
+          }),
+        }).catch(() => {});
+      }
+
+      log('submit_quota_exceeded_suspended', { clientKey, plan: client.plan, limit: planLimit });
+    } else {
+      log('submit_quota_exceeded_already_suspended', { clientKey });
+    }
+
     return res.status(429).json({
-      error:         `Limite do plano atingido (${planLimit} tryons). Acesse seu painel para continuar.`,
-      code:          'QUOTA_EXCEEDED',
-      limit:         planLimit,
-      usage:         newCount - 1,
-      plan:          client.plan || 'starter',
-      panelUrl:      `${process.env.APP_URL || 'https://app.mirageai.com.br'}/painel-cliente.html`,
+      error:    `Limite do plano atingido (${planLimit} tryons). Acesse seu painel para regularizar.`,
+      code:     'QUOTA_EXCEEDED',
+      limit:    planLimit,
+      usage:    newCount - 1,
+      plan:     client.plan || 'starter',
+      panelUrl: `${process.env.APP_URL || 'https://app.mirageai.com.br'}/painel-cliente.html`,
+      suspended: true,
     });
   }
   await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, usageCount: newCount }));
