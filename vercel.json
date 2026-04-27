@@ -2,26 +2,6 @@
   "cleanUrls": true,
   "trailingSlash": false,
 
-  "redirects": [
-    {
-      "has": [{ "type": "host", "value": "www.mirageai.com.br" }],
-      "source": "/(.*)",
-      "destination": "https://mirageai.com.br/$1",
-      "permanent": true
-    },
-    {
-      "has": [{ "type": "host", "value": "app.mirageai.com.br" }],
-      "source": "/",
-      "destination": "https://app.mirageai.com.br/painel-cliente",
-      "permanent": false
-    },
-    {
-      "has": [{ "type": "host", "value": "app.mirageai.com.br" }],
-      "source": "/admin",
-      "destination": "https://app.mirageai.com.br/painel-admin",
-      "permanent": false
-    }
-  ],
 
   "functions": {
     "api/submit.js": {
