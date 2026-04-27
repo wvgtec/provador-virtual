@@ -557,6 +557,40 @@
     let currentJobId    = null;
     let pendingLead     = null;
     let leadDone        = false;
+    let stageTimer      = null;
+
+    // Mensagens por etapa (ms → texto)
+    const LOADING_STAGES = [
+      {  at:     0, text: 'Enviando sua foto para processamento...' },
+      {  at:  4000, text: 'Analisando a peça de roupa...' },
+      {  at:  9000, text: 'Aplicando a peça ao seu modelo...' },
+      {  at: 14000, text: 'Ajustando detalhes e iluminação...' },
+      {  at: 20000, text: 'Finalizando seu look...' },
+      {  at: 28000, text: 'Quase lá, aguarde mais um instante...' },
+    ];
+
+    function startLoadingStages() {
+      if (stageTimer) clearInterval(stageTimer);
+      const start = Date.now();
+      let stageIdx = 0;
+      loadingText.textContent = LOADING_STAGES[0].text;
+
+      stageTimer = setInterval(() => {
+        const elapsed = Date.now() - start;
+        let next = stageIdx;
+        for (let i = LOADING_STAGES.length - 1; i >= 0; i--) {
+          if (elapsed >= LOADING_STAGES[i].at) { next = i; break; }
+        }
+        if (next !== stageIdx) {
+          stageIdx = next;
+          loadingText.textContent = LOADING_STAGES[stageIdx].text;
+        }
+      }, 500);
+    }
+
+    function stopLoadingStages() {
+      if (stageTimer) { clearInterval(stageTimer); stageTimer = null; }
+    }
 
     // ── Helpers de UI ──────────────────────────────────────────────────────
     function showError(msg) { errorDiv.textContent = msg; errorDiv.classList.add('visible'); }
@@ -654,6 +688,7 @@
 
     function resetToUpload() {
       clearInterval(pollTimer);
+      stopLoadingStages();
       selectedDataUrl = null;
       currentJobId    = null;
       pendingLead     = null;
@@ -848,10 +883,12 @@
 
         // 5. Polling
         pollStart = Date.now();
+        startLoadingStages();
         await new Promise((resolve, reject) => {
           pollTimer = setInterval(async () => {
             if (Date.now() - pollStart > POLL_TIMEOUT) {
               clearInterval(pollTimer);
+              stopLoadingStages();
               return reject(new Error('O processamento demorou mais que o esperado. Tente novamente.'));
             }
             const elapsed = Date.now() - pollStart;
@@ -861,6 +898,7 @@
               const pollData = await pollRes.json();
               if (pollData.status === 'done' || pollData.status === 'completed') {
                 clearInterval(pollTimer);
+                stopLoadingStages();
                 setProgress(100);
 
                 // ─ Crossfade: scanline para → resultado aparece ─
@@ -878,6 +916,7 @@
 
               } else if (pollData.status === 'error' || pollData.status === 'failed') {
                 clearInterval(pollTimer);
+                stopLoadingStages();
                 reject(new Error(pollData.error || 'Não foi possível processar. Tente com outra foto.'));
               }
             } catch (_) {}
