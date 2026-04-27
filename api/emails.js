@@ -240,3 +240,90 @@ export async function sendTrialUpgradeEmail({ name, email, planName, amount, inv
     html,
   });
 }
+
+// 6. Aviso de 80% da cota — enviado ao cliente
+export async function sendQuotaWarningEmail({ name, email, planName, usage, limit, panelUrl }) {
+  const pct = Math.round((usage / limit) * 100);
+  const restantes = limit - usage;
+  const html = emailLayout(`
+    <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0A0A0A">
+      Você usou ${pct}% do seu plano ⚠️
+    </h2>
+    <p style="margin:0 0 24px;font-size:15px;color:#6B7280;line-height:1.6">
+      Olá ${name}! Você já utilizou <strong>${usage} de ${limit} gerações</strong> do plano <strong>${planName}</strong>.
+      Restam apenas <strong>${restantes} geração${restantes !== 1 ? 'ões' : ''}</strong>.
+    </p>
+
+    <div style="background:#FFF9C4;border:1px solid #FFE34E;border-radius:10px;padding:16px;margin-bottom:24px">
+      <div style="font-size:13px;font-weight:700;color:#713F12;margin-bottom:6px">Barra de uso do plano</div>
+      <div style="background:#FDE68A;border-radius:6px;height:12px;overflow:hidden">
+        <div style="background:#F59E0B;height:100%;width:${pct}%;border-radius:6px"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:#92400E">
+        <span>${usage} usados</span><span>${restantes} restantes</span>
+      </div>
+    </div>
+
+    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6">
+      Quando atingir o limite, seu plano será <strong>suspenso automaticamente</strong>.
+      Para evitar interrupção, você pode:
+    </p>
+    <ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#374151;line-height:1.8">
+      <li>Comprar gerações extras (pague só pelo que usar)</li>
+      <li>Fazer upgrade para um plano maior</li>
+    </ul>
+
+    ${btn(panelUrl || APP_URL + '/painel-cliente.html', 'Gerenciar plano →', '#F59E0B')}
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `⚠️ Você usou ${pct}% do seu plano Mirage — ${restantes} geração${restantes !== 1 ? 'ões' : ''} restante${restantes !== 1 ? 's' : ''}`,
+    html,
+  });
+}
+
+// 7. Plano suspenso por cota esgotada — enviado ao cliente
+export async function sendQuotaSuspendedEmail({ name, email, planName, usage, limit, panelUrl }) {
+  const html = emailLayout(`
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="display:inline-block;background:#FEF2F2;border-radius:50%;padding:16px;margin-bottom:12px">
+        <span style="font-size:32px">🚫</span>
+      </div>
+      <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0A0A0A">Seu plano foi suspenso</h2>
+      <p style="margin:0;font-size:15px;color:#6B7280">Você atingiu o limite de ${limit} gerações do plano ${planName}.</p>
+    </div>
+
+    <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:16px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;color:#991B1B;font-weight:600">
+        🔒 Novas tentativas de geração estão bloqueadas até você regularizar.
+      </p>
+    </div>
+
+    <p style="margin:0 0 16px;font-size:14px;color:#374151;line-height:1.6">
+      Para reativar seu acesso, acesse seu painel e escolha uma opção:
+    </p>
+    <ul style="margin:0 0 24px;padding-left:20px;font-size:14px;color:#374151;line-height:1.8">
+      <li><strong>Comprar gerações extras</strong> — pague pelo excedente e continue no mesmo plano</li>
+      <li><strong>Fazer upgrade</strong> — migre para um plano com mais gerações</li>
+    </ul>
+
+    ${btn((panelUrl || APP_URL + '/painel-cliente.html') + '?openOverage=1', 'Resolver agora →', '#DC2626')}
+
+    <p style="margin:16px 0 0;font-size:12px;color:#9CA3AF;text-align:center">
+      Seu acesso é restaurado automaticamente após o pagamento.
+    </p>
+  `);
+
+  return sendEmail({
+    to: email,
+    subject: `🚫 Plano suspenso — você atingiu o limite de ${limit} gerações do ${planName}`,
+    html,
+  });
+}
+
+// 8. Notificação admin genérica
+export async function sendAdminEmail({ to, subject, html }) {
+  const adminTo = to || process.env.ADMIN_NOTIFY_EMAIL || 'wlissesv@gmail.com';
+  return sendEmail({ to: adminTo, subject, html });
+}
