@@ -203,24 +203,32 @@ export default async function handler(req, res) {
               items:            [{ price: planData.stripePriceId }],
               trial_end:        trialEnd,
               payment_behavior: 'default_incomplete',
-              expand:           ['latest_invoice.hosted_invoice_url'],
+              expand:           ['latest_invoice'],
             });
             client.stripeSubscriptionId = sub.id;
             client.stripeStatus         = sub.status;
             // Trial = ativo até o fim do período
             client.active = true;
+            // Recupera link da fatura se existir
+            invoiceUrl = sub.latest_invoice?.hosted_invoice_url || null;
           } else {
             // 2b. Plano pago direto — cria assinatura sem trial e suspende até pagar
             const sub = await stripe.subscriptions.create({
               customer:         customerId,
               items:            [{ price: planData.stripePriceId }],
               payment_behavior: 'default_incomplete',
-              expand:           ['latest_invoice.hosted_invoice_url'],
+              expand:           ['latest_invoice'],
             });
             client.stripeSubscriptionId = sub.id;
             client.stripeStatus         = 'pending_payment';
             client.active               = false;
-            invoiceUrl = sub.latest_invoice?.hosted_invoice_url || null;
+
+            // Fatura precisa ser finalizada para ter hosted_invoice_url
+            let inv = sub.latest_invoice;
+            if (inv && inv.status === 'draft') {
+              inv = await stripe.invoices.finalizeInvoice(inv.id);
+            }
+            invoiceUrl = inv?.hosted_invoice_url || null;
           }
         } catch (e) {
           stripeError = e.message;
