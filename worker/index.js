@@ -26,14 +26,22 @@ function log(event, data = {}) {
   console.log(JSON.stringify({ ts: new Date().toISOString(), event, ...data }));
 }
 
-// ─── Google Auth ──────────────────────────────────────────────────────────────
+// ─── Google Auth (com cache em memória por 55 min) ────────────────────────────
 function pemToBuffer(pem) {
   return Buffer.from(pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, ''), 'base64');
 }
 
+let _tokenCache = null; // { token, expiresAt }
+
 async function getGoogleAccessToken() {
-  const sa  = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   const now = Math.floor(Date.now() / 1000);
+
+  // Retorna token em cache se ainda válido (margem de 5 min)
+  if (_tokenCache && now < _tokenCache.expiresAt - 300) {
+    return _tokenCache.token;
+  }
+
+  const sa = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
 
   const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
   const unsignedToken = `${encode({ alg: 'RS256', typ: 'JWT' })}.${encode({
@@ -58,6 +66,8 @@ async function getGoogleAccessToken() {
   });
   const tokenData = await tokenRes.json();
   if (!tokenData.access_token) throw new Error('Falha ao obter access token: ' + JSON.stringify(tokenData));
+
+  _tokenCache = { token: tokenData.access_token, expiresAt: now + 3600 };
   return tokenData.access_token;
 }
 
@@ -271,4 +281,8 @@ app.post('/process', async (req, res) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   log('worker_started', { port: PORT });
+  // Pré-aquece o access token para a primeira requisição ser mais rápida
+  getGoogleAccessToken()
+    .then(() => log('token_prewarmed'))
+    .catch(e => log('token_prewarm_error', { error: e.message }));
 });
