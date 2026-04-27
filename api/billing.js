@@ -57,7 +57,7 @@ async function authenticate(clientKey, password) {
   const raw = await redis.get(`client:${clientKey}`);
   if (!raw) return null;
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  if (!client.active) return null;
+  // Billing é sempre permitido — cliente precisa ver faturas e pagar mesmo suspenso
   const stored = client.passwordHash || client.secret || '';
   if (!verifyPassword(password, stored)) return null;
   return client;
