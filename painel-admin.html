@@ -505,12 +505,13 @@ tbody tr:hover td { background: #fafbff; }
     <div class="field">
       <label>Plano</label>
       <select id="new-plan" class="filter-select" style="width:100%;padding:10px 12px;font-size:14px">
-        <option value="starter">Starter (100 tryons / R$ 49)</option>
-        <option value="pro">Pro (500 tryons / R$ 149)</option>
-        <option value="growth" selected>Growth (1000 tryons / R$ 249)</option>
-        <option value="scale">Scale (5000 tryons / R$ 749)</option>
-        <option value="enterprise">Enterprise (ilimitado / R$ 2.499)</option>
+        <!-- populado dinamicamente por openCreateModal() -->
       </select>
+    </div>
+    <div class="field">
+      <label>Dias de trial (0 = cobrar imediatamente)</label>
+      <input type="number" id="new-trial-days" value="0" min="0" max="365"
+             style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
     </div>
     <div class="field"><label>Senha de acesso ao painel (mín. 6 chars)</label><input type="password" id="new-password" placeholder="O cliente usará esta senha para entrar"></div>
     <div id="created-result" style="display:none"></div>
@@ -1315,37 +1316,59 @@ function renderSettings() {
 }
 
 // ─── Criar cliente ─────────────────────────────────────────────────────────────
-function openCreateModal() {
-  document.getElementById('new-name').value     = '';
-  document.getElementById('new-email').value    = '';
-  document.getElementById('new-store').value    = '';
-  document.getElementById('new-password').value = '';
-  document.getElementById('new-plan').value     = 'growth';
-  document.getElementById('created-result').style.display = 'none';
-  document.getElementById('create-actions').style.display = 'flex';
+async function openCreateModal() {
+  document.getElementById('new-name').value       = '';
+  document.getElementById('new-email').value      = '';
+  document.getElementById('new-store').value      = '';
+  document.getElementById('new-password').value   = '';
+  document.getElementById('new-trial-days').value = '0';
+  document.getElementById('created-result').style.display  = 'none';
+  document.getElementById('create-actions').style.display  = 'flex';
+
+  // Garante que os planos do Redis estão carregados
+  if (!produtosCache.length) await loadProdutos();
+
+  const select = document.getElementById('new-plan');
+  select.innerHTML = produtosCache.length
+    ? produtosCache.map(p => {
+        const limit  = p.limit === Infinity ? 'ilimitado' : `${Number(p.tryons || p.limit || 0).toLocaleString()} tryons`;
+        const price  = p.price > 0 ? `R$ ${Number(p.price).toLocaleString()}` : 'grátis';
+        const stripe = p.stripePriceId ? '' : ' ⚠ sem Stripe';
+        return `<option value="${p.id}">${p.name} (${limit} · ${price}/mês${stripe})</option>`;
+      }).join('')
+    : `<option value="demonstracao">Demonstração (grátis)</option>`;
+
   document.getElementById('modal-create').classList.add('open');
 }
 
 async function createClient() {
-  const name     = document.getElementById('new-name').value.trim();
-  const email    = document.getElementById('new-email').value.trim();
-  const store    = document.getElementById('new-store').value.trim();
-  const plan     = document.getElementById('new-plan').value;
-  const password = document.getElementById('new-password').value;
+  const name       = document.getElementById('new-name').value.trim();
+  const email      = document.getElementById('new-email').value.trim();
+  const store      = document.getElementById('new-store').value.trim();
+  const plan       = document.getElementById('new-plan').value;
+  const password   = document.getElementById('new-password').value;
+  const trialDays  = parseInt(document.getElementById('new-trial-days').value) || 0;
   if (!name || !email) { alert('Nome e e-mail são obrigatórios.'); return; }
   const btn = document.querySelector('#create-actions .btn-primary');
   btn.disabled = true; btn.textContent = 'Criando...';
-  const r = await apiFetch('create', { name, email, store, plan, password });
+  const r = await apiFetch('create', { name, email, store, plan, password, trialDays });
   btn.disabled = false; btn.textContent = 'Criar cliente';
   if (!r.ok) { alert(r.error || 'Erro ao criar cliente.'); return; }
-  const panelUrl = 'https://wvgtec.github.io/provador-virtual-landing/painel-cliente.html';
+  const panelUrl = `${window.location.origin}/painel-cliente.html`;
   const el = document.getElementById('created-result');
   el.style.display = 'block';
   el.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;font-size:13px;">
     <div style="font-weight:700;color:#166534;margin-bottom:8px;">✅ Cliente criado com sucesso!</div>
+    ${r.invoiceUrl ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:#92400e;">
+      <strong>⏳ Aguardando pagamento</strong> — conta suspensa até o cliente pagar.<br>
+      <a href="${escHtml(r.invoiceUrl)}" target="_blank" style="color:#635BFF;text-decoration:underline">Ver fatura no Stripe →</a>
+    </div>` : ''}
+    ${r.stripeWarning ? `<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:8px;margin-bottom:10px;font-size:12px;color:#78350f;">
+      ⚠ Stripe: ${escHtml(r.stripeWarning)}
+    </div>` : ''}
     <div style="margin-bottom:6px;"><strong>Chave API:</strong></div>
     <div class="secret-val">${escHtml(r.key)}</div>
-    ${r.client.passwordHash || password ? `<div style="margin:6px 0 2px;"><strong>Senha do painel:</strong></div><div class="secret-val">${escHtml(password||'(definida)')}</div>` : ''}
+    ${password ? `<div style="margin:6px 0 2px;"><strong>Senha do painel:</strong></div><div class="secret-val">${escHtml(password)}</div>` : ''}
     <div style="margin:8px 0 2px;font-size:12px;"><strong>Link do painel:</strong></div>
     <div class="secret-val" style="font-size:11px;">${escHtml(panelUrl)}</div>
     <button class="btn btn-secondary btn-sm" style="margin-top:8px;width:100%" onclick="copyText('${escHtml(panelUrl)}')">Copiar link do painel</button>
