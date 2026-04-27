@@ -364,6 +364,158 @@ export default async function handler(req, res) {
       }
     }
 
+    // ── OVERAGE — Gerações excedentes ─────────────────────────────────────────
+
+    // OVERAGE_INFO — retorna dados para a calculadora no painel
+    if (action === 'overage_info') {
+      const billing     = await calcBilling(client);
+      const planData    = await getPlanLimits(client.plan || 'starter');
+      const extraTryons = Number(client.extraTryons) || 0;
+      return res.json({
+        ok:           true,
+        plan:         client.plan || 'starter',
+        planName:     planData.name,
+        limit:        planData.limit,
+        extraTryons,
+        totalLimit:   planData.limit === Infinity ? Infinity : planData.limit + extraTryons,
+        usage:        billing.usage,
+        overageRate:  planData.overage,
+        hasSavedCard: !!(stripe && client.stripeCustomerId),
+      });
+    }
+
+    // BUY_OVERAGE_SAVED — compra gerações extras com cartão salvo
+    if (action === 'buy_overage_saved') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const { quantity } = params;
+      const qty = parseInt(quantity);
+      if (!qty || qty < 1 || qty > 10000) return res.status(400).json({ error: 'Quantidade inválida (1–10.000).' });
+
+      const planData   = await getPlanLimits(client.plan || 'starter');
+      const overageRate = planData.overage;
+      if (!overageRate) return res.status(400).json({ error: 'Este plano não possui cobrança por excedente.' });
+
+      const amountBRL   = +(qty * overageRate).toFixed(2);
+      const amountCents = Math.round(amountBRL * 100);
+
+      // Busca e define payment method padrão
+      const methods = await stripe.paymentMethods.list({ customer: client.stripeCustomerId, type: 'card', limit: 1 });
+      if (!methods.data.length) return res.json({ ok: false, error: 'Nenhum cartão cadastrado.' });
+      const pmId = methods.data[0].id;
+      await stripe.customers.update(client.stripeCustomerId, { invoice_settings: { default_payment_method: pmId } });
+
+      // Cria e confirma PaymentIntent
+      const pi = await stripe.paymentIntents.create({
+        amount:   amountCents,
+        currency: 'brl',
+        customer: client.stripeCustomerId,
+        payment_method: pmId,
+        confirm:  true,
+        description: `Mirage — ${qty} gerações excedentes (${planData.name})`,
+        metadata: { clientKey: client.key, type: 'overage', quantity: String(qty) },
+        off_session: true,
+      });
+
+      if (pi.status === 'succeeded') {
+        const newExtra = (Number(client.extraTryons) || 0) + qty;
+        client.extraTryons = newExtra;
+        await redis.set(`client:${client.key}`, JSON.stringify(client));
+
+        // Notifica admin
+        const RESEND_KEY  = process.env.RESEND_API_KEY;
+        const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'wlissesv@gmail.com';
+        const APP_URL     = process.env.APP_URL || 'https://app.mirageai.com.br';
+        if (RESEND_KEY) {
+          fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from:    'Mirage Sistema <pagamentos@mirageai.com.br>',
+              to:      [ADMIN_EMAIL],
+              subject: `💳 Excedente comprado — ${client.name || client.email} — ${qty} gerações`,
+              html: `<div style="font-family:sans-serif;max-width:520px">
+                <div style="background:#0a0a0a;padding:20px 28px;border-radius:12px 12px 0 0">
+                  <img src="${APP_URL}/logo-mirage.png" alt="Mirage" height="28" style="filter:invert(1)">
+                </div>
+                <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:24px 28px;border-radius:0 0 12px 12px">
+                  <h2 style="margin:0 0 16px;font-size:18px;color:#635bff">💳 Gerações extras compradas</h2>
+                  <table style="width:100%;border-collapse:collapse">
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;width:140px">Cliente</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${client.name || '—'}</td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Email</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px">${client.email || '—'}</td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Plano</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px">${planData.name}</td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px">Qtde extra</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600">${qty} gerações</td></tr>
+                    <tr><td style="padding:8px 0;color:#6b7280;font-size:13px">Valor cobrado</td><td style="padding:8px 0;font-size:13px;font-weight:600;color:#635bff">R$ ${amountBRL.toFixed(2).replace('.',',')}</td></tr>
+                  </table>
+                  <p style="margin:16px 0 0;font-size:12px;color:#9ca3af">Novo limite total: ${planData.limit + newExtra} tryons · <a href="${APP_URL}/painel-admin.html" style="color:#635bff">Ver admin →</a></p>
+                </div>
+              </div>`,
+            }),
+          }).catch(() => {});
+        }
+        return res.json({ ok: true, quantity: qty, amountBRL, newExtraTryons: newExtra });
+      }
+
+      return res.json({ ok: false, error: `Pagamento não confirmado (${pi.status}). Tente novamente.` });
+    }
+
+    // BUY_OVERAGE_INTENT — cria PaymentIntent para cobrar gerações extras com cartão novo
+    if (action === 'buy_overage_intent') {
+      if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
+      const { quantity } = params;
+      const qty = parseInt(quantity);
+      if (!qty || qty < 1 || qty > 10000) return res.status(400).json({ error: 'Quantidade inválida (1–10.000).' });
+
+      const planData    = await getPlanLimits(client.plan || 'starter');
+      const overageRate = planData.overage;
+      if (!overageRate) return res.status(400).json({ error: 'Este plano não possui cobrança por excedente.' });
+
+      const amountCents = Math.round(qty * overageRate * 100);
+      const customerId  = await ensureCustomer();
+
+      const pi = await stripe.paymentIntents.create({
+        amount:   amountCents,
+        currency: 'brl',
+        customer: customerId,
+        description: `Mirage — ${qty} gerações excedentes (${planData.name})`,
+        metadata: { clientKey: client.key, type: 'overage', quantity: String(qty) },
+      });
+
+      return res.json({ ok: true, clientSecret: pi.id ? pi.client_secret : null,
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '', amountBRL: +(qty * overageRate).toFixed(2) });
+    }
+
+    // DECLINE_OVERAGE — cliente recusou ambas opções: suspende conta e notifica admin
+    if (action === 'decline_overage') {
+      client.active = false;
+      await redis.set(`client:${client.key}`, JSON.stringify(client));
+
+      const RESEND_KEY  = process.env.RESEND_API_KEY;
+      const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'wlissesv@gmail.com';
+      const APP_URL     = process.env.APP_URL || 'https://app.mirageai.com.br';
+      if (RESEND_KEY) {
+        fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from:    'Mirage Sistema <pagamentos@mirageai.com.br>',
+            to:      [ADMIN_EMAIL],
+            subject: `⚠️ Plano suspenso — ${client.name || client.email} recusou excedente`,
+            html: `<div style="font-family:sans-serif;max-width:520px">
+              <div style="background:#0a0a0a;padding:20px 28px;border-radius:12px 12px 0 0">
+                <img src="${APP_URL}/logo-mirage.png" alt="Mirage" height="28" style="filter:invert(1)">
+              </div>
+              <div style="background:#fff;border:1px solid #e5e7eb;border-top:none;padding:24px 28px;border-radius:0 0 12px 12px">
+                <h2 style="margin:0 0 12px;font-size:18px;color:#dc2626">⚠️ Plano suspenso</h2>
+                <p style="font-size:14px;color:#374151;margin:0 0 16px">${client.name || client.email} atingiu o limite do plano e recusou comprar excedente e fazer upgrade.</p>
+                <p style="font-size:12px;color:#9ca3af">Conta suspensa automaticamente. <a href="${APP_URL}/painel-admin.html" style="color:#635bff">Reativar no admin →</a></p>
+              </div>
+            </div>`,
+          }),
+        }).catch(() => {});
+      }
+      return res.json({ ok: true, suspended: true });
+    }
+
     // REMOVE_CARD — desvincula o cartão salvo do cliente
     if (action === 'remove_card') {
       if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });

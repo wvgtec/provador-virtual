@@ -820,7 +820,25 @@
           }),
         });
         const submitData = await submitRes.json();
-        if (!submitRes.ok || !submitData.jobId) throw new Error(submitData.error || 'Falha ao enviar para processamento.');
+        if (!submitRes.ok || !submitData.jobId) {
+          // Limite de plano atingido — mensagem especial com link para o painel
+          if (submitData.code === 'QUOTA_EXCEEDED') {
+            const panelUrl = submitData.panelUrl || 'https://app.mirageai.com.br/painel-cliente.html';
+            const errDiv = document.getElementById('nksw-error');
+            if (errDiv) {
+              errDiv.innerHTML = `Limite do plano atingido. <a href="${panelUrl}" target="_blank" style="color:#635BFF;font-weight:600;text-decoration:underline;">Comprar gerações extras ou fazer upgrade →</a>`;
+              errDiv.classList.add('visible');
+            }
+            scanLine.classList.remove('active');
+            renderCanvas.classList.remove('visible');
+            previewWrap.classList.add('visible');
+            generateBtn.classList.remove('nksw-hidden');
+            generateBtn.disabled = false;
+            loadingArea.classList.remove('visible');
+            return;
+          }
+          throw new Error(submitData.error || 'Falha ao enviar para processamento.');
+        }
         currentJobId = submitData.jobId;
 
         // 4. Lead pendente → envia agora

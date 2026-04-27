@@ -165,7 +165,8 @@ export default async function handler(req, res) {
   // ─── Cota atômica — sem race condition ───────────────────────────────────
   // Garante que usage:${clientKey} existe e não está atrás do objeto do cliente.
   // Necessário para clientes criados antes da cota atômica ou após reset de billing.
-  const planLimit = PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter;
+  // Limite base do plano + gerações extras compradas
+  const planLimit = (PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter) + (Number(client.extraTryons) || 0);
   const rawUsage  = await redis.get(`usage:${clientKey}`);
   if (rawUsage === null || Number(rawUsage) < Number(client.usageCount || 0)) {
     await redis.set(`usage:${clientKey}`, String(Number(client.usageCount) || 0));
@@ -178,10 +179,12 @@ export default async function handler(req, res) {
     await redis.decr(`usage:${clientKey}`);
     log('submit_quota_exceeded', { clientKey, plan: client.plan, usage: newCount - 1, limit: planLimit });
     return res.status(429).json({
-      error: `Limite do plano "${client.plan || 'starter'}" atingido (${planLimit} tryons). Faça upgrade para continuar.`,
-      code:  'QUOTA_EXCEEDED',
-      limit: planLimit,
-      usage: newCount - 1,
+      error:         `Limite do plano atingido (${planLimit} tryons). Acesse seu painel para continuar.`,
+      code:          'QUOTA_EXCEEDED',
+      limit:         planLimit,
+      usage:         newCount - 1,
+      plan:          client.plan || 'starter',
+      panelUrl:      `${process.env.APP_URL || 'https://app.mirageai.com.br'}/painel-cliente.html`,
     });
   }
   await redis.set(`client:${clientKey}`, JSON.stringify({ ...client, usageCount: newCount }));
