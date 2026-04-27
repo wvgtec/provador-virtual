@@ -45,13 +45,14 @@ async function isRateLimited(ip) {
 }
 
 // Autentica por clientKey + senha (usada após o login)
-async function authenticate(clientKey, password) {
+// allowSuspended: true para ações de billing que devem funcionar mesmo sem pagamento
+async function authenticate(clientKey, password, allowSuspended = false) {
   if (!clientKey || !isValidClientKey(clientKey)) return null;
   if (!password || typeof password !== 'string') return null;
   const raw = await redis.get(`client:${clientKey}`);
   if (!raw) return null;
   const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  if (!client.active) return null;
+  if (!client.active && !allowSuspended) return null;
   const stored = client.passwordHash || client.secret || '';
   if (!verifyPassword(password, stored)) return null;
   return client;
@@ -123,16 +124,24 @@ export default async function handler(req, res) {
     const raw = await redis.get(`client:${foundKey}`);
     if (!raw) return res.status(401).json({ error: 'Credenciais inválidas.' });
     const client = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    if (!client.active) return res.status(403).json({ error: 'Conta suspensa. Entre em contato com o suporte.' });
 
     const stored = client.passwordHash || client.secret || '';
     if (!verifyPassword(password, stored)) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
-    return res.json({ ok: true, clientKey: foundKey, client: sanitize(client) });
+    // Permite login mesmo suspenso — cliente precisa ver as cobranças e pagar
+    return res.json({
+      ok:        true,
+      clientKey: foundKey,
+      client:    sanitize(client),
+      suspended: !client.active,   // painel mostra banner de pagamento pendente
+    });
   }
 
   // ─── Demais ações — requer clientKey + senha ──────────────────────────────
-  const client = await authenticate(clientKey, password);
+  // Ações de billing são permitidas mesmo com conta suspensa
+  const BILLING_ACTIONS = ['me', 'summary', 'invoices', 'setup_intent', 'pay_invoice', 'payment_link'];
+  const isBillingAction = BILLING_ACTIONS.includes(action);
+  const client = await authenticate(clientKey, password, isBillingAction);
   if (!client) return res.status(401).json({ error: 'Não autorizado.' });
 
   try {
