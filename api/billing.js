@@ -294,11 +294,26 @@ export default async function handler(req, res) {
       if (!stripe) return res.status(503).json({ error: 'Stripe não configurado.' });
       const { invoiceId } = params;
       if (!invoiceId) return res.status(400).json({ error: 'invoiceId obrigatório.' });
+      if (!client.stripeCustomerId) return res.json({ ok: false, error: 'Nenhum cliente Stripe associado.' });
       try {
-        const inv = await stripe.invoices.pay(invoiceId, { expand: ['payment_intent'] });
+        // Busca o payment method padrão do customer
+        const methods = await stripe.paymentMethods.list({
+          customer: client.stripeCustomerId,
+          type: 'card',
+          limit: 1,
+        });
+        if (!methods.data.length) return res.json({ ok: false, error: 'Nenhum cartão cadastrado.' });
+        const pmId = methods.data[0].id;
+
+        // Define como default no customer para evitar o erro
+        await stripe.customers.update(client.stripeCustomerId, {
+          invoice_settings: { default_payment_method: pmId },
+        });
+
+        // Paga a fatura com o payment method explícito
+        const inv = await stripe.invoices.pay(invoiceId, { payment_method: pmId });
         return res.json({ ok: true, status: inv.status, paid: inv.paid });
       } catch (e) {
-        // Se o cartão foi recusado, retorna o erro para o cliente
         return res.json({ ok: false, error: e.message });
       }
     }
