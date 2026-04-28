@@ -524,7 +524,7 @@
       <a href="#como">Como funciona</a>
       <a href="#faq">FAQ</a>
     </div>
-    <button class="nav-cta" onclick="openModal()">Pedir demo gratuita</button>
+    <button class="nav-cta" onclick="openModal('nav')">Pedir demo gratuita</button>
   </div>
 </nav>
 
@@ -544,7 +544,7 @@
       </p>
       <div class="hero-cta rise" style="animation-delay:.25s">
         <a href="#studio" class="btn btn-yellow">Testar com sua foto →</a>
-        <button class="btn btn-ghost" onclick="openModal()">Pedir demo com meu catálogo</button>
+        <button class="btn btn-ghost" onclick="openModal('hero')">Pedir demo com meu catálogo</button>
       </div>
       <div class="stat-row rise" style="animation-delay:.35s">
         <div class="stat"><div class="n">+35%</div><div class="l">conversão média</div></div>
@@ -707,7 +707,7 @@
           </button>
           <div class="demo-error" id="demo-error"></div>
           <button class="reset-btn" id="reset-btn" style="display:none" onclick="resetCanvas()">↺ Trocar foto</button>
-          <button class="run-btn" style="margin-top:12px;background:#fff;color:var(--ink);display:none" id="result-cta" onclick="openModal()">
+          <button class="run-btn" style="margin-top:12px;background:#fff;color:var(--ink);display:none" id="result-cta" onclick="openModal('studio_result')">
             Quero isso no meu e-commerce →
           </button>
         </div>
@@ -1225,6 +1225,7 @@
     btn.disabled = true;
     btn.classList.remove('ready');
     errorEl.style.display = 'none';
+    ga('studio_demo_started', { garment: document.getElementById('selected-name')?.textContent });
     document.getElementById('hud-status').textContent = 'ANALYZING';
     document.getElementById('scan-line').classList.add('active');
     document.getElementById('person-preview').style.display = 'block';
@@ -1316,6 +1317,7 @@
           btn.classList.add('ready');
           document.getElementById('demo-btn-text').textContent = 'Gerar novo ✦';
           document.getElementById('result-cta').style.display = 'flex';
+          ga('studio_demo_completed', { garment: document.getElementById('selected-name')?.textContent });
         } else if (d.status === 'error') {
           document.getElementById('scan-line').classList.remove('active');
           errorEl.textContent = 'Erro do servidor: ' + d.error;
@@ -1333,9 +1335,28 @@
     }, 2000);
   }
 
-  function openModal() {
+  // ── GA4 helper ────────────────────────────────────────────────────────────
+  function ga(name, params) {
+    if (typeof gtag === 'function') gtag('event', name, params || {});
+  }
+
+  // Rastreia seções visíveis (ganhos, dashboard, faq, parceiros)
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          ga('section_viewed', { section_id: e.target.id || e.target.className.split(' ')[0] });
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('section[id]').forEach(s => obs.observe(s));
+  }
+
+  function openModal(source) {
     document.getElementById('modal').classList.add('open');
     document.body.style.overflow = 'hidden';
+    ga('demo_modal_opened', { source: source || 'unknown' });
   }
   function closeModal(e) {
     if (!e || e.target === document.getElementById('modal')) {
@@ -1364,6 +1385,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.detail || 'Erro ao enviar');
+      ga('lead_submitted', { source: 'modal', volume: document.getElementById('lead-volume').value });
       // Sucesso — substitui conteúdo do modal
       document.getElementById('modal').querySelector('.modal-box').innerHTML = `
         <div style="text-align:center;padding:20px 0">
@@ -1405,6 +1427,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.detail || 'Erro desconhecido');
+      ga('lead_submitted', { source: 'demo', volume: document.getElementById('lf-volume').value });
       document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Em breve entraremos em contato pelo WhatsApp.</p></div>';
     } catch (err) {
       console.error('[submitLeadForm]', err);
