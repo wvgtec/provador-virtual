@@ -113,7 +113,29 @@ export default async function handler(req, res) {
   try {
     const sa    = JSON.parse(saEnv);
     const token = await getAccessToken(sa);
-    const table = `\`${PROJECT_ID}.${DATASET}.gcp_billing_export_v1_*\``;
+
+    // ── Descobre o nome exato da tabela (evita problema com wildcard + tabela particionada) ──
+    const listRes = await fetch(
+      `https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT_ID}/datasets/${DATASET}/tables`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    const listData = await listRes.json();
+    const billingTableId = listData.tables
+      ?.map(t => t.tableReference?.tableId)
+      .find(id => id?.startsWith('gcp_billing_export_v1_'));
+
+    if (!billingTableId) {
+      console.log('[billing-gcp] Tabela de billing ainda não criada pelo GCP — aguardando');
+      return res.status(200).json({
+        pending: true,
+        mes: new Date().toISOString().slice(0, 7),
+        totais: { bruto: 0, creditos: 0, liquido: 0 },
+        servicos: [],
+        creditos_utilizados: [],
+      });
+    }
+
+    const table = `\`${PROJECT_ID}.${DATASET}.${billingTableId}\``;
 
     // ── Query 1: Custo bruto + créditos por serviço ─────────────────────────
     const costSql = `
