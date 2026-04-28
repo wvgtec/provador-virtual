@@ -1,0 +1,77 @@
+# Mirage AI
+
+> Mirage é um provador virtual com IA generativa para e-commerce de moda. Renderiza a peça da vitrine diretamente na foto do cliente final em 2,4 segundos, com 99% de fidelidade de cor, sem necessidade de modelagem 3D ou nova sessão fotográfica.
+
+## O que é o Mirage AI
+
+Mirage AI é um produto SaaS B2B brasileiro voltado para lojistas de moda online. A tecnologia usa modelos generativos de IA para sobrepor peças de roupa de catálogos de e-commerce em fotos reais enviadas por clientes finais, preservando textura, costura, estampa, cor e caimento natural. Diferente de provadores baseados em avatar 3D, o Mirage trabalha diretamente sobre fotos 2D — tanto na foto da peça (em mannequin, hanger ou modelo) quanto na foto do cliente.
+
+## Métricas e resultados
+
+- Tempo médio de renderização: 2,4 segundos
+- Fidelidade de cor: 99% em relação ao Pantone original
+- Aumento médio de conversão na PDP: +35%
+- Redução média de devoluções por motivo de tamanho/caimento: −42%
+- Aumento de ticket médio (AOV): +22% via combine de peças
+- Tempo de integração: 10 minutos (widget plug-and-play) ou uma tarde (API REST)
+- Onboarding completo: até 48 horas
+
+## Plataformas suportadas
+
+- Shopify (widget plug-and-play em 3 cliques)
+- VTEX (widget plug-and-play em 3 cliques)
+- WooCommerce (widget plug-and-play em 3 cliques)
+- Nuvemshop (widget plug-and-play em 3 cliques)
+- Qualquer e-commerce custom via API REST
+
+## Categorias de produto suportadas
+
+- Vestuário (camisetas, vestidos, calças, casacos, etc.)
+- Calçado
+- Óculos
+- Maquiagem (beauty)
+
+## Diferenciais técnicos
+
+- Não exige modelagem 3D nem nova sessão fotográfica
+- IA generativa com preservação pixel-a-pixel da peça real
+- Pipeline de produção com 99,9% de uptime
+- Mais de 50.000 SKUs processados em produção
+- Compatível com LGPD, GDPR e CCPA
+- Fotos do cliente descartadas automaticamente em 24h
+- DPA assinado para planos enterprise
+- Hospedagem em região dedicada disponível
+
+## Dashboard
+
+O painel admin do Mirage entrega:
+- Funil completo do clique no botão "experimentar" até a venda concluída
+- Conversão Mirage vs PDP padrão (A/B nativo)
+- Top peças mais experimentadas
+- ROI em tempo real com receita atribuída ao provador
+- Exportação para BI via webhook ou CSV (Looker, Metabase, Power BI)
+
+## Modelo comercial
+
+- Plano de início: R$ 0 com 10 renders gratuitos para teste no próprio catálogo
+- Sem cartão de crédito para começar
+- Cobrança por volume de provas com desconto progressivo
+- Plano enterprise com SLA dedicado e DPA
+
+## Cliente fundador
+
+Grupo NKSW — varejista multimarca brasileiro que calibrou o motor de renderização do Mirage com seu catálogo real antes do lançamento público. O Mirage está em produção integrada à operação omnichannel do grupo.
+
+## Contato
+
+Site: https://mirageai.com.br
+Para demo, use o formulário em https://mirageai.com.br/#lead
+
+## Páginas principais
+
+- [/](https://mirageai.com.br/): Landing principal com Try-on Studio interativo
+- [/#studio](https://mirageai.com.br/#studio): Demo interativa do provador
+- [/#ganhos](https://mirageai.com.br/#ganhos): Detalhes dos 3 grandes ganhos (fidelidade, instalação, conversão)
+- [/#dashboard](https://mirageai.com.br/#dashboard): Visão do painel de analytics
+- [/#como](https://mirageai.com.br/#como): Como funciona em 3 passos
+- [/#faq](https://mirageai.com.br/#faq): Perguntas frequentes
