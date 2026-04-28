@@ -10,6 +10,36 @@
   const POLL_MS       = 2000;
   const POLL_TIMEOUT  = 90000;
 
+  // ─── Mirage Analytics (Measurement Protocol GA4) ──────────────────────────
+  const MGA = {
+    mid: 'G-3CTR9CDSX4',
+    sec: 'G-W38t4oSGW8scDifAUq0Q',
+    _cid: null,
+    cid() {
+      if (this._cid) return this._cid;
+      try {
+        let id = localStorage.getItem('_mirage_cid');
+        if (!id) {
+          id = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + '.' + Date.now());
+          localStorage.setItem('_mirage_cid', id);
+        }
+        this._cid = id;
+      } catch { this._cid = Math.random().toString(36).slice(2); }
+      return this._cid;
+    },
+    send(name, params = {}) {
+      try {
+        fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${this.mid}&api_secret=${this.sec}`, {
+          method: 'POST',
+          body: JSON.stringify({
+            client_id: this.cid(),
+            events: [{ name, params: { engagement_time_msec: 100, ...params } }],
+          }),
+        }).catch(() => {});
+      } catch (_) {}
+    },
+  };
+
   // ─── Configuração ──────────────────────────────────────────────────────────
   const CFG = {
     apiUrl    : (window.VTON_API_URL    || '').replace(/\/$/, ''),
@@ -514,6 +544,8 @@
 
     if (!clientKey) { console.error('[Mirage] VTON_CLIENT_KEY não definido.'); return; }
 
+    MGA.send('tryon_widget_opened', { client_key: clientKey, store: window.location.hostname, page: window.location.pathname });
+
     const overlay = buildModal(storeName);
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
@@ -654,6 +686,7 @@
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ jobId: currentJobId, clientKey, lead }),
         });
+        MGA.send('tryon_lead_submitted', { client_key: clientKey, store: window.location.hostname, has_whatsapp: !!lead.whatsapp });
       } catch (_) {}
 
       leadInner.style.display = 'none';
@@ -842,6 +875,7 @@
         setProgress(40);
 
         // 3. Submete o job
+        MGA.send('tryon_started', { client_key: clientKey, store: window.location.hostname, page: window.location.pathname });
         const submitRes = await fetch(`${apiUrl}/api/submit`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -910,6 +944,7 @@
                   loadingArea.classList.remove('visible');
                   resultActions.classList.add('visible');
                   lgpdNotice.classList.add('visible');
+                  MGA.send('tryon_result_viewed', { client_key: clientKey, store: window.location.hostname, duration_ms: Date.now() - pollStart });
                 };
                 renderResult.src = resultUrl;
                 resolve();

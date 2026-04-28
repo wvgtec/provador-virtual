@@ -256,7 +256,22 @@ app.post('/process', async (req, res) => {
       ]);
     }
 
-    log('process_done', { jobId, clientKey, durationMs: Date.now() - startedAt });
+    const durationMs = Date.now() - startedAt;
+    log('process_done', { jobId, clientKey, durationMs });
+
+    // GA4 Measurement Protocol — evento server-side (não bloqueável por ad blocker)
+    fetch(`https://www.google-analytics.com/mp/collect?measurement_id=G-3CTR9CDSX4&api_secret=G-W38t4oSGW8scDifAUq0Q`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: `server.${clientKey}`,
+        events: [{
+          name: 'tryon_completed',
+          params: { client_key: clientKey, category: category || 'auto', duration_ms: durationMs, cached: false, engagement_time_msec: 1 },
+        }],
+      }),
+    }).catch(() => {});
+
     return res.status(200).json({ jobId, status: 'done' });
 
   } catch (err) {

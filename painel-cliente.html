@@ -7,6 +7,14 @@
 <link rel="icon" type="image/png" href="logo-mirage.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3CTR9CDSX4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-3CTR9CDSX4', { send_page_view: false });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <style>
@@ -681,6 +689,20 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
 // URL da API — detectada automaticamente pelo domínio atual.
 const API_URL = window.location.origin;
 
+// ── Google Analytics 4 ────────────────────────────────────────────────────────
+const GA_ID = 'G-3CTR9CDSX4';
+function gaEvent(name, params = {}) {
+  if (typeof gtag !== 'function') return;
+  gtag('event', name, params);
+}
+function gaPage(pageName) {
+  if (typeof gtag !== 'function') return;
+  gtag('event', 'page_view', {
+    page_title:    pageName,
+    page_location: window.location.origin + '/painel#' + pageName,
+  });
+}
+
 const PLANS = {
   starter:    { name:'Starter',    limit:100,      price:49,    overage:0.75, color:'#6B7280' },
   pro:        { name:'Pro',        limit:500,      price:149,   overage:0.40, color:'#635BFF' },
@@ -725,6 +747,8 @@ async function doLogin() {
     st.client     = data.client;
     st.suspended  = !!data.suspended;
     sessionStorage.setItem('cpSession', JSON.stringify({ clientKey:data.clientKey, password }));
+    gtag('set', 'user_properties', { client_key: data.clientKey, plan: data.client?.plan || 'unknown' });
+    gaEvent('login', { method: 'email', client_key: data.clientKey });
     startApp();
   } catch { errEl.textContent = 'Erro de conexão. Tente novamente.'; }
   finally { btn.disabled=false; btn.textContent='Entrar'; }
@@ -823,6 +847,7 @@ function nav(id) {
   document.getElementById(`view-${id}`)?.classList.add('active');
   document.getElementById('topbarTitle').textContent = VIEW_TITLES[id]||id;
   document.getElementById('topbarActions').innerHTML = '';
+  gaPage(VIEW_TITLES[id] || id);
   if (id==='dashboard')   loadDashboard();
   else if (id==='geracoes')   loadJobs();
   else if (id==='produtos')   loadProducts();
@@ -1069,6 +1094,7 @@ function obCopySnippet() {
   navigator.clipboard.writeText(text).then(() => {
     const b = document.querySelector('#ob-panel-3 .code-copy-btn');
     if (b) { b.textContent = 'Copiado!'; setTimeout(() => b.textContent = 'Copiar', 2000); }
+    gaEvent('snippet_copied', { source: 'onboarding', platform: document.getElementById('ob-platform')?.value });
   });
 }
 
@@ -1094,7 +1120,9 @@ async function obNext(step) {
     localStorage.setItem('ob_done_' + st.clientKey, '1');
     const badge = document.getElementById('onboardingBadge');
     if (badge) badge.style.display = 'none';
+    gaEvent('onboarding_completed', { client_key: st.clientKey });
   }
+  gaEvent('onboarding_step', { step_number: step, step_name: ['loja','personalizacao','instalacao','concluido'][step-1] });
   obSetStep(step + 1);
   if (step === 2) { obBuildSnippet(); }
 }
@@ -1192,7 +1220,10 @@ ${optional}
 
 function copySnippet() {
   navigator.clipboard.writeText(document.getElementById('snippetCode').textContent)
-    .then(()=>{ const b=document.querySelector('.code-copy-btn'); b.textContent='Copiado!'; setTimeout(()=>b.textContent='Copiar',2000); });
+    .then(()=>{
+      const b=document.querySelector('.code-copy-btn'); b.textContent='Copiado!'; setTimeout(()=>b.textContent='Copiar',2000);
+      gaEvent('snippet_copied', { source: 'integracao', platform: document.getElementById('snippetPlatform')?.value });
+    });
 }
 
 function renderBilling() {
@@ -1662,6 +1693,7 @@ function showInvoiceDetail(invoiceId) {
 }
 
 async function upgradePlan() {
+  gaEvent('upgrade_clicked', { current_plan: st.client?.plan, client_key: st.clientKey });
   // Recarrega planos se necessário
   if (!st.plans.length) {
     const r = await fetch(`${API_URL}/api/client`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'listPlans'}) }).then(r=>r.json()).catch(()=>({ok:false,plans:[]}));
