@@ -136,9 +136,22 @@ export default async function handler(req, res) {
     }
 
     const table = `\`${PROJECT_ID}.${DATASET}.${billingTableId}\``;
+    console.log('[billing-gcp] Tabela encontrada:', billingTableId);
+
+    // ── Query de diagnóstico: conta total de linhas ──────────────────────────
+    const countSql = `SELECT COUNT(*) AS total FROM ${table}`;
+    let totalRows = 0;
+    try {
+      const countResult = await queryBigQuery(token, countSql);
+      totalRows = parseInt(countResult[0]?.total || '0');
+      console.log('[billing-gcp] Total de linhas na tabela:', totalRows);
+    } catch (e) {
+      console.error('[billing-gcp] Erro ao contar linhas:', e.message);
+    }
 
     // ── Query 1: Custo bruto + créditos por serviço ─────────────────────────
-    const costSql = `
+    // Sem filtro de data se não houver dados do mês atual (tabela pode ter dados históricos)
+    const costSql = totalRows > 0 ? `
       SELECT
         service.description                                      AS service,
         ROUND(SUM(cost), 4)                                      AS custo_bruto,
@@ -154,10 +167,10 @@ export default async function handler(req, res) {
       GROUP BY service, currency
       ORDER BY custo_bruto DESC
       LIMIT 20
-    `;
+    ` : null;
 
-    // ── Query 2: Créditos disponíveis (saldo restante) ──────────────────────
-    const creditSql = `
+    // ── Query 2: Créditos ────────────────────────────────────────────────────
+    const creditSql = totalRows > 0 ? `
       SELECT
         c.name  AS nome,
         c.type  AS tipo,
@@ -169,7 +182,21 @@ export default async function handler(req, res) {
         AND c.amount < 0
       GROUP BY c.name, c.type, currency
       ORDER BY valor_utilizado ASC
-    `;
+    ` : null;
+
+    if (!costSql) {
+      console.log('[billing-gcp] Tabela existe mas sem dados do mês atual ainda');
+      return res.status(200).json({
+        pending: true,
+        tableFound: billingTableId,
+        totalRows,
+        mes: new Date().toISOString().slice(0, 7),
+        totais: { bruto: 0, creditos: 0, liquido: 0 },
+        servicos: [],
+        creditos_utilizados: [],
+        _debug: `Tabela ${billingTableId} encontrada com ${totalRows} linhas — aguardando dados do mês atual`,
+      });
+    }
 
     const [custosPorServico, creditosUtilizados] = await Promise.all([
       queryBigQuery(token, costSql),
