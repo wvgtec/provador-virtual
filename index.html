@@ -1396,7 +1396,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.detail || 'Erro desconhecido');
-      document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4      document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Em breve entraremos em contato pelo WhatsApp.</p></div>';
+      document.getElementById('lf-form-wrap').innerHTML = '<div class="lf-success"><div class="lf-check">✓</div><h4>Pedido recebido.</h4><p>Em breve entraremos em contato pelo WhatsApp.</p></div>';
     } catch (err) {
       console.error('[submitLeadForm]', err);
       btn.disabled = false;
