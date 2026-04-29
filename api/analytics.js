@@ -105,7 +105,7 @@ export default async function handler(req, res) {
     const periodo = req.query?.periodo || '30daysAgo';
 
     // ── 1. KPIs gerais ────────────────────────────────────────────────────────
-    const [kpisReport, trendReport, sourcesReport, devicesReport, eventsReport, pagesReport] =
+    const [kpisReport, trendReport, sourcesReport, devicesReport, eventsReport, pagesReport, clientEventsReport] =
       await Promise.all([
 
         // KPIs: sessões, usuários, pageviews, bounce rate, duração média
@@ -163,28 +163,64 @@ export default async function handler(req, res) {
           orderBys:   [{ metric: { metricName: 'screenPageViews' }, desc: true }],
           limit: 8,
         }),
+
+        // Eventos por client_key (widget por cliente)
+        runReport(token, {
+          dateRanges: [{ startDate: periodo, endDate: 'today' }],
+          dimensions: [
+            { name: 'customEvent:client_key' },
+            { name: 'eventName' },
+          ],
+          metrics:  [{ name: 'eventCount' }],
+          orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'eventName',
+              inListFilter: {
+                values: ['tryon_widget_opened', 'tryon_started', 'tryon_result_viewed', 'tryon_lead_submitted'],
+              },
+            },
+          },
+          limit: 200,
+        }),
       ]);
 
     // ── Extrai KPIs ───────────────────────────────────────────────────────────
     const kpis = kpisReport.rows?.[0];
     const metricVal = (i) => parseFloat(kpis?.metricValues?.[i]?.value || '0');
 
+    // ── Agrega eventos por client_key ─────────────────────────────────────────
+    const rawClientEvents = parseReport(clientEventsReport);
+    const clientMap = {};
+    rawClientEvents.forEach(row => {
+      const key   = row['customEvent:client_key'] || '(sem key)';
+      const event = row.eventName;
+      const count = parseInt(row.eventCount || 0);
+      if (!clientMap[key]) clientMap[key] = { client_key: key, opened: 0, started: 0, viewed: 0, leads: 0 };
+      if (event === 'tryon_widget_opened')  clientMap[key].opened  += count;
+      if (event === 'tryon_started')        clientMap[key].started += count;
+      if (event === 'tryon_result_viewed')  clientMap[key].viewed  += count;
+      if (event === 'tryon_lead_submitted') clientMap[key].leads   += count;
+    });
+    const porCliente = Object.values(clientMap).sort((a, b) => b.started - a.started);
+
     return res.status(200).json({
       ok:      true,
       periodo,
       kpis: {
-        sessions:        Math.round(metricVal(0)),
-        activeUsers:     Math.round(metricVal(1)),
-        pageviews:       Math.round(metricVal(2)),
-        bounceRate:      Math.round(metricVal(3) * 100) / 100,
-        avgSessionSec:   Math.round(metricVal(4)),
-        newUsers:        Math.round(metricVal(5)),
+        sessions:      Math.round(metricVal(0)),
+        activeUsers:   Math.round(metricVal(1)),
+        pageviews:     Math.round(metricVal(2)),
+        bounceRate:    Math.round(metricVal(3) * 100) / 100,
+        avgSessionSec: Math.round(metricVal(4)),
+        newUsers:      Math.round(metricVal(5)),
       },
-      tendencia:  parseReport(trendReport),
-      fontes:     parseReport(sourcesReport),
+      tendencia:    parseReport(trendReport),
+      fontes:       parseReport(sourcesReport),
       dispositivos: parseReport(devicesReport),
-      eventos:    parseReport(eventsReport),
-      paginas:    parseReport(pagesReport),
+      eventos:      parseReport(eventsReport),
+      paginas:      parseReport(pagesReport),
+      porCliente,
     });
 
   } catch (err) {
