@@ -1669,98 +1669,6 @@ async function loadAnalytics(periodo = '30daysAgo') {
         </div>
       </div>
 
-      <!-- Grid: fontes + dispositivos + eventos + páginas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-
-        <!-- Fontes de tráfego -->
-        <div class="card">
-          <div class="card-header"><h3>Fontes de tráfego</h3></div>
-          <div style="padding:0 12px 12px">
-            ${fontes.map(f => {
-              const pct = kpis.sessions > 0 ? Math.round(Number(f.sessions)/kpis.sessions*100) : 0;
-              const icon = canalIcon[f.sessionDefaultChannelGrouping] || '📊';
-              return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-                <span>${icon}</span>
-                <div style="flex:1;min-width:0">
-                  <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.sessionDefaultChannelGrouping||'Outro'}</div>
-                  <div style="height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden">
-                    <div style="height:100%;width:${pct}%;background:var(--primary);border-radius:2px"></div>
-                  </div>
-                </div>
-                <div style="text-align:right;flex-shrink:0">
-                  <div style="font-size:13px;font-weight:600">${fmt(f.sessions)}</div>
-                  <div style="font-size:11px;color:var(--muted)">${pct}%</div>
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-
-        <!-- Eventos -->
-        <div class="card">
-          <div class="card-header"><h3>Top eventos</h3></div>
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-              <thead><tr style="border-bottom:1px solid var(--border)">
-                <th style="text-align:left;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Evento</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Total</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Usuários</th>
-              </tr></thead>
-              <tbody>
-                ${eventos.map(e => `<tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:8px 12px;font-weight:500">${e.eventName||'—'}</td>
-                  <td style="padding:8px 12px;text-align:right">${fmt(e.eventCount)}</td>
-                  <td style="padding:8px 12px;text-align:right;color:var(--muted)">${fmt(e.totalUsers)}</td>
-                </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Dispositivos -->
-        <div class="card">
-          <div class="card-header"><h3>Dispositivos</h3></div>
-          <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
-            ${dispositivos.map(d => {
-              const icon = {desktop:'🖥️',mobile:'📱',tablet:'📟'}[d.deviceCategory]||'💻';
-              const pct  = kpis.sessions > 0 ? Math.round(Number(d.sessions)/kpis.sessions*100) : 0;
-              return `<div style="display:flex;align-items:center;gap:10px">
-                <span style="font-size:18px">${icon}</span>
-                <div style="flex:1">
-                  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                    <span style="font-size:13px;font-weight:500;text-transform:capitalize">${d.deviceCategory}</span>
-                    <span style="font-size:13px;font-weight:600">${pct}%</span>
-                  </div>
-                  <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-                    <div style="height:100%;width:${pct}%;background:var(--primary);border-radius:3px"></div>
-                  </div>
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-
-        <!-- Top páginas -->
-        <div class="card">
-          <div class="card-header"><h3>Top páginas</h3></div>
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:13px">
-              <thead><tr style="border-bottom:1px solid var(--border)">
-                <th style="text-align:left;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Página</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Views</th>
-              </tr></thead>
-              <tbody>
-                ${paginas.map(p => `<tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:8px 12px;font-family:monospace;font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.pagePath||'/'}</td>
-                  <td style="padding:8px 12px;text-align:right;font-weight:600">${fmt(p.screenPageViews)}</td>
-                </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
-
       <!-- Funil do Widget -->
       ${funil.opened ? `
       <div class="card" style="margin-top:16px">
@@ -1818,7 +1726,7 @@ async function loadAnalytics(periodo = '30daysAgo') {
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
               <tr style="border-bottom:1px solid var(--border)">
-                <th style="text-align:left;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Client Key</th>
+                <th style="text-align:left;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Cliente</th>
                 <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">👁️ Abriu</th>
                 <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">📷 Foto</th>
                 <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">⚡ Gerou</th>
@@ -1836,8 +1744,8 @@ async function loadAnalytics(periodo = '30daysAgo') {
                 const clientName = clientData?.name || '';
                 return `<tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:10px 12px">
-                    <div style="font-family:monospace;font-size:11px;color:var(--muted)">${c.client_key}</div>
-                    ${clientName ? `<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:2px">${clientName}</div>` : ''}
+                    <div style="font-size:13px;font-weight:600">${clientName || c.client_key}</div>
+                    ${clientData?.store ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${clientData.store}</div>` : ''}
                   </td>
                   <td style="padding:10px 12px;text-align:right">${fmt(c.opened)}</td>
                   <td style="padding:10px 12px;text-align:right">${fmt(c.photo||0)}</td>
