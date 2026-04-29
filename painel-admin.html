@@ -1618,7 +1618,7 @@ async function loadAnalytics(periodo = '30daysAgo') {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
 
-    const { kpis, tendencia, fontes, dispositivos, eventos, paginas, porCliente = [] } = data;
+    const { kpis, tendencia, fontes, dispositivos, eventos, paginas, porCliente = [], funil = {} } = data;
     const fmt = n => Number(n).toLocaleString('pt-BR');
     const fmtSec = s => { const m = Math.floor(s/60); const sec = s%60; return m > 0 ? `${m}m ${sec}s` : `${sec}s`; };
 
@@ -1761,6 +1761,55 @@ async function loadAnalytics(periodo = '30daysAgo') {
 
       </div>
 
+      <!-- Funil do Widget -->
+      ${funil.opened ? `
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><h3>🔽 Funil do Provador Virtual — todos os clientes</h3></div>
+        <div style="padding:16px 20px">
+          ${(() => {
+            const steps = [
+              { label:'Widget aberto',     key:'opened',  icon:'👁️',  color:'#635BFF' },
+              { label:'Foto enviada',      key:'photo',   icon:'📷',  color:'#0EA5E9' },
+              { label:'Geração iniciada',  key:'started', icon:'⚡',  color:'#F59E0B' },
+              { label:'Resultado visto',   key:'viewed',  icon:'✅',  color:'#16A34A' },
+              { label:'Foto salva',        key:'saved',   icon:'💾',  color:'#8B5CF6' },
+              { label:'Lead capturado',    key:'leads',   icon:'📋',  color:'#EC4899' },
+            ];
+            const base = funil.opened || 1;
+            return steps.map((s, i) => {
+              const val  = funil[s.key] || 0;
+              const pct  = Math.round((val / base) * 100);
+              const drop = i > 0 ? Math.round(((funil[steps[i-1].key]||0) - val) / Math.max(funil[steps[i-1].key]||1,1) * 100) : 0;
+              return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+                <span style="font-size:18px;width:24px;text-align:center">${s.icon}</span>
+                <div style="flex:1">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                    <span style="font-size:13px;font-weight:500">${s.label}</span>
+                    <span style="font-size:13px;font-weight:700">${fmt(val)} <span style="color:var(--muted);font-weight:400">(${pct}%)</span></span>
+                  </div>
+                  <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+                    <div style="height:100%;width:${pct}%;background:${s.color};border-radius:4px;transition:width .6s"></div>
+                  </div>
+                  ${i > 0 && drop > 0 ? `<div style="font-size:10px;color:var(--error);margin-top:2px">↓ ${drop}% abandonaram aqui</div>` : ''}
+                </div>
+              </div>`;
+            }).join('');
+          })()}
+          <div style="display:flex;gap:16px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
+            ${[
+              {label:'Retentativas',  val: funil.retry || 0,        icon:'🔄'},
+              {label:'Lead pulado',   val: funil.skipped || 0,      icon:'⏭️'},
+              {label:'Trocou foto',   val: funil.change_photo || 0, icon:'🔃'},
+              {label:'Erros',         val: funil.errors || 0,       icon:'❌', red: true},
+            ].map(s => `<div style="background:var(--bg);border-radius:8px;padding:8px 14px;text-align:center;flex:1;min-width:80px">
+              <div style="font-size:16px">${s.icon}</div>
+              <div style="font-size:15px;font-weight:700;color:${s.red?'var(--error)':'var(--text)'}">${fmt(s.val)}</div>
+              <div style="font-size:11px;color:var(--muted)">${s.label}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>` : ''}
+
       <!-- Widget por cliente -->
       ${porCliente.length ? `
       <div class="card" style="margin-top:16px">
@@ -1770,11 +1819,14 @@ async function loadAnalytics(periodo = '30daysAgo') {
             <thead>
               <tr style="border-bottom:1px solid var(--border)">
                 <th style="text-align:left;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Client Key</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Abriu</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Gerou</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Viu resultado</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Leads</th>
-                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Conversão</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">👁️ Abriu</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">📷 Foto</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">⚡ Gerou</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">✅ Viu</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">💾 Salvou</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">📋 Leads</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">❌ Erros</th>
+                <th style="text-align:right;padding:8px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">Conv.</th>
               </tr>
             </thead>
             <tbody>
@@ -1788,9 +1840,12 @@ async function loadAnalytics(periodo = '30daysAgo') {
                     ${clientName ? `<div style="font-size:12px;font-weight:600;color:var(--text);margin-top:2px">${clientName}</div>` : ''}
                   </td>
                   <td style="padding:10px 12px;text-align:right">${fmt(c.opened)}</td>
+                  <td style="padding:10px 12px;text-align:right">${fmt(c.photo||0)}</td>
                   <td style="padding:10px 12px;text-align:right;font-weight:600;color:var(--primary)">${fmt(c.started)}</td>
-                  <td style="padding:10px 12px;text-align:right">${fmt(c.viewed)}</td>
+                  <td style="padding:10px 12px;text-align:right">${fmt(c.viewed||0)}</td>
+                  <td style="padding:10px 12px;text-align:right;color:#8B5CF6;font-weight:600">${fmt(c.saved||0)}</td>
                   <td style="padding:10px 12px;text-align:right;color:var(--success);font-weight:600">${fmt(c.leads)}</td>
+                  <td style="padding:10px 12px;text-align:right;color:${(c.errors||0)>0?'var(--error)':'var(--muted)'}">${fmt(c.errors||0)}</td>
                   <td style="padding:10px 12px;text-align:right">
                     <span style="background:${conv>=50?'var(--success-light)':conv>=20?'#fffbeb':'var(--error-light)'};color:${conv>=50?'var(--success)':conv>=20?'#92400e':'var(--error)'};padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600">${conv}%</span>
                   </td>

@@ -544,7 +544,25 @@
 
     if (!clientKey) { console.error('[Mirage] VTON_CLIENT_KEY não definido.'); return; }
 
-    MGA.send('tryon_widget_opened', { client_key: clientKey, store: window.location.hostname, page: window.location.pathname });
+    // ── Helper: parâmetros comuns enriquecidos ─────────────────────────────
+    const garmentDomain = (() => {
+      try { return garmentUrl ? new URL(garmentUrl.startsWith('http') ? garmentUrl : 'https://'+garmentUrl).hostname : ''; }
+      catch { return ''; }
+    })();
+
+    const mp = (extra = {}) => ({
+      client_key:     clientKey,
+      store:          window.location.hostname,
+      store_name:     storeName || '',
+      page:           window.location.pathname,
+      category:       category || 'auto',
+      has_garment:    garmentUrl ? 1 : 0,
+      garment_domain: garmentDomain,
+      ...extra,
+    });
+
+    // ── Evento: widget aberto ──────────────────────────────────────────────
+    MGA.send('tryon_widget_opened', mp());
 
     const overlay = buildModal(storeName);
     document.body.appendChild(overlay);
@@ -686,7 +704,7 @@
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ jobId: currentJobId, clientKey, lead }),
         });
-        MGA.send('tryon_lead_submitted', { client_key: clientKey, store: window.location.hostname, has_whatsapp: !!lead.whatsapp });
+        MGA.send('tryon_lead_submitted', mp({ has_whatsapp: !!lead.whatsapp ? 1 : 0 }));
       } catch (_) {}
 
       leadInner.style.display = 'none';
@@ -698,6 +716,7 @@
 
     leadSubmit.addEventListener('click', submitLead);
     leadSkip.addEventListener('click', () => {
+      MGA.send('tryon_lead_skipped', mp());
       leadWrap.classList.remove('visible');
       leadDone = true;
     });
@@ -715,7 +734,11 @@
       generateBtn.classList.remove('nksw-hidden');
 
       processImage(file)
-        .then(dataUrl => { selectedDataUrl = dataUrl; generateBtn.disabled = false; })
+        .then(dataUrl => {
+          selectedDataUrl = dataUrl;
+          generateBtn.disabled = false;
+          MGA.send('tryon_photo_uploaded', mp({ file_type: file.type, file_size_kb: Math.round(file.size / 1024) }));
+        })
         .catch(e => { showError(e.message); });
     }
 
@@ -760,7 +783,15 @@
       clearError();
     }
 
+    function getStage() {
+      if (resultActions.classList.contains('visible')) return 'result';
+      if (renderCanvas.classList.contains('visible'))  return 'generating';
+      if (previewWrap.classList.contains('visible'))   return 'preview';
+      return 'upload';
+    }
+
     function closeModal() {
+      MGA.send('tryon_modal_closed', mp({ stage: getStage() }));
       clearInterval(pollTimer);
       overlay.remove();
       document.body.style.overflow = '';
@@ -789,11 +820,18 @@
       if (f && f.type.startsWith('image/')) setFile(f);
     });
 
-    changeBtn.addEventListener('click', resetToUpload);
-    retryBtn.addEventListener('click',  resetToUpload);
+    changeBtn.addEventListener('click', () => {
+      MGA.send('tryon_change_photo', mp({ stage: 'preview' }));
+      resetToUpload();
+    });
+    retryBtn.addEventListener('click', () => {
+      MGA.send('tryon_retry', mp({ stage: 'result' }));
+      resetToUpload();
+    });
 
     // ── Salvar foto ─────────────────────────────────────────────────────────
     saveBtn.addEventListener('click', () => {
+      MGA.send('tryon_result_saved', mp({ garment_url: (garmentUrl||'').slice(0,100) }));
       const src = renderResult.src;
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       let blobUrl = null;
@@ -875,7 +913,7 @@
         setProgress(40);
 
         // 3. Submete o job
-        MGA.send('tryon_started', { client_key: clientKey, store: window.location.hostname, page: window.location.pathname });
+        MGA.send('tryon_started', mp({ garment_url: (garmentUrl||'').slice(0,100) }));
         const submitRes = await fetch(`${apiUrl}/api/submit`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -944,7 +982,11 @@
                   loadingArea.classList.remove('visible');
                   resultActions.classList.add('visible');
                   lgpdNotice.classList.add('visible');
-                  MGA.send('tryon_result_viewed', { client_key: clientKey, store: window.location.hostname, duration_ms: Date.now() - pollStart });
+                  MGA.send('tryon_result_viewed', mp({
+                    duration_ms:  Date.now() - pollStart,
+                    garment_url:  (garmentUrl||'').slice(0,100),
+                    result_time_s: Math.round((Date.now() - pollStart) / 1000),
+                  }));
                 };
                 renderResult.src = resultUrl;
                 resolve();
@@ -969,7 +1011,9 @@
         previewWrap.classList.add('visible');
         generateBtn.classList.remove('nksw-hidden');
         generateBtn.disabled = false;
-        showError(err?.message || 'Erro inesperado. Tente novamente.');
+        const errMsg = err?.message || 'Erro inesperado';
+        MGA.send('tryon_error', mp({ error_message: errMsg.slice(0, 100), garment_url: (garmentUrl||'').slice(0,100) }));
+        showError(errMsg + '. Tente novamente.');
         setProgress(0);
         loadingArea.classList.remove('visible');
       }

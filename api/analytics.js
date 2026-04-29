@@ -105,7 +105,7 @@ export default async function handler(req, res) {
     const periodo = req.query?.periodo || '30daysAgo';
 
     // ── 1. KPIs gerais ────────────────────────────────────────────────────────
-    const [kpisReport, trendReport, sourcesReport, devicesReport, eventsReport, pagesReport, clientEventsReport] =
+    const [kpisReport, trendReport, sourcesReport, devicesReport, eventsReport, pagesReport, clientEventsReport, funnelReport] =
       await Promise.all([
 
         // KPIs: sessões, usuários, pageviews, bounce rate, duração média
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
           limit: 8,
         }),
 
-        // Eventos por client_key (widget por cliente)
+        // Eventos widget por client_key (todos os eventos do funil)
         runReport(token, {
           dateRanges: [{ startDate: periodo, endDate: 'today' }],
           dimensions: [
@@ -177,17 +177,64 @@ export default async function handler(req, res) {
             filter: {
               fieldName: 'eventName',
               inListFilter: {
-                values: ['tryon_widget_opened', 'tryon_started', 'tryon_result_viewed', 'tryon_lead_submitted'],
+                values: [
+                  'tryon_widget_opened',
+                  'tryon_photo_uploaded',
+                  'tryon_started',
+                  'tryon_result_viewed',
+                  'tryon_result_saved',
+                  'tryon_lead_submitted',
+                  'tryon_lead_skipped',
+                  'tryon_retry',
+                  'tryon_change_photo',
+                  'tryon_modal_closed',
+                  'tryon_error',
+                ],
               },
             },
           },
-          limit: 200,
+          limit: 500,
+        }),
+
+        // Funil global (todos os eventos agregados sem dimensão de cliente)
+        runReport(token, {
+          dateRanges: [{ startDate: periodo, endDate: 'today' }],
+          dimensions: [{ name: 'eventName' }],
+          metrics:    [{ name: 'eventCount' }, { name: 'totalUsers' }],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'eventName',
+              inListFilter: {
+                values: [
+                  'tryon_widget_opened', 'tryon_photo_uploaded', 'tryon_started',
+                  'tryon_result_viewed', 'tryon_result_saved', 'tryon_lead_submitted',
+                  'tryon_lead_skipped', 'tryon_retry', 'tryon_change_photo', 'tryon_error',
+                ],
+              },
+            },
+          },
         }),
       ]);
 
     // ── Extrai KPIs ───────────────────────────────────────────────────────────
     const kpis = kpisReport.rows?.[0];
     const metricVal = (i) => parseFloat(kpis?.metricValues?.[i]?.value || '0');
+
+    // ── Funil global ──────────────────────────────────────────────────────────
+    const funnelRows = parseReport(funnelReport);
+    const funnelMap  = Object.fromEntries(funnelRows.map(r => [r.eventName, parseInt(r.eventCount||0)]));
+    const funil = {
+      opened:       funnelMap['tryon_widget_opened']   || 0,
+      photo:        funnelMap['tryon_photo_uploaded']  || 0,
+      started:      funnelMap['tryon_started']         || 0,
+      viewed:       funnelMap['tryon_result_viewed']   || 0,
+      saved:        funnelMap['tryon_result_saved']    || 0,
+      leads:        funnelMap['tryon_lead_submitted']  || 0,
+      skipped:      funnelMap['tryon_lead_skipped']    || 0,
+      retry:        funnelMap['tryon_retry']           || 0,
+      change_photo: funnelMap['tryon_change_photo']    || 0,
+      errors:       funnelMap['tryon_error']           || 0,
+    };
 
     // ── Agrega eventos por client_key ─────────────────────────────────────────
     const rawClientEvents = parseReport(clientEventsReport);
@@ -196,11 +243,19 @@ export default async function handler(req, res) {
       const key   = row['customEvent:client_key'] || '(sem key)';
       const event = row.eventName;
       const count = parseInt(row.eventCount || 0);
-      if (!clientMap[key]) clientMap[key] = { client_key: key, opened: 0, started: 0, viewed: 0, leads: 0 };
-      if (event === 'tryon_widget_opened')  clientMap[key].opened  += count;
-      if (event === 'tryon_started')        clientMap[key].started += count;
-      if (event === 'tryon_result_viewed')  clientMap[key].viewed  += count;
-      if (event === 'tryon_lead_submitted') clientMap[key].leads   += count;
+      if (!clientMap[key]) clientMap[key] = {
+        client_key: key, opened: 0, photo: 0, started: 0, viewed: 0,
+        saved: 0, leads: 0, skipped: 0, retry: 0, errors: 0,
+      };
+      if (event === 'tryon_widget_opened')   clientMap[key].opened  += count;
+      if (event === 'tryon_photo_uploaded')  clientMap[key].photo   += count;
+      if (event === 'tryon_started')         clientMap[key].started += count;
+      if (event === 'tryon_result_viewed')   clientMap[key].viewed  += count;
+      if (event === 'tryon_result_saved')    clientMap[key].saved   += count;
+      if (event === 'tryon_lead_submitted')  clientMap[key].leads   += count;
+      if (event === 'tryon_lead_skipped')    clientMap[key].skipped += count;
+      if (event === 'tryon_retry')           clientMap[key].retry   += count;
+      if (event === 'tryon_error')           clientMap[key].errors  += count;
     });
     const porCliente = Object.values(clientMap).sort((a, b) => b.started - a.started);
 
@@ -221,6 +276,7 @@ export default async function handler(req, res) {
       eventos:      parseReport(eventsReport),
       paginas:      parseReport(pagesReport),
       porCliente,
+      funil,
     });
 
   } catch (err) {
