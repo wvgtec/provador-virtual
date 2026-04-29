@@ -1618,7 +1618,7 @@ async function loadAnalytics(periodo = '30daysAgo') {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
 
-    const { kpis, tendencia, fontes, dispositivos, eventos, paginas } = data;
+    const { kpis, tendencia, fontes, dispositivos, eventos, paginas, porCliente = [] } = data;
     const fmt = n => Number(n).toLocaleString('pt-BR');
     const fmtSec = s => { const m = Math.floor(s/60); const sec = s%60; return m > 0 ? `${m}m ${sec}s` : `${sec}s`; };
 
