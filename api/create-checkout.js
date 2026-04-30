@@ -102,7 +102,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Plano sem preço Stripe. Edite o plano no admin para sincronizar.' });
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-04-22.dahlia' });
 
   try {
     // Garante customer Stripe e salva índice de busca

@@ -296,7 +296,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Stripe não configurado.' });
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-04-22.dahlia' });
 
   // Lê o body bruto antes de qualquer parsing — obrigatório para verificar assinatura
   let rawBody;

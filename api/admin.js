@@ -16,7 +16,7 @@ const redis = new Redis({
 
 // Stripe — ativo só se a chave estiver configurada
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-04-22.dahlia' })
   : null;
 
 // ─── Helpers de autenticação ──────────────────────────────────────────────────

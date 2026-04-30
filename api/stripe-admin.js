@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'STRIPE_SECRET_KEY não configurada' });
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-04-22.dahlia' });
 
   try {
     const now       = new Date();
