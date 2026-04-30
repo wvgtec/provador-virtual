@@ -121,12 +121,16 @@ async function handleInvoicePaid(stripe, invoice) {
   if (!client) return;
 
   // Atualiza plano com base na assinatura vinculada à fatura
+  // API 2026-04-22: subscription moveu de invoice.subscription para invoice.parent.subscription_details.subscription
   let plan = client.plan || 'starter';
-  const subId = invoice.subscription;
+  const subId = invoice.subscription
+    || invoice.parent?.subscription_details?.subscription
+    || null;
   if (subId) {
     try {
-      const sub = await stripe.subscriptions.retrieve(subId);
-      const priceId = sub.items.data[0]?.price?.id;
+      const sub     = await stripe.subscriptions.retrieve(subId);
+      const subItem = sub.items.data[0];
+      const priceId = subItem?.price?.id || subItem?.pricing?.price_details?.price || null;
       const mapped  = priceId ? mapPriceToPlan(priceId) : null;
       if (mapped) plan = mapped;
     } catch (e) { /* mantém plano atual se não conseguir ler a assinatura */ }
@@ -201,7 +205,9 @@ async function handleSubscriptionUpdated(stripe, subscription) {
   const client = await getClient(clientKey);
   if (!client) return;
 
-  const priceId = subscription.items.data[0]?.price?.id;
+  // API 2026-04-22: price pode estar em price.id (antigo) ou pricing.price_details.price (novo)
+  const item0   = subscription.items.data[0];
+  const priceId = item0?.price?.id || item0?.pricing?.price_details?.price || null;
   const plan    = (priceId ? mapPriceToPlan(priceId) : null) || client.plan || 'starter';
 
   client.plan                 = plan;
