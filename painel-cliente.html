@@ -1064,8 +1064,11 @@ function obBuildSnippet() {
   window.VTON_STORE_NAME = '${storeName}';
   window.addEventListener('load', function() {
     var img = document.querySelector('[class*="productImageTag"]')
-           || document.querySelector('[class*="product-image"] img');
-    if (img) window.VTON_GARMENT_URL = img.src;
+           || document.querySelector('[class*="product-image"] img')
+           || document.querySelector('.product-gallery__image img')
+           || document.querySelector('.product-featured-image img')
+           || document.querySelector('[data-product-image]');
+    if (img) window.VTON_GARMENT_URL = img.src || img.dataset.src || '';
   });
 ${optional}
 <\/script>
@@ -1185,8 +1188,11 @@ function buildSnippet() {
   window.VTON_STORE_NAME = '${storeName}';
   window.addEventListener('load', function() {
     var img = document.querySelector('[class*="productImageTag"]')
-           || document.querySelector('[class*="product-image"] img');
-    if (img) window.VTON_GARMENT_URL = img.src;
+           || document.querySelector('[class*="product-image"] img')
+           || document.querySelector('.product-gallery__image img')
+           || document.querySelector('.product-featured-image img')
+           || document.querySelector('[data-product-image]');
+    if (img) window.VTON_GARMENT_URL = img.src || img.dataset.src || '';
   });
 ${optional}
 <\/script>

@@ -375,6 +375,45 @@
     return url;
   }
 
+  // ─── Detecção de imagem para Nuvemshop ────────────────────────────────────
+  function detectNuvemshopImage() {
+    // Regex para trocar sufixo de tamanho por versão grande
+    const upsize = src => src.replace(/-\d+-\d+(\.\w+)$/, '-1024-1024$1');
+
+    // 1. API JS do Nuvemshop (window.LS.product.images)
+    try {
+      const lsImages = window.LS?.product?.images;
+      if (lsImages && lsImages.length > 0) {
+        const img = lsImages[0];
+        const src = typeof img === 'string' ? img : (img.src || img.url || '');
+        if (src && src.includes('mitiendanube.com')) return upsize(src);
+      }
+    } catch (_) {}
+
+    // 2. Imagem já carregada no DOM com URL da CDN Nuvemshop
+    const loaded = Array.from(document.querySelectorAll('img')).find(img =>
+      img.src &&
+      img.src.includes('mitiendanube.com/stores') &&
+      img.src.includes('/products/') &&
+      !img.src.includes('empty-placeholder') &&
+      img.naturalWidth > 0
+    );
+    if (loaded) return upsize(loaded.src);
+
+    // 3. Lazy loading (data-src / data-lazy-src / data-image)
+    const lazy = document.querySelector(
+      '[data-src*="mitiendanube.com/stores"][data-src*="/products/"],' +
+      '[data-lazy-src*="mitiendanube.com/stores"][data-lazy-src*="/products/"],' +
+      '[data-image*="mitiendanube.com/stores"][data-image*="/products/"]'
+    );
+    if (lazy) {
+      const src = lazy.dataset.src || lazy.dataset.lazySrc || lazy.dataset.image || '';
+      if (src) return upsize(src);
+    }
+
+    return null;
+  }
+
   // ─── Constrói o modal ──────────────────────────────────────────────────────
   function buildModal(storeName) {
     const leadSub = storeName
@@ -532,8 +571,12 @@
   function initModal(instanceCfg) {
     const apiUrl     = instanceCfg.apiUrl     || CFG.apiUrl;
     const clientKey  = instanceCfg.clientKey  || CFG.clientKey;
-    const garmentUrl = toAbsoluteUrl(instanceCfg.garmentUrl || CFG.garmentUrl
+    // Ignora template não renderizado (ex: "{{ ... }}", "{% ... %}", "<?php")
+    const _rawGarment = instanceCfg.garmentUrl || CFG.garmentUrl || '';
+    const _safeGarment = /^\{\{|^\{%|^<\?/.test(_rawGarment.trim()) ? '' : _rawGarment;
+    const garmentUrl = toAbsoluteUrl(_safeGarment
       || document.querySelector('[data-vton-image]')?.dataset?.vtonImage
+      || detectNuvemshopImage()
       || document.querySelector('.product__media img')?.src
       || document.querySelector('.product-featured-img')?.src
       || document.querySelector('.woocommerce-product-gallery__image img')?.src
