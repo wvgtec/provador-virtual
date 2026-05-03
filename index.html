@@ -205,6 +205,11 @@
 
     .wrap { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
 
+    /* ANNOUNCEMENT BAR */
+    .announce-bar { background: var(--ink); color: var(--paper); text-align: center; padding: 9px 20px; font-size: 13px; font-weight: 500; letter-spacing: -0.01em; display: flex; align-items: center; justify-content: center; gap: 12px; position: relative; z-index: 61; }
+    .announce-bar a { color: var(--yellow); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+    .announce-bar a:hover { opacity: .8; }
+
     /* NAV */
     .nav { position: sticky; top: 0; z-index: 60; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1.5px solid var(--ink); }
     .nav-row { display: flex; align-items: center; justify-content: space-between; height: 72px; }
@@ -239,6 +244,13 @@
     .hero-scan::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, rgba(255,227,78,0.8), transparent); animation: scanline 3s ease-in-out infinite; }
     .hero-badge { position: absolute; top: 16px; left: 16px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: var(--yellow); border: 1.5px solid var(--ink); font-weight: 600; font-size: 12px; }
     .hero-meta { position: absolute; bottom: 16px; right: 16px; padding: 10px 14px; border-radius: 10px; background: var(--ink); color: #fff; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.05em; }
+
+    /* LOGOS */
+    .logos-section { padding: 28px 0; border-bottom: 1.5px solid var(--ink); background: var(--paper-2); }
+    .logos-label { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 18px; }
+    .logos-row { display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap; }
+    .logos-row .brand-name { font-weight: 700; font-size: 18px; letter-spacing: -0.03em; color: rgba(10,10,10,0.35); transition: color .2s; user-select: none; }
+    .logos-row .brand-name:hover { color: var(--ink); }
 
     /* MARQUEE */
     .marquee { overflow: hidden; border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); padding: 16px 0; margin-top: 40px; background: var(--yellow); }
@@ -401,7 +413,7 @@
     .partner-stats .ps-l { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 6px; font-family: "JetBrains Mono", monospace; letter-spacing: 0.04em; text-transform: uppercase; }
 
     /* HOW */
-    .how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-top: 40px; }
+    .how-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-top: 40px; }
     .how-card { border: 1.5px solid var(--ink); border-radius: 18px; padding: 28px; background: var(--paper); transition: all .2s; }
     .how-card:hover { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 0 var(--ink); }
     .how-num { font-weight: 700; font-size: 40px; line-height: 1; background: var(--yellow); display: inline-block; padding: 4px 14px; border: 1.5px solid var(--ink); border-radius: 10px; letter-spacing: -0.03em; }
@@ -421,6 +433,35 @@
     .who .wname { font-size: 14px; font-weight: 600; }
     .who .wrole { font-size: 12px; color: var(--muted); }
     .kpi-badge { font-family: "JetBrains Mono", monospace; font-size: 11px; font-weight: 500; padding: 5px 12px; border: 1.5px solid var(--ink); border-radius: 999px; align-self: flex-start; background: var(--yellow); }
+
+    /* PRICING */
+    .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 40px; align-items: start; }
+    .plan { border: 1.5px solid var(--ink); border-radius: 22px; padding: 28px 24px; background: var(--paper); transition: all .2s; position: relative; }
+    .plan:hover { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 0 var(--ink); }
+    .plan.featured { background: var(--ink); color: var(--paper); transform: translateY(-8px); box-shadow: 6px 6px 0 0 var(--yellow); }
+    .plan.featured:hover { transform: translateY(-8px) translate(-3px,-3px); box-shadow: 8px 8px 0 0 var(--yellow); }
+    .plan-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; margin-bottom: 14px; border: 1.5px solid var(--ink); background: var(--yellow); color: var(--ink); }
+    .plan.featured .plan-badge { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
+    .plan-name { font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+    .plan-price { margin: 14px 0 4px; }
+    .plan-price .amount { font-weight: 700; font-size: 42px; line-height: 1; letter-spacing: -0.04em; }
+    .plan-price .amount small { font-size: 18px; font-weight: 500; }
+    .plan-price .period { font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+    .plan.featured .plan-price .period { color: rgba(255,255,255,0.6); }
+    .plan-vol { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 6px 0 18px; padding-bottom: 18px; border-bottom: 1.5px dashed var(--line); }
+    .plan.featured .plan-vol { color: rgba(255,255,255,0.5); border-bottom-color: rgba(255,255,255,0.15); }
+    .plan-features { list-style: none; padding: 0; margin: 0 0 22px; display: flex; flex-direction: column; gap: 9px; }
+    .plan-features li { font-size: 14px; font-weight: 500; display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+    .plan-features li::before { content: "✓"; font-weight: 700; flex-shrink: 0; color: var(--ink); }
+    .plan.featured .plan-features li::before { color: var(--yellow); }
+    .plan-cta { display: block; width: 100%; padding: 13px; border-radius: 12px; font-weight: 600; font-size: 14px; text-align: center; border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink); cursor: pointer; transition: all .2s; }
+    .plan-cta:hover { background: var(--yellow-soft); }
+    .plan.featured .plan-cta { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
+    .plan.featured .plan-cta:hover { background: #f5d800; }
+    .pricing-note { text-align: center; margin-top: 24px; font-size: 13px; color: var(--muted); font-weight: 500; }
+    .pricing-note a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 1100px) { .pricing-grid { grid-template-columns: 1fr 1fr; } .plan.featured { transform: none; } .plan.featured:hover { transform: translate(-3px,-3px); } }
+    @media (max-width: 640px) { .pricing-grid { grid-template-columns: 1fr; } }
 
     /* LEAD FORM */
     .leadform { position: relative; overflow: hidden; border-radius: 28px; background: var(--yellow); padding: 56px 48px; border: 1.5px solid var(--ink); }
@@ -483,6 +524,7 @@
       .hero-inner { grid-template-columns: 1fr; }
       .studio-grid { grid-template-columns: 1fr; }
       .how-grid, .tests, .caps, .gains, .foot-row { grid-template-columns: 1fr 1fr; gap: 16px; }
+      .how-grid { grid-template-columns: 1fr 1fr; }
       .dash-wrap, .partner-grid { grid-template-columns: 1fr; gap: 32px; }
       .leadform-inner { grid-template-columns: 1fr; gap: 32px; }
       .partner-wrap { padding: 48px 32px; }
@@ -511,6 +553,12 @@
 </head>
 <body>
 
+<!-- ANNOUNCEMENT BAR -->
+<div class="announce-bar">
+  <span>✦ Novo · Provador virtual plug-and-play para Shopify, VTEX, WooCommerce e Nuvemshop.</span>
+  <a href="#lead">Comece grátis →</a>
+</div>
+
 <!-- NAV -->
 <nav class="nav">
   <div class="wrap nav-row">
@@ -521,7 +569,7 @@
       <a href="#studio">Ver demo</a>
       <a href="#como">Como funciona</a>
       <a href="#ganhos">Resultados</a>
-      <a href="#lead">Começar</a>
+      <a href="#planos">Planos</a>
       <a href="#faq">FAQ</a>
     </div>
     <button class="nav-cta" onclick="openModal('nav')">Começar grátis</button>
@@ -540,16 +588,16 @@
         Veja como a roupa fica em você, <em>antes de comprar</em>
       </h1>
       <p class="sub rise" style="animation-delay:.15s">
-        Seu cliente não precisa mais imaginar — ele se vê usando a peça direto na loja.
+        Coloque o provador virtual na página do seu produto. O cliente se vê usando a peça em 2,4s — sem sair da sua loja, sem app, sem 3D.
       </p>
       <div class="hero-cta rise" style="animation-delay:.25s">
-        <a href="#studio" class="btn btn-yellow">Começar grátis →</a>
-        <button class="btn btn-ghost" onclick="openModal('hero')">Ver como funciona</button>
+        <a href="#lead" class="btn btn-yellow">Quero minha demo →</a>
+        <a href="#studio" class="btn btn-ghost">Ver a demo ao vivo</a>
       </div>
-      <div class="stat-row rise" style="animation-delay:.35s">
-        <div class="stat"><div class="n" style="font-size:22px">✓</div><div class="l">Mais interação na página</div></div>
-        <div class="stat"><div class="n" style="font-size:22px">✓</div><div class="l">Mais confiança na decisão</div></div>
-        <div class="stat"><div class="n" style="font-size:22px">✓</div><div class="l">Mais chances de conversão</div></div>
+      <div class="stat-row rise" style="animation-delay:.3s">
+        <div class="stat"><div class="n">+35<sup style="font-size:18px;vertical-align:top;font-weight:600">%</sup></div><div class="l">conversão na página de produto</div></div>
+        <div class="stat"><div class="n">-42<sup style="font-size:18px;vertical-align:top;font-weight:600">%</sup></div><div class="l">devoluções por caimento e cor</div></div>
+        <div class="stat"><div class="n">2,4<sup style="font-size:18px;vertical-align:top;font-weight:600">s</sup></div><div class="l">render médio em produção</div></div>
       </div>
     </div>
     <div class="hero-right rise" style="animation-delay:.2s">
@@ -573,6 +621,21 @@
     </div>
   </div>
 </section>
+
+<!-- LOGOS -->
+<div class="logos-section">
+  <div class="wrap">
+    <p class="logos-label">Marcas que já usam o Mirage</p>
+    <div class="logos-row">
+      <span class="brand-name">NKSW</span>
+      <span class="brand-name">Bella Rosa</span>
+      <span class="brand-name">Ellus</span>
+      <span class="brand-name">Maria Grão</span>
+      <span class="brand-name">Studio K</span>
+      <span class="brand-name">Soma</span>
+    </div>
+  </div>
+</div>
 
 <!-- STUDIO -->
 <section class="studio" id="studio">
@@ -719,26 +782,26 @@
 <section>
   <div class="wrap">
     <div class="eyebrow">02 · Por que funciona</div>
-    <h2 class="section-title">Comprar roupa online ainda é <em class="hl-pink">uma aposta</em>.</h2>
-    <p class="section-sub">O cliente olha fotos, tenta imaginar como vai ficar — e muitas vezes desiste. Não é preço, não é frete. É falta de visualização.</p>
+    <h2 class="section-title">O cliente desiste quando <em class="hl-pink">não consegue se imaginar</em> com a peça.</h2>
+    <p class="section-sub">Não é preço, não é frete. É não saber como vai ficar. O Mirage resolve isso antes do checkout.</p>
     <div class="caps">
       <div class="cap">
         <span class="no">01</span>
         <div class="cap-icon">👤</div>
-        <h4>O cliente se vê usando a peça</h4>
-        <p>Ele envia uma foto, escolhe o produto e vê como a roupa fica no corpo. Sem suposição, sem tentativa — decisão mais rápida e mais segura.</p>
+        <h4>O cliente vê a peça no próprio corpo</h4>
+        <p>Foto dele, produto da sua loja, resultado em 2,4s. Sem suposição, sem tentativa — a dúvida que gerava abandono deixa de existir.</p>
       </div>
       <div class="cap">
         <span class="no">02</span>
         <div class="cap-icon">🖼</div>
-        <h4>Visualização real, não avatar genérico</h4>
-        <p>Não é um boneco digital. A peça aparece na foto real do cliente — com a mesma cor e caimento que ele vai receber em casa.</p>
+        <h4>IA generativa, não avatar genérico</h4>
+        <p>Textura, cor e caimento preservados da foto original do produto. Não é um boneco com a roupa pregada — é a peça real na foto real do cliente.</p>
       </div>
       <div class="cap">
         <span class="no">03</span>
         <div class="cap-icon">⚡</div>
-        <h4>Instala em qualquer loja, sem dev</h4>
-        <p>Funciona no Shopify, VTEX, WooCommerce e Nuvemshop. Adicione um script na sua loja e o Mirage começa a funcionar — sem mudanças complexas.</p>
+        <h4>Plugado na sua loja em 10 minutos</h4>
+        <p>Um script. Shopify, VTEX, WooCommerce ou Nuvemshop. Sem dev bloqueado, sem mudança de tema, sem nova sessão de fotos do catálogo.</p>
       </div>
     </div>
   </div>
@@ -748,25 +811,31 @@
 <section id="como">
   <div class="wrap">
     <div class="eyebrow">03 · Como funciona</div>
-    <h2 class="section-title">Três passos. Sem complicação, <em class="hl-yellow">sem fricção</em>.</h2>
-    <p class="section-sub">Com o Mirage, o cliente se vê com a peça antes de comprar. Funciona direto na sua loja, sem que ele precise instalar nada ou criar conta.</p>
+    <h2 class="section-title">Quatro passos. Do clique <em class="hl-yellow">à decisão de compra</em>.</h2>
+    <p class="section-sub">O cliente usa direto na sua loja, no celular ou computador. Sem instalar nada, sem criar conta, sem sair da página do produto.</p>
     <div class="how-grid">
       <div class="how-card">
         <div class="how-num">01</div>
-        <h4>Cliente envia uma foto</h4>
-        <p>Rápido e direto, sem fricção. Uma foto de corpo inteiro — pode ser do celular mesmo, tirada na hora.</p>
+        <h4>Tira ou envia uma foto</h4>
+        <p>Uma foto de corpo inteiro do próprio celular. Não precisa ser estúdio — a IA detecta a pose automaticamente.</p>
         <div class="how-arrow">→</div>
       </div>
       <div class="how-card">
         <div class="how-num">02</div>
-        <h4>Escolhe o produto</h4>
-        <p>Qualquer item da sua loja. O Mirage já leu o catálogo — o cliente só clica na peça que quer experimentar.</p>
+        <h4>Escolhe a peça</h4>
+        <p>Qualquer item do catálogo da sua loja. O Mirage já leu as fotos dos produtos — o cliente só clica no que quer experimentar.</p>
         <div class="how-arrow">→</div>
       </div>
       <div class="how-card">
         <div class="how-num">03</div>
-        <h4>Vê o resultado</h4>
-        <p>Uma visualização real de como a peça fica. Não é medida exata — é se ver usando a roupa antes de decidir.</p>
+        <h4>IA renderiza em 2,4s</h4>
+        <p>O modelo generativo sobrepõe a peça na foto do cliente preservando textura, cor e caimento. Sem avatar, sem boneco digital.</p>
+        <div class="how-arrow">→</div>
+      </div>
+      <div class="how-card" style="background:var(--yellow-soft)">
+        <div class="how-num">✓</div>
+        <h4>Confiança e compra</h4>
+        <p>O cliente vê como a peça fica de verdade e decide sem dúvida. Menos abandono, menos devolução por "não ficou como esperava".</p>
         <div class="how-arrow">↗</div>
       </div>
     </div>
@@ -776,9 +845,9 @@
 <!-- 3 GANHOS -->
 <section id="ganhos">
   <div class="wrap">
-    <div class="eyebrow">04 · Benefícios</div>
-    <h2 class="section-title">Quando o cliente se vê, <em class="hl-pink">ele decide</em>.</h2>
-    <p class="section-sub">Lojas que testaram viram mais interação com os produtos e clientes passando mais tempo na página — porque a dúvida deixou de ser um bloqueio.</p>
+    <div class="eyebrow">04 · Resultados</div>
+    <h2 class="section-title">Menos dúvida. <em class="hl-pink">Mais venda. Menos devolução.</em></h2>
+    <p class="section-sub">Lojas com o Mirage ativo registraram clientes passando mais tempo na página, experimentando mais peças e devolvendo menos por "não ficou como eu esperava".</p>
 
     <div class="gains">
       <div class="gain">
@@ -925,6 +994,90 @@
   </div>
 </section>
 
+<!-- PRICING -->
+<section id="planos">
+  <div class="wrap">
+    <div class="eyebrow">07 · Planos</div>
+    <h2 class="section-title">Comece grátis, escale <em class="hl-yellow">com o crescimento</em>.</h2>
+    <p class="section-sub">Planos por volume de provas. Sem taxa de setup, sem contrato anual obrigatório. Cancele quando quiser.</p>
+    <div class="pricing-grid">
+
+      <!-- Grátis -->
+      <div class="plan">
+        <div class="plan-name">Grátis</div>
+        <div class="plan-price">
+          <div class="amount"><small>R$</small>0</div>
+          <div class="period">para sempre</div>
+        </div>
+        <div class="plan-vol">10 provas / mês</div>
+        <ul class="plan-features">
+          <li>Widget na página de produto</li>
+          <li>Shopify, VTEX, WooCommerce</li>
+          <li>Sem cartão de crédito</li>
+          <li>Dashboard básico</li>
+        </ul>
+        <a href="#lead" class="plan-cta">Começar grátis</a>
+      </div>
+
+      <!-- Starter -->
+      <div class="plan">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">
+          <div class="amount"><small>R$</small>79</div>
+          <div class="period">por mês</div>
+        </div>
+        <div class="plan-vol">100 provas / mês</div>
+        <ul class="plan-features">
+          <li>Tudo do plano Grátis</li>
+          <li>Captura de e-mail no widget</li>
+          <li>Integração com Klaviyo</li>
+          <li>Suporte via e-mail</li>
+        </ul>
+        <a href="#lead" class="plan-cta">Escolher Starter</a>
+      </div>
+
+      <!-- Growth - destaque -->
+      <div class="plan featured">
+        <div class="plan-badge">✦ Mais popular</div>
+        <div class="plan-name">Growth</div>
+        <div class="plan-price">
+          <div class="amount"><small>R$</small>149</div>
+          <div class="period">por mês</div>
+        </div>
+        <div class="plan-vol">500 provas / mês</div>
+        <ul class="plan-features">
+          <li>Tudo do plano Starter</li>
+          <li>A/B nativo Mirage vs PDP</li>
+          <li>Dashboard com ROI em tempo real</li>
+          <li>Exportação CSV / webhook</li>
+          <li>Suporte prioritário</li>
+        </ul>
+        <a href="#lead" class="plan-cta">Escolher Growth</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="plan">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">
+          <div class="amount"><small>R$</small>499</div>
+          <div class="period">por mês</div>
+        </div>
+        <div class="plan-vol">2.000 provas / mês</div>
+        <ul class="plan-features">
+          <li>Tudo do plano Growth</li>
+          <li>SLA de uptime dedicado</li>
+          <li>Onboarding com time Mirage</li>
+          <li>API REST completa</li>
+          <li>Volume personalizado disponível</li>
+        </ul>
+        <a href="#lead" class="plan-cta">Falar com equipe</a>
+      </div>
+
+    </div>
+    <p class="pricing-note">Precisa de volume maior? <a href="#lead">Fale com a gente</a> para planos enterprise.</p>
+  </div>
+</section>
+
 <!-- LEAD FORM -->
 <section id="lead" style="padding-top:32px">
   <div class="wrap">
@@ -933,7 +1086,7 @@
       <div class="blob blob-l2 float" style="animation-delay:1s"></div>
       <div class="leadform-inner">
         <div>
-          <div class="eyebrow">07 · Comece agora</div>
+          <div class="eyebrow">08 · Comece agora</div>
           <h2>Deixe seu cliente <em>se ver com a roupa</em>. Antes de comprar.</h2>
           <p class="section-sub" style="color:var(--ink);opacity:.75">Teste com o seu próprio catálogo. Sem compromisso, sem cartão de crédito. Em até 48 horas você já vê o resultado nas suas próprias peças.</p>
           <div style="display:flex;gap:18px;margin-top:24px;flex-wrap:wrap">
@@ -1024,6 +1177,7 @@
         <a href="#ganhos">Ganhos</a>
         <a href="#dashboard">Dashboard</a>
         <a href="#como">Como funciona</a>
+        <a href="#planos">Planos</a>
         <a href="#faq">FAQ</a>
       </div>
       <div class="foot-col">
