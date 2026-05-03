@@ -635,7 +635,7 @@ const PLANS = {
   scale:      { name: 'Scale',      limit: 5000,     price: 149, overage: 0.03, color: '#16A34A' },
   enterprise: { name: 'Enterprise', limit: Infinity, price: 499, overage: 0.02, color: '#0A0A0A' },
 };
-const WIDGET_VERSION = '6.0';
+const WIDGET_VERSION = '6.2';
 
 // ─── Estado ────────────────────────────────────────────────────────────────────
 let apiUrl   = window.location.origin;
@@ -775,6 +775,7 @@ async function loadClients() {
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
 async function loadDashboard() {
   await loadClients();
+  if (!produtosCache.length) await loadProdutos();
   renderKPIs();
   renderCharts();
   renderTopClients();
@@ -783,7 +784,7 @@ async function loadDashboard() {
 
 function calcMRR() {
   return clients.filter(c => c.active).reduce((s, c) => {
-    const p = PLANS[c.plan || 'starter'];
+    const p = getPlanData(c.plan || 'starter');
     return s + (p ? p.price : 0);
   }, 0);
 }
@@ -793,7 +794,7 @@ function renderKPIs() {
   const tryons   = clients.reduce((s, c) => s + (c.usageCount || 0), 0);
   const mrr      = calcMRR();
   const occupied = clients.filter(c => {
-    const p = PLANS[c.plan || 'starter'];
+    const p = getPlanData(c.plan || 'starter');
     return p && p.limit !== Infinity && (c.usageCount || 0) / p.limit >= 0.8;
   }).length;
 
@@ -882,7 +883,7 @@ function renderTopClients() {
 function renderAlerts() {
   const alerts = [];
   clients.forEach(c => {
-    const p = PLANS[c.plan || 'starter'];
+    const p = getPlanData(c.plan || 'starter');
     if (!p || p.limit === Infinity) return;
     const pct = (c.usageCount || 0) / p.limit;
     if (pct >= 1)   alerts.push({ type: 'err',  msg: `${c.name} atingiu o limite (${c.plan})` });
@@ -901,6 +902,7 @@ function renderAlerts() {
 // ─── Clientes ──────────────────────────────────────────────────────────────────
 async function renderClients() {
   if (!clients.length) await loadClients();
+  if (!produtosCache.length) await loadProdutos();
   filterClients();
   populateJobsClientFilter();
 }
@@ -926,7 +928,7 @@ function filterClients() {
   }
 
   tbody.innerHTML = filtered.map(c => {
-    const plan  = PLANS[c.plan || 'starter'] || PLANS.starter;
+    const plan  = getPlanData(c.plan || 'starter');
     const usage = c.usageCount || 0;
     const pct   = plan.limit === Infinity ? 0 : Math.min(Math.round(usage / plan.limit * 100), 100);
     const barColor = pct >= 100 ? 'var(--error)' : pct >= 80 ? 'var(--warning)' : 'var(--primary)';
@@ -1184,7 +1186,7 @@ async function renderBilling() {
     const p = c.plan || 'starter';
     byPlan[p] = byPlan[p] || { count: 0, revenue: 0 };
     byPlan[p].count++;
-    byPlan[p].revenue += PLANS[p]?.price || 0;
+    byPlan[p].revenue += getPlanData(p)?.price || 0;
   });
   // Agrupa por plano usando getPlanData
   const allPlanIds = [...new Set(clients.filter(c=>c.active).map(c=>c.plan||'starter'))];

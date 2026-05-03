@@ -172,7 +172,24 @@ export default async function handler(req, res) {
   if (client.plan && PLAN_LIMITS[client.plan] !== undefined) {
     basePlanLimit = PLAN_LIMITS[client.plan];
   } else if (client.plan) {
-    const planRaw = await redis.get(`plan:${client.plan}`);
+    // Tenta por ID exato primeiro
+    let planRaw = await redis.get(`plan:${client.plan}`);
+    // Se nao encontrou, varre o indice de planos buscando por nome normalizado
+    if (!planRaw) {
+      try {
+        const ids = await redis.smembers('plans:index').catch(() => []);
+        if (ids && ids.length) {
+          const normalize = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const needle = normalize(client.plan);
+          const raws = await Promise.all(ids.map(id => redis.get(`plan:${id}`).catch(() => null)));
+          for (const r of raws) {
+            if (!r) continue;
+            const p = typeof r === 'string' ? JSON.parse(r) : r;
+            if (normalize(p.id) === needle || normalize(p.name) === needle) { planRaw = r; break; }
+          }
+        }
+      } catch (_) {}
+    }
     if (planRaw) {
       const planData = typeof planRaw === 'string' ? JSON.parse(planRaw) : planRaw;
       basePlanLimit = planData.tryons === 0 ? Infinity : (Number(planData.tryons) || PLAN_LIMITS.starter);

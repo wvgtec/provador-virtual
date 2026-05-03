@@ -66,24 +66,44 @@ async function authenticate(clientKey, password) {
 const PLAN_NAMES = { starter:'Starter', pro:'Pro', growth:'Growth', scale:'Scale', enterprise:'Enterprise' };
 
 async function getPlanLimits(planId) {
-  // Tenta buscar plano customizado do Redis
+  // Tenta buscar plano customizado do Redis por ID exato
   const raw = await redis.get(`plan:${planId}`).catch(() => null);
   if (raw) {
     const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
     return { name: p.name || planId, limit: p.tryons === 0 ? Infinity : (Number(p.tryons) || 100), price: Number(p.price) || 0, overage: Number(p.overage) || 0 };
   }
+  // Se nao encontrou por ID exato, varre o indice de planos buscando por nome
+  try {
+    const ids = await redis.smembers('plans:index').catch(() => []);
+    if (ids && ids.length) {
+      const raws = await Promise.all(ids.map(id => redis.get(`plan:${id}`).catch(() => null)));
+      for (const r of raws) {
+        if (!r) continue;
+        const p = typeof r === 'string' ? JSON.parse(r) : r;
+        if (
+          p.id === planId ||
+          p.name?.toLowerCase().replace(/[^a-z0-9]/g, '') === planId?.toLowerCase().replace(/[^a-z0-9]/g, '')
+        ) {
+          return { name: p.name || planId, limit: p.tryons === 0 ? Infinity : (Number(p.tryons) || 100), price: Number(p.price) || 0, overage: Number(p.overage) || 0 };
+        }
+      }
+    }
+  } catch (_) {}
   // Fallback para planos hardcoded
   const fp = PLAN_LIMITS[planId] ?? PLAN_LIMITS.starter;
   return { name: PLAN_NAMES[planId] || planId, ...fp };
 }
 
 async function calcBilling(client) {
-  const plan    = await getPlanLimits(client.plan || 'starter');
-  const usage   = Number(client.usageCount) || 0;
-  const excess  = Math.max(0, usage - plan.limit);
+  const plan       = await getPlanLimits(client.plan || 'starter');
+  const extraTryons = Number(client.extraTryons) || 0;
+  const baseLimit  = plan.limit;
+  const totalLimit = baseLimit === Infinity ? Infinity : baseLimit + extraTryons;
+  const usage      = Number(client.usageCount) || 0;
+  const excess     = totalLimit === Infinity ? 0 : Math.max(0, usage - totalLimit);
   const overageAmt = +(excess * plan.overage).toFixed(2);
-  const total   = +(plan.price + overageAmt).toFixed(2);
-  return { planName: plan.name, planPrice: plan.price, limit: plan.limit, overage: plan.overage, usage, excess, overageAmt, total };
+  const total      = +(plan.price + overageAmt).toFixed(2);
+  return { planName: plan.name, planPrice: plan.price, limit: totalLimit, overage: plan.overage, usage, excess, overageAmt, total };
 }
 
 // Gera data da próxima cobrança (5 de cada mês)
