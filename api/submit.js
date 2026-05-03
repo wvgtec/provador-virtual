@@ -166,8 +166,23 @@ export default async function handler(req, res) {
   // ─── Cota atômica — sem race condition ───────────────────────────────────
   // Garante que usage:${clientKey} existe e não está atrás do objeto do cliente.
   // Necessário para clientes criados antes da cota atômica ou após reset de billing.
-  // Limite base do plano + gerações extras compradas
-  const planLimit = (PLAN_LIMITS[client.plan] ?? PLAN_LIMITS.starter) + (Number(client.extraTryons) || 0);
+  // Limite base: usa PLAN_LIMITS para planos fixos; para planos customizados (ex: demonstracao),
+  // busca o campo tryons do Redis — evita fallback incorreto para starter (100).
+  let basePlanLimit;
+  if (client.plan && PLAN_LIMITS[client.plan] !== undefined) {
+    basePlanLimit = PLAN_LIMITS[client.plan];
+  } else if (client.plan) {
+    const planRaw = await redis.get(`plan:${client.plan}`);
+    if (planRaw) {
+      const planData = typeof planRaw === 'string' ? JSON.parse(planRaw) : planRaw;
+      basePlanLimit = planData.tryons === 0 ? Infinity : (Number(planData.tryons) || PLAN_LIMITS.starter);
+    } else {
+      basePlanLimit = PLAN_LIMITS.starter;
+    }
+  } else {
+    basePlanLimit = PLAN_LIMITS.starter;
+  }
+  const planLimit = basePlanLimit + (Number(client.extraTryons) || 0);
   const rawUsage  = await redis.get(`usage:${clientKey}`);
   if (rawUsage === null || Number(rawUsage) < Number(client.usageCount || 0)) {
     await redis.set(`usage:${clientKey}`, String(Number(client.usageCount) || 0));
