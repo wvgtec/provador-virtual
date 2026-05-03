@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termos de Uso · Mirage AI</title>
+  <meta name="description" content="Termos de Uso do Mirage AI — condições que regulam o uso da tecnologia de provador virtual por lojistas e usuários finais.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://mirageai.com.br/termos.html">
+  <link rel="icon" type="image/png" href="logo-mirage.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0A0A0A;
+      --paper: #FFFFFF;
+      --paper-2: #F6F5F1;
+      --cream: #FBF7EC;
+      --line: rgba(10,10,10,0.12);
+      --muted: rgba(10,10,10,0.58);
+      --yellow: #FFE34E;
+      --yellow-soft: #FFF5B8;
+      --pink: #FFD6CC;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
+
+    /* NAV */
+    .nav { position: sticky; top: 0; z-index: 60; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1.5px solid var(--ink); }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -0.03em; }
+    .nav-links { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
+    .nav-links a:hover { opacity: .6; }
+    .nav-cta { background: var(--yellow); color: var(--ink); border: 1.5px solid var(--ink); padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .nav-cta:hover { transform: translate(-2px,-2px); box-shadow: 3px 3px 0 0 var(--ink); }
+
+    /* PAGE HERO */
+    .page-hero { padding: 56px 0 40px; border-bottom: 1.5px solid var(--ink); background: var(--cream); }
+    .page-tag { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+    .page-hero h1 { font-weight: 700; font-size: clamp(32px, 4vw, 52px); letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 12px; }
+    .page-hero .update { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+
+    /* CONTENT */
+    .legal-wrap { max-width: 800px; margin: 0 auto; padding: 64px 28px 80px; }
+    .legal-intro { font-size: 17px; line-height: 1.65; color: var(--muted); margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1.5px solid var(--line); }
+
+    .legal-section { margin-bottom: 48px; }
+    .legal-section h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px; padding: 10px 16px; background: var(--yellow-soft); border-left: 3px solid var(--ink); border-radius: 0 8px 8px 0; }
+    .legal-section p { font-size: 15.5px; line-height: 1.7; color: var(--ink); margin-bottom: 12px; }
+    .legal-section ul { list-style: none; padding: 0; margin: 8px 0 12px; display: flex; flex-direction: column; gap: 8px; }
+    .legal-section ul li { font-size: 15px; line-height: 1.6; padding: 10px 14px; background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; display: flex; gap: 10px; align-items: flex-start; }
+    .legal-section ul li::before { content: "·"; font-weight: 700; color: var(--ink); flex-shrink: 0; font-size: 18px; line-height: 1.4; }
+    .legal-section .highlight-box { background: var(--yellow-soft); border: 1.5px solid var(--ink); border-radius: 12px; padding: 18px 20px; font-size: 15px; line-height: 1.6; font-weight: 500; margin-bottom: 12px; }
+    .legal-section .warning-box { background: var(--pink); border: 1.5px solid var(--ink); border-radius: 12px; padding: 18px 20px; font-size: 15px; line-height: 1.6; font-weight: 500; margin-bottom: 12px; }
+
+    /* FOOTER */
+    footer { padding: 48px 0 32px; border-top: 1.5px solid var(--ink); background: var(--cream); }
+    .foot-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 36px; }
+    .foot-col h6 { font-size: 13px; font-weight: 700; margin: 0 0 12px; }
+    .foot-col a { display: block; padding: 5px 0; font-size: 14px; font-weight: 500; }
+    .foot-col a:hover { color: var(--muted); }
+    .foot-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1.5px solid var(--ink); color: var(--muted); font-size: 13px; font-weight: 500; flex-wrap: wrap; gap: 8px; }
+
+    @media (max-width: 1100px) { .foot-row { grid-template-columns: 1fr 1fr; gap: 28px; } }
+    @media (max-width: 640px) {
+      .foot-row { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .nav-links { display: none; }
+      .wrap { padding: 0 20px; }
+      .legal-wrap { padding: 40px 20px 64px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a href="/" class="logo">
+      <img src="logo-mirage.png" alt="Mirage" style="height:44px;display:inline-block;vertical-align:middle;">
+    </a>
+    <div class="nav-links">
+      <a href="/#studio">Ver demo</a>
+      <a href="/#como">Como funciona</a>
+      <a href="/#ganhos">Resultados</a>
+      <a href="/#faq">FAQ</a>
+    </div>
+    <a href="/#lead" class="nav-cta">Quero minha demo</a>
+  </div>
+</nav>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="wrap">
+    <div class="page-tag">Legal · Uso</div>
+    <h1>Termos de Uso</h1>
+    <div class="update">Última atualização: 03 de maio de 2026</div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="legal-wrap">
+
+  <p class="legal-intro">Os presentes Termos regulam o uso da tecnologia Mirage por lojistas e usuários finais.</p>
+
+  <div class="legal-section">
+    <h2>1. Objeto e escopo</h2>
+    <p>O Mirage disponibiliza tecnologia de visualização digital que permite a simulação de peças de vestuário sobre imagens enviadas pelos usuários finais.</p>
+    <div class="highlight-box">A ferramenta possui caráter meramente ilustrativo e referencial.</div>
+  </div>
+
+  <div class="legal-section">
+    <h2>2. Limitação técnica da ferramenta</h2>
+    <p>O Mirage não garante:</p>
+    <ul>
+      <li>Precisão de medidas.</li>
+      <li>Ajuste exato ao corpo.</li>
+      <li>Fidelidade absoluta de caimento ou proporções.</li>
+    </ul>
+    <p>A visualização gerada constitui uma aproximação visual destinada a auxiliar a decisão de compra.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>3. Responsabilidade sobre as imagens enviadas</h2>
+    <p>Ao utilizar a ferramenta, o usuário declara, sob as penas da lei, que:</p>
+    <ul>
+      <li>É titular da imagem enviada ou possui autorização expressa para seu uso.</li>
+      <li>Não está violando direitos de terceiros, incluindo direitos de imagem, privacidade ou propriedade intelectual.</li>
+    </ul>
+    <p>É expressamente proibido:</p>
+    <ul>
+      <li>Utilizar imagens de terceiros sem consentimento.</li>
+      <li>Utilizar imagens obtidas de forma ilícita.</li>
+      <li>Inserir imagens com conteúdo ilegal, ofensivo ou que viole direitos.</li>
+    </ul>
+    <div class="warning-box">O Mirage não realiza verificação de titularidade, identidade ou autorização sobre as imagens enviadas.</div>
+  </div>
+
+  <div class="legal-section">
+    <h2>4. Uso indevido e isenção de responsabilidade</h2>
+    <p>O Mirage não se responsabiliza por qualquer uso indevido da ferramenta, incluindo:</p>
+    <ul>
+      <li>Upload de imagens de terceiros sem autorização.</li>
+      <li>Utilização das imagens geradas para fins ilícitos, abusivos ou não autorizados.</li>
+      <li>Uso de imagens envolvendo trajes de banho, biquínis ou peças similares em contextos inadequados.</li>
+    </ul>
+    <p>Toda responsabilidade recai exclusivamente sobre o usuário que realizou o envio da imagem e gerou o conteúdo.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>5. Responsabilidade do lojista</h2>
+    <p>O lojista que integra o Mirage compromete-se a:</p>
+    <ul>
+      <li>Informar de forma clara seus usuários sobre o funcionamento da ferramenta.</li>
+      <li>Obter consentimento quando exigido por lei.</li>
+      <li>Cumprir integralmente a legislação aplicável de proteção de dados.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>6. Uso permitido</h2>
+    <p>A utilização da ferramenta deve se limitar a fins legítimos de visualização de produtos. É vedado:</p>
+    <ul>
+      <li>Utilizar a tecnologia para fins ilícitos.</li>
+      <li>Tentar acessar, copiar ou interferir no funcionamento do sistema.</li>
+      <li>Utilizar o serviço de forma que possa gerar danos ao Mirage ou a terceiros.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>7. Limitação de responsabilidade geral</h2>
+    <p>Na máxima extensão permitida pela legislação aplicável, o Mirage não será responsável por:</p>
+    <ul>
+      <li>Decisões de compra baseadas na visualização gerada.</li>
+      <li>Expectativas divergentes quanto ao produto real.</li>
+      <li>Danos decorrentes de uso indevido da ferramenta.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>8. Disponibilidade do serviço</h2>
+    <p>O Mirage não garante disponibilidade contínua e ininterrupta, podendo haver interrupções para manutenção ou melhorias.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>9. Alterações dos termos</h2>
+    <p>O Mirage poderá alterar estes Termos a qualquer momento, mediante publicação da versão atualizada nesta página.</p>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <div class="foot-col">
+        <a href="/" class="logo" style="margin-bottom:14px">
+          <img src="logo-mirage.png" alt="Mirage" style="height:44px;display:inline-block;vertical-align:middle;">
+        </a>
+        <p style="color:var(--muted);font-size:14px;margin:12px 0 0;max-width:32ch;line-height:1.5;font-weight:500">Provador virtual com IA generativa para moda direta ao consumidor. Feito no Brasil.</p>
+      </div>
+      <div class="foot-col">
+        <h6>Produto</h6>
+        <a href="/#studio">Studio</a>
+        <a href="/#ganhos">Ganhos</a>
+        <a href="/#dashboard">Dashboard</a>
+        <a href="/#como">Como funciona</a>
+        <a href="/#faq">FAQ</a>
+      </div>
+      <div class="foot-col">
+        <h6>Empresa</h6>
+        <a href="#">Sobre</a>
+        <a href="#">Blog</a>
+        <a href="#">Carreiras</a>
+        <a href="#">Imprensa</a>
+      </div>
+      <div class="foot-col">
+        <h6>Legal</h6>
+        <a href="privacidade.html">Política de Privacidade</a>
+        <a href="termos.html">Termos de Uso</a>
+        <a href="mailto:oi@provadorvirtual.app">oi@provadorvirtual.app</a>
+      </div>
+    </div>
+    <div class="foot-bar">
+      <span>© 2026 Mirage · Todos os direitos reservados</span>
+      <span>Feito com IA · CNPJ 00.000.000/0001-00</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

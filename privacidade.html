@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidade · Mirage AI</title>
+  <meta name="description" content="Política de Privacidade do Mirage AI — como realizamos o tratamento de dados pessoais no contexto da tecnologia de provador virtual.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://mirageai.com.br/privacidade.html">
+  <link rel="icon" type="image/png" href="logo-mirage.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0A0A0A;
+      --paper: #FFFFFF;
+      --paper-2: #F6F5F1;
+      --cream: #FBF7EC;
+      --line: rgba(10,10,10,0.12);
+      --muted: rgba(10,10,10,0.58);
+      --yellow: #FFE34E;
+      --yellow-soft: #FFF5B8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
+
+    /* NAV */
+    .nav { position: sticky; top: 0; z-index: 60; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1.5px solid var(--ink); }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -0.03em; }
+    .nav-links { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
+    .nav-links a:hover { opacity: .6; }
+    .nav-cta { background: var(--yellow); color: var(--ink); border: 1.5px solid var(--ink); padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .nav-cta:hover { transform: translate(-2px,-2px); box-shadow: 3px 3px 0 0 var(--ink); }
+
+    /* PAGE HERO */
+    .page-hero { padding: 56px 0 40px; border-bottom: 1.5px solid var(--ink); background: var(--cream); }
+    .page-tag { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+    .page-hero h1 { font-weight: 700; font-size: clamp(32px, 4vw, 52px); letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 12px; }
+    .page-hero .update { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+
+    /* CONTENT */
+    .legal-wrap { max-width: 800px; margin: 0 auto; padding: 64px 28px 80px; }
+    .legal-intro { font-size: 17px; line-height: 1.65; color: var(--muted); margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1.5px solid var(--line); }
+
+    .legal-section { margin-bottom: 48px; }
+    .legal-section h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 14px; padding: 10px 16px; background: var(--yellow-soft); border-left: 3px solid var(--ink); border-radius: 0 8px 8px 0; }
+    .legal-section p { font-size: 15.5px; line-height: 1.7; color: var(--ink); margin-bottom: 12px; }
+    .legal-section ul { list-style: none; padding: 0; margin: 8px 0 12px; display: flex; flex-direction: column; gap: 8px; }
+    .legal-section ul li { font-size: 15px; line-height: 1.6; padding: 10px 14px; background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; display: flex; gap: 10px; align-items: flex-start; }
+    .legal-section ul li::before { content: "·"; font-weight: 700; color: var(--ink); flex-shrink: 0; font-size: 18px; line-height: 1.4; }
+    .legal-section .highlight-box { background: var(--yellow-soft); border: 1.5px solid var(--ink); border-radius: 12px; padding: 18px 20px; font-size: 15px; line-height: 1.6; font-weight: 500; margin-bottom: 12px; }
+
+    /* FOOTER */
+    footer { padding: 48px 0 32px; border-top: 1.5px solid var(--ink); background: var(--cream); }
+    .foot-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 36px; }
+    .foot-col h6 { font-size: 13px; font-weight: 700; margin: 0 0 12px; }
+    .foot-col a { display: block; padding: 5px 0; font-size: 14px; font-weight: 500; }
+    .foot-col a:hover { color: var(--muted); }
+    .foot-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1.5px solid var(--ink); color: var(--muted); font-size: 13px; font-weight: 500; flex-wrap: wrap; gap: 8px; }
+
+    @media (max-width: 1100px) { .foot-row { grid-template-columns: 1fr 1fr; gap: 28px; } }
+    @media (max-width: 640px) {
+      .foot-row { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .nav-links { display: none; }
+      .wrap { padding: 0 20px; }
+      .legal-wrap { padding: 40px 20px 64px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a href="/" class="logo">
+      <img src="logo-mirage.png" alt="Mirage" style="height:44px;display:inline-block;vertical-align:middle;">
+    </a>
+    <div class="nav-links">
+      <a href="/#studio">Ver demo</a>
+      <a href="/#como">Como funciona</a>
+      <a href="/#ganhos">Resultados</a>
+      <a href="/#faq">FAQ</a>
+    </div>
+    <a href="/#lead" class="nav-cta">Quero minha demo</a>
+  </div>
+</nav>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="wrap">
+    <div class="page-tag">Legal · Privacidade</div>
+    <h1>Política de Privacidade</h1>
+    <div class="update">Última atualização: 03 de maio de 2026</div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="legal-wrap">
+
+  <p class="legal-intro">A presente Política de Privacidade descreve, de forma clara e transparente, como o Mirage realiza o tratamento de dados pessoais no contexto da disponibilização de sua tecnologia de provador virtual para e-commerces.</p>
+
+  <div class="legal-section">
+    <h2>1. Definições e enquadramento legal</h2>
+    <p>Para os fins desta Política:</p>
+    <ul>
+      <li>O <strong>Mirage</strong> atua como operador de dados nos termos da Lei Geral de Proteção de Dados Pessoais e, quando aplicável, como processador nos termos do Regulamento Geral sobre a Proteção de Dados.</li>
+      <li>O <strong>lojista contratante</strong> é o controlador de dados, responsável pela coleta, base legal e finalidade do tratamento.</li>
+      <li>O <strong>usuário final</strong> é o titular dos dados pessoais tratados no contexto da utilização do provador virtual.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>2. Natureza do tratamento de dados</h2>
+    <p>O Mirage realiza tratamento estritamente necessário e limitado à execução da funcionalidade de provador virtual, consistindo em:</p>
+    <ul>
+      <li>Processamento temporário de imagem (foto) enviada pelo usuário final.</li>
+      <li>Associação momentânea da imagem com o produto selecionado.</li>
+      <li>Geração de visualização simulada da peça no corpo do usuário.</li>
+    </ul>
+    <div class="highlight-box">Não há enriquecimento de dados, perfilhamento, reconhecimento facial, identificação biométrica ou qualquer inferência sensível.</div>
+  </div>
+
+  <div class="legal-section">
+    <h2>3. Não armazenamento e descarte de imagens</h2>
+    <p>O Mirage adota como princípio a não retenção de imagens. Dessa forma:</p>
+    <ul>
+      <li>As imagens enviadas são processadas em ambiente controlado e não são armazenadas de forma persistente.</li>
+      <li>Não há criação de banco de imagens, histórico de usuários ou repositório de fotos.</li>
+      <li>O descarte ocorre automaticamente após a conclusão do processamento, em ciclo técnico necessário à entrega do resultado.</li>
+      <li>Não realizamos backup, replicação ou arquivamento das imagens.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>4. Finalidade do tratamento</h2>
+    <p>O tratamento de dados ocorre exclusivamente para:</p>
+    <ul>
+      <li>Permitir a visualização simulada de produtos no corpo do usuário.</li>
+      <li>Viabilizar a experiência interativa dentro do e-commerce do controlador.</li>
+    </ul>
+    <p>É vedada qualquer utilização para fins diversos, incluindo marketing, publicidade ou comercialização de dados.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>5. Base legal</h2>
+    <p>O tratamento é realizado com fundamento em:</p>
+    <ul>
+      <li>Consentimento do titular, quando aplicável, obtido pelo controlador.</li>
+      <li>Execução de serviço solicitado pelo titular.</li>
+    </ul>
+    <p>O Mirage não coleta consentimento diretamente do usuário final, sendo essa responsabilidade exclusiva do controlador.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>6. Compartilhamento de dados</h2>
+    <p>O Mirage não compartilha imagens ou dados pessoais com terceiros, exceto:</p>
+    <ul>
+      <li>Quando necessário para a execução técnica do serviço, dentro de padrões de segurança equivalentes.</li>
+      <li>Mediante obrigação legal ou ordem judicial.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>7. Segurança da informação</h2>
+    <p>O Mirage adota medidas técnicas e administrativas adequadas, incluindo:</p>
+    <ul>
+      <li>Criptografia de dados em trânsito.</li>
+      <li>Ambientes segregados de processamento.</li>
+      <li>Controle de acesso restrito.</li>
+      <li>Monitoramento de segurança.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>8. Direitos dos titulares</h2>
+    <p>Os direitos dos titulares, previstos na LGPD e GDPR, devem ser exercidos junto ao controlador (lojista), responsável pela relação direta com o usuário final.</p>
+  </div>
+
+  <div class="legal-section">
+    <h2>9. Limitação de responsabilidade</h2>
+    <p>O Mirage não se responsabiliza por:</p>
+    <ul>
+      <li>Coleta inadequada de consentimento pelo controlador.</li>
+      <li>Uso indevido da ferramenta por parte de usuários finais.</li>
+      <li>Inserção de dados ou imagens em desconformidade com a legislação.</li>
+    </ul>
+  </div>
+
+  <div class="legal-section">
+    <h2>10. Atualizações</h2>
+    <p>Esta Política poderá ser atualizada a qualquer tempo, mediante publicação da versão vigente nesta página.</p>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <div class="foot-col">
+        <a href="/" class="logo" style="margin-bottom:14px">
+          <img src="logo-mirage.png" alt="Mirage" style="height:44px;display:inline-block;vertical-align:middle;">
+        </a>
+        <p style="color:var(--muted);font-size:14px;margin:12px 0 0;max-width:32ch;line-height:1.5;font-weight:500">Provador virtual com IA generativa para moda direta ao consumidor. Feito no Brasil.</p>
+      </div>
+      <div class="foot-col">
+        <h6>Produto</h6>
+        <a href="/#studio">Studio</a>
+        <a href="/#ganhos">Ganhos</a>
+        <a href="/#dashboard">Dashboard</a>
+        <a href="/#como">Como funciona</a>
+        <a href="/#faq">FAQ</a>
+      </div>
+      <div class="foot-col">
+        <h6>Empresa</h6>
+        <a href="#">Sobre</a>
+        <a href="#">Blog</a>
+        <a href="#">Carreiras</a>
+        <a href="#">Imprensa</a>
+      </div>
+      <div class="foot-col">
+        <h6>Legal</h6>
+        <a href="privacidade.html">Política de Privacidade</a>
+        <a href="termos.html">Termos de Uso</a>
+        <a href="mailto:oi@provadorvirtual.app">oi@provadorvirtual.app</a>
+      </div>
+    </div>
+    <div class="foot-bar">
+      <span>© 2026 Mirage · Todos os direitos reservados</span>
+      <span>Feito com IA · CNPJ 00.000.000/0001-00</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
