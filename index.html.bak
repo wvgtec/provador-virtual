@@ -15,7 +15,7 @@
 
   <!-- PRIMARY SEO -->
   <title>Mirage AI · Provador Virtual com IA para E-commerce de Moda</title>
-  <meta name="description" content="Mirage é o provador virtual com IA generativa que renderiza a peça da vitrine na foto do cliente em poucos segundos, com 99% de fidelidade de cor. Plug-and-play em Shopify, VTEX, WooCommerce e Nuvemshop. Aumente conversão, reduza devoluções, sem 3D, sem nova sessão de fotos.">
+  <meta name="description" content="Mirage é o provador virtual com IA generativa que renderiza a peça da vitrine na foto do cliente em 2,4 segundos, com 99% de fidelidade de cor. Plug-and-play em Shopify, VTEX, WooCommerce e Nuvemshop. Aumente conversão, reduza devoluções — sem 3D, sem nova sessão de fotos.">
   <meta name="keywords" content="provador virtual, virtual try-on, IA generativa moda, AI fitting room, Shopify try-on, VTEX provador, WooCommerce provador, prova virtual de roupa, redução de devolução, conversão e-commerce moda, Mirage AI">
   <meta name="author" content="Mirage AI">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -29,7 +29,7 @@
   <meta property="og:locale" content="pt_BR">
   <meta property="og:site_name" content="Mirage AI">
   <meta property="og:title" content="Mirage AI · Provador Virtual com IA para E-commerce de Moda">
-  <meta property="og:description" content="A peça da sua vitrine renderizada na foto real do seu cliente em poucos segundos. +35% conversão, -42% devolução. Plug-and-play em Shopify, VTEX, WooCommerce.">
+  <meta property="og:description" content="A peça da sua vitrine renderizada na foto real do seu cliente em 2,4s. +35% conversão, −42% devolução. Plug-and-play em Shopify, VTEX, WooCommerce.">
   <meta property="og:url" content="https://mirageai.com.br/">
   <meta property="og:image" content="https://mirageai.com.br/og-cover.jpg">
   <meta property="og:image:width" content="1200">
@@ -39,11 +39,11 @@
   <!-- TWITTER -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Mirage AI · Provador Virtual com IA para Moda">
-  <meta name="twitter:description" content="A peça da sua vitrine na foto real do seu cliente em poucos segundos. Plug-and-play em Shopify, VTEX, WooCommerce.">
+  <meta name="twitter:description" content="A peça da sua vitrine na foto real do seu cliente em 2,4s. Plug-and-play em Shopify, VTEX, WooCommerce.">
   <meta name="twitter:image" content="https://mirageai.com.br/og-cover.jpg">
 
   <!-- GEO / AI ENGINE OPTIMIZATION -->
-  <meta name="ai-content-declaration" content="Mirage AI é um provador virtual brasileiro que usa IA generativa para sobrepor peças de roupa de catálogos de e-commerce em fotos reais de clientes finais, preservando textura, cor e caimento. Categoria: virtual try-on, AI fitting room, immersive commerce. Setor: moda, e-commerce. Tecnologia: modelos generativos 2D, sem necessidade de modelagem 3D. Tempo de renderização: poucos segundos. Fidelidade de cor: 99%. Integrações: Shopify, VTEX, WooCommerce, Nuvemshop e API REST. Resultados típicos: aumento de 35% em conversão e redução de 42% em devolução.">
+  <meta name="ai-content-declaration" content="Mirage AI é um provador virtual brasileiro que usa IA generativa para sobrepor peças de roupa de catálogos de e-commerce em fotos reais de clientes finais, preservando textura, cor e caimento. Categoria: virtual try-on, AI fitting room, immersive commerce. Setor: moda, e-commerce. Tecnologia: modelos generativos 2D, sem necessidade de modelagem 3D. Tempo de renderização: 2,4 segundos. Fidelidade de cor: 99%. Integrações: Shopify, VTEX, WooCommerce, Nuvemshop e API REST. Resultados típicos: aumento de 35% em conversão e redução de 42% em devolução.">
   <meta name="application-name" content="Mirage AI">
   <meta name="category" content="Virtual Try-On, E-commerce, AI, Fashion">
 
@@ -63,7 +63,7 @@
     "alternateName": "Mirage",
     "url": "https://mirageai.com.br/",
     "logo": "https://mirageai.com.br/logo-mirage.png",
-    "description": "Provador virtual com IA generativa para e-commerce de moda. Renderiza a peça da vitrine diretamente na foto do cliente em poucos segundos.",
+    "description": "Provador virtual com IA generativa para e-commerce de moda. Renderiza a peça da vitrine diretamente na foto do cliente em 2,4 segundos.",
     "foundingLocation": "Brasil",
     "sameAs": []
   }
@@ -86,7 +86,7 @@
       "description": "Plano de início com 10 renders gratuitos, sem cartão"
     },
     "featureList": [
-      "Renderização em poucos segundos",
+      "Renderização em 2,4 segundos",
       "99% de fidelidade de cor",
       "Sem cadastro de catálogo 3D",
       "Integração plug-and-play com Shopify, VTEX, WooCommerce e Nuvemshop",
@@ -147,7 +147,7 @@
         "name": "O que torna o Mirage diferente de outros provadores virtuais?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "O Mirage não usa avatar 3D nem malha genérica. A IA generativa preserva textura, costura, estampa e cor da peça real da vitrine, renderizando-a diretamente na foto do cliente com 99% de fidelidade de cor."
+          "text": "O Mirage não usa avatar 3D nem malha genérica. A IA generativa preserva textura, costura, estampa e cor da peça real da vitrine, renderizando-a diretamente na foto do cliente em 2,4 segundos com 99% de fidelidade de cor."
         }
       }
     ]
@@ -610,7 +610,7 @@
           <span style="background:#0A0A0A;color:#fff;padding:5px 10px;border-radius:6px">● RENDER</span>
           <span style="background:#FFE34E;color:#0A0A0A;padding:5px 10px;border-radius:6px;border:1px solid #0A0A0A">FIT 96%</span>
         </div>
-        <div class="hero-meta">v4.2 · live</div>
+        <div class="hero-meta">v4.2 · 2.4s</div>
       </div>
     </div>
   </div>
@@ -633,7 +633,7 @@
           <div class="eyebrow">01 · Demonstração</div>
           <h2>Antes: foto do produto. Depois: <em class="hl-yellow">você usando a peça</em>.</h2>
         </div>
-        <p class="studio-sub">Escolha uma peça, envie sua foto e veja como ela fica. Não é sobre medidas exatas, é sobre conseguir se ver usando a peça antes de comprar.</p>
+        <p class="studio-sub">Escolha uma peça, envie sua foto e veja como ela fica. Não é sobre medidas exatas — é sobre conseguir se ver usando a peça antes de comprar.</p>
       </div>
       <div class="studio-grid">
 
@@ -774,13 +774,13 @@
         <span class="no">01</span>
         <div class="cap-icon">👤</div>
         <h4>O cliente vê a peça no próprio corpo</h4>
-        <p>Foto dele, produto da sua loja, resultado em poucos segundos. Sem suposição, sem tentativa. A dúvida que gerava abandono deixa de existir.</p>
+        <p>Foto dele, produto da sua loja, resultado em 2,4s. Sem suposição, sem tentativa — a dúvida que gerava abandono deixa de existir.</p>
       </div>
       <div class="cap">
         <span class="no">02</span>
         <div class="cap-icon">🖼</div>
         <h4>IA generativa, não avatar genérico</h4>
-        <p>Textura, cor e caimento preservados da foto original do produto. Não é um boneco com a roupa pregada, é a peça real na foto real do cliente.</p>
+        <p>Textura, cor e caimento preservados da foto original do produto. Não é um boneco com a roupa pregada — é a peça real na foto real do cliente.</p>
       </div>
       <div class="cap">
         <span class="no">03</span>
@@ -802,18 +802,18 @@
       <div class="how-card">
         <div class="how-num">01</div>
         <h4>Tira ou envia uma foto</h4>
-        <p>Uma foto de corpo inteiro do próprio celular. Não precisa ser estúdio, a IA detecta a pose automaticamente.</p>
+        <p>Uma foto de corpo inteiro do próprio celular. Não precisa ser estúdio — a IA detecta a pose automaticamente.</p>
         <div class="how-arrow">→</div>
       </div>
       <div class="how-card">
         <div class="how-num">02</div>
         <h4>Escolhe a peça</h4>
-        <p>Qualquer item do catálogo da sua loja. O Mirage já leu as fotos dos produtos. O cliente só clica no que quer experimentar.</p>
+        <p>Qualquer item do catálogo da sua loja. O Mirage já leu as fotos dos produtos — o cliente só clica no que quer experimentar.</p>
         <div class="how-arrow">→</div>
       </div>
       <div class="how-card">
         <div class="how-num">03</div>
-        <h4>IA processa em poucos segundos</h4>
+        <h4>IA renderiza em 2,4s</h4>
         <p>O modelo generativo sobrepõe a peça na foto do cliente preservando textura, cor e caimento. Sem avatar, sem boneco digital.</p>
         <div class="how-arrow">→</div>
       </div>
@@ -850,7 +850,7 @@
         <span class="gain-num">02 · Engajamento</span>
         <span class="gain-stat" style="font-size:38px;line-height:1.2">Mais<br>tempo</span>
         <h4>Interação real com a peça.</h4>
-        <p>O provador vira um motivo para o cliente ficar na página e explorar mais itens do catálogo, sozinho, sem precisar de ajuda.</p>
+        <p>O provador vira um motivo para o cliente ficar na página e explorar mais itens do catálogo — sozinho, sem precisar de ajuda.</p>
         <ul>
           <li>Mais tempo na página de produto</li>
           <li>Mais peças experimentadas por sessão</li>
@@ -876,7 +876,7 @@
 <section id="dashboard">
   <div class="wrap">
     <div class="eyebrow">05 · Dashboard</div>
-    <h2 class="section-title">Você não vê só o try-on. <em class="hl-yellow">Vê o ROI.</em></h2>
+    <h2 class="section-title">Você não vê só o try-on — <em class="hl-yellow">vê o ROI</em>.</h2>
     <p class="section-sub">Painel consolidado com o funil completo: do clique no botão "experimentar" até a venda concluída. Você sabe exatamente quanto o Mirage está trazendo de volta.</p>
 
     <div class="dash-wrap">
@@ -951,15 +951,15 @@
         <div>
           <span class="partner-eyebrow">✦ Launch Partner · 2026</span>
           <h2>Construído junto com quem <em>vende moda no Brasil</em>.</h2>
-          <p class="sub">Mirage não nasceu em laboratório. O motor de renderização foi calibrado em produção real com o catálogo da <strong>NKSW</strong>, marca brasileira de moda praia. Depois de testar vários fornecedores de provador virtual, nenhum funcionava de verdade para biquínis. Texturas erradas, caimento irreal ou simplesmente não renderizava peças menores. O Mirage resolveu. Hoje está sendo aberto para um grupo seleto de marcas parceiras.</p>
+          <p class="sub">Mirage não nasceu em laboratório. O motor de renderização foi calibrado em produção real com o catálogo da <strong>NKSW</strong> — marca brasileira de moda praia. Depois de testar vários fornecedores de provador virtual, nenhum funcionava de verdade para biquínis: texturas erradas, caimento irreal, ou simplesmente não renderizava peças menores. O Mirage resolveu. Hoje está sendo aberto para um grupo seleto de marcas parceiras.</p>
           <div class="partner-stats">
             <div>
               <div class="ps-n">+50k</div>
               <div class="ps-l">SKUs processados</div>
             </div>
             <div>
-              <div class="ps-n">10min</div>
-              <div class="ps-l">instalação plug-and-play</div>
+              <div class="ps-n">2,4s</div>
+              <div class="ps-l">render médio em produção</div>
             </div>
             <div>
               <div class="ps-n">99,9%</div>
@@ -971,7 +971,7 @@
           <a href="https://www.nksw.com.br" target="_blank" rel="noopener" style="text-decoration:none">
             <span class="nksw-mark">NKSW</span>
           </a>
-          <p>"Testamos vários fornecedores de provador virtual antes do Mirage. Nenhum funcionava para biquínis de verdade. A textura sumia, o caimento era irreal. O Mirage foi o único que renderizou a peça como ela é. Hoje faz parte do nosso funil de venda, não só de uma feature de página."</p>
+          <p>"Testamos vários fornecedores de provador virtual antes do Mirage. Nenhum funcionava para biquínis de verdade — a textura sumia, o caimento era irreal. O Mirage foi o único que renderizou a peça como ela é. Hoje faz parte do nosso funil de venda, não só de uma feature de página."</p>
           <div class="partner-meta">Wlisses Godoy · Head de E-commerce, NKSW</div>
         </div>
       </div>
@@ -1120,15 +1120,15 @@
     <div class="faq-list">
       <div class="faq-item" onclick="toggleFaq(this)">
         <div class="faq-q"><span>Isso mostra o tamanho exato da roupa?</span><span class="faq-plus">+</span></div>
-        <div class="faq-a">Não. O foco é visualização. O cliente entende como a peça fica no corpo, a cor real, o caimento geral. Não é um guia de medidas, é uma forma de se ver usando antes de comprar.</div>
+        <div class="faq-a">Não. O foco é visualização — o cliente entende como a peça fica no corpo, a cor real, o caimento geral. Não é um guia de medidas, é uma forma de se ver usando antes de comprar.</div>
       </div>
       <div class="faq-item" onclick="toggleFaq(this)">
         <div class="faq-q"><span>Precisa de integração complexa?</span><span class="faq-plus">+</span></div>
-        <div class="faq-a">Não. Basta adicionar um script na sua loja. Funciona em Shopify, VTEX, WooCommerce e Nuvemshop em até 10 minutos, sem time de desenvolvimento bloqueado.</div>
+        <div class="faq-a">Não. Basta adicionar um script na sua loja. Funciona em Shopify, VTEX, WooCommerce e Nuvemshop em até 10 minutos — sem time de desenvolvimento bloqueado.</div>
       </div>
       <div class="faq-item" onclick="toggleFaq(this)">
         <div class="faq-q"><span>Funciona com qualquer produto?</span><span class="faq-plus">+</span></div>
-        <div class="faq-a">Sim, desde que o produto tenha imagem. O Mirage usa as fotos que você já tem no catálogo, em mannequin, hanger ou modelo. Nenhuma sessão de foto extra necessária.</div>
+        <div class="faq-a">Sim, desde que o produto tenha imagem. O Mirage usa as fotos que você já tem no catálogo — em mannequin, hanger ou modelo. Nenhuma sessão de foto extra necessária.</div>
       </div>
       <div class="faq-item" onclick="toggleFaq(this)">
         <div class="faq-q"><span>O cliente precisa baixar algum app?</span><span class="faq-plus">+</span></div>
@@ -1600,4 +1600,4 @@
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                               
