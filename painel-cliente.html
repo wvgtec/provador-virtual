@@ -1036,9 +1036,9 @@ function obBuildSnippet() {
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
     nuvemshop:     "{{ product.featured_image | product_image_url: 'original' }}",
-    woocommerce:   '<?php echo get_the_post_thumbnail_url(get_the_ID(), "full"); ?>',
-    lojaintegrada: '{% if product.image %}{{ product.image.url }}{% endif %}',
-    vtexlegacy:    '$product.ImageURL',
+    woocommerce:   "<?php echo get_the_post_thumbnail_url(get_the_ID(), 'full'); ?>",
+    lojaintegrada: "{% if product.image %}{{ product.image.url }}{% endif %}",
+    vtexlegacy:    "$product.ImageURL",
   };
   const hints = {
     shopify:       'Cole no arquivo <strong>product.liquid</strong> do seu tema (Loja Online > Temas > Editar código), antes do <code>&lt;/body&gt;</code>.',
@@ -1075,7 +1075,7 @@ ${optional}
     snippet = `<script>
   window.VTON_API_URL     = '${base}';
   window.VTON_CLIENT_KEY  = '${st.clientKey}';
-  window.VTON_GARMENT_URL = '${garments[platform] || garments.shopify}';
+  window.VTON_GARMENT_URL = "${garments[platform] || garments.shopify}";
   window.VTON_STORE_NAME  = '${storeName}';
 ${optional}
 <\/script>
@@ -1163,9 +1163,9 @@ function buildSnippet() {
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
     nuvemshop:     "{{ product.featured_image | product_image_url: 'original' }}",
-    woocommerce:   '<?php echo get_the_post_thumbnail_url(get_the_ID(), "full"); ?>',
-    lojaintegrada: '{% if product.image %}{{ product.image.url }}{% endif %}',
-    vtexlegacy:    '$product.ImageURL',
+    woocommerce:   "<?php echo get_the_post_thumbnail_url(get_the_ID(), 'full'); ?>",
+    lojaintegrada: "{% if product.image %}{{ product.image.url }}{% endif %}",
+    vtexlegacy:    "$product.ImageURL",
   };
 
   const hints = {
@@ -1196,7 +1196,7 @@ ${optional}
     snippet = `<script>
   window.VTON_API_URL     = '${base}';
   window.VTON_CLIENT_KEY  = '${st.clientKey}';
-  window.VTON_GARMENT_URL = '${garments[platform] || garments.shopify}';
+  window.VTON_GARMENT_URL = "${garments[platform] || garments.shopify}";
   window.VTON_STORE_NAME  = '${storeName}';
 ${optional}
 <\/script>

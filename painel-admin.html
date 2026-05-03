@@ -1546,16 +1546,16 @@ function updateSnippet() {
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
     nuvemshop:     "{{ product.featured_image | product_image_url: 'original' }}",
-    woocommerce:   '<?php echo get_the_post_thumbnail_url(get_the_ID(), "full"); ?>',
-    lojaintegrada: '{% if product.image %}{{ product.image.url }}{% endif %}',
-    vtexlegacy:    '$product.ImageURL',
+    woocommerce:   "<?php echo get_the_post_thumbnail_url(get_the_ID(), 'full'); ?>",
+    lojaintegrada: "{% if product.image %}{{ product.image.url }}{% endif %}",
+    vtexlegacy:    "$product.ImageURL",
   };
   const optional = `  /* Personalização opcional — descomente e ajuste os valores:\n  window.VTON_BTN_TEXT   = 'Experimentar';\n  window.VTON_BTN_BG     = '#000000';\n  window.VTON_BTN_COLOR  = '#ffffff';\n  window.VTON_BTN_WIDTH  = '100%';\n  window.VTON_BTN_HEIGHT = '52px';\n  window.VTON_BTN_RADIUS = '12px';\n  */`;
   let snippet;
   if (platform === 'vtexio') {
     snippet = `<script>\n  window.VTON_API_URL    = '${base}';\n  window.VTON_CLIENT_KEY = '${_snippetKey}';\n  window.VTON_STORE_NAME = '${store}';\n  window.addEventListener('load', function() {\n    var img = document.querySelector('[class*="productImageTag"]')\n           || document.querySelector('[class*="product-image"] img');\n    if (img) window.VTON_GARMENT_URL = img.src;\n  });\n${optional}\n<\/script>\n<div id="vton-anchor"><\/div>\n<script src="${wUrl}" defer><\/script>`;
   } else {
-    snippet = `<script>\n  window.VTON_API_URL     = '${base}';\n  window.VTON_CLIENT_KEY  = '${_snippetKey}';\n  window.VTON_GARMENT_URL = '${garments[platform] || garments.shopify}';\n  window.VTON_STORE_NAME  = '${store}';\n${optional}\n<\/script>\n<div id="vton-anchor"><\/div>\n<script src="${wUrl}" defer><\/script>`;
+    snippet = `<script>\n  window.VTON_API_URL     = '${base}';\n  window.VTON_CLIENT_KEY  = '${_snippetKey}';\n  window.VTON_GARMENT_URL = "${garments[platform] || garments.shopify}";\n  window.VTON_STORE_NAME  = '${store}';\n${optional}\n<\/script>\n<div id="vton-anchor"><\/div>\n<script src="${wUrl}" defer><\/script>`;
   }
   document.getElementById('snippet-box').innerHTML =
     `<button onclick="copySnippet()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Copiar</button>` +
