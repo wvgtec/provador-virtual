@@ -1028,14 +1028,14 @@ function obBuildSnippet() {
   const btnWidth  = document.getElementById('ob-btn-width')?.value  || '100%';
   const btnHeight = document.getElementById('ob-btn-height')?.value || '52px';
   const btnRadius = document.getElementById('ob-btn-radius')?.value || '12px';
-  const storeName = (st.client?.name || document.getElementById('ob-name')?.value || 'Minha Loja').replace(/'/g, "\\'");
+  const storeName = (st.client?.name || document.getElementById('ob-name')?.value || 'Minha Loja').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/'/g, "\\'");
   const platform  = document.getElementById('ob-platform')?.value || 'shopify';
   const base      = 'https://api.mirageai.com.br';
-  const wUrl      = 'https://app.mirageai.com.br/widget/tryon-widget.js?v=6.0';
+  const wUrl      = 'https://app.mirageai.com.br/widget/tryon-widget.js?v=6.2';
 
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
-    nuvemshop:     '{product.featured_image.src}',
+    nuvemshop:     "{{ product.featured_image | product_image_url: 'original' }}",
     woocommerce:   '<?php echo get_the_post_thumbnail_url(get_the_ID(), "full"); ?>',
     lojaintegrada: '{% if product.image %}{{ product.image.url }}{% endif %}',
     vtexlegacy:    '$product.ImageURL',
@@ -1149,10 +1149,10 @@ function buildSnippet() {
   const btnWidth  = document.getElementById('cfgBtnWidth')?.value  || '100%';
   const btnHeight = document.getElementById('cfgBtnHeight')?.value || '52px';
   const btnRadius = document.getElementById('cfgBtnRadius')?.value || '12px';
-  const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/'/g, "\\'");
+  const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/'/g, "\\'");
   const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
   const base      = 'https://api.mirageai.com.br';
-  const wUrl      = `https://app.mirageai.com.br/widget/tryon-widget.js?v=6.0`;
+  const wUrl      = `https://app.mirageai.com.br/widget/tryon-widget.js?v=6.2`;
   const optional  = `  window.VTON_BTN_TEXT   = '${btnText}';
   window.VTON_BTN_BG     = '${btnBg}';
   window.VTON_BTN_COLOR  = '${btnColor}';
@@ -1162,7 +1162,7 @@ function buildSnippet() {
 
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
-    nuvemshop:     '{product.featured_image.src}',
+    nuvemshop:     "{{ product.featured_image | product_image_url: 'original' }}",
     woocommerce:   '<?php echo get_the_post_thumbnail_url(get_the_ID(), "full"); ?>',
     lojaintegrada: '{% if product.image %}{{ product.image.url }}{% endif %}',
     vtexlegacy:    '$product.ImageURL',

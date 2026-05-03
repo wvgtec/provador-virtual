@@ -139,6 +139,7 @@ async function callVertexTryOn({ projectId, personImageUrl, garmentImageUrl, cat
   }
 
   const data = await response.json();
+  // Vertex AI virtual-try-on-001 retorna JPEG, não PNG
   const imageBase64 = data?.predictions?.[0]?.bytesBase64Encoded;
   if (!imageBase64) throw new Error('Vertex AI não retornou imagem: ' + JSON.stringify(data));
   return imageBase64;
@@ -206,8 +207,9 @@ app.post('/process', async (req, res) => {
     const accessToken = await getGoogleAccessToken();
     const imageBase64 = await callVertexTryOn({ projectId, personImageUrl, garmentImageUrl, category, accessToken });
 
-    const outputPath = `outputs/${jobId}.png`;
-    const resultUrl  = await uploadToGCS(accessToken, outputPath, Buffer.from(imageBase64, 'base64'), 'image/png');
+    // Vertex AI retorna JPEG — armazenado com content-type correto
+    const outputPath = `outputs/${jobId}.jpg`;
+    const resultUrl  = await uploadToGCS(accessToken, outputPath, Buffer.from(imageBase64, 'base64'), 'image/jpeg');
     const completedAt = Date.now();
 
     await Promise.all([
