@@ -1,5 +1,5 @@
 /**
- * Mirage — Widget de Provador Virtual v6.2
+ * Mirage — Widget de Provador Virtual v6.3
  * Design: NKSW v4 | Efeito de renderização + formulário abaixo do resultado
  */
 (function () {

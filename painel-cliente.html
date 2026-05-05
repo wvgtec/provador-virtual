@@ -1033,7 +1033,7 @@ function obBuildSnippet() {
   const storeName = (st.client?.name || document.getElementById('ob-name')?.value || 'Minha Loja').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/'/g, "\\'");
   const platform  = document.getElementById('ob-platform')?.value || 'shopify';
   const base      = 'https://api.mirageai.com.br';
-  const wUrl      = 'https://app.mirageai.com.br/widget/tryon-widget.js?v=6.2';
+  const wUrl      = 'https://app.mirageai.com.br/widget/tryon-widget.js?v=6.3';
 
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
@@ -1168,7 +1168,7 @@ function buildSnippet() {
   const storeName = (st.client?.name || st.client?.store || 'Minha Loja').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/'/g, "\\'");
   const platform  = document.getElementById('snippetPlatform')?.value || 'shopify';
   const base      = 'https://api.mirageai.com.br';
-  const wUrl      = `https://app.mirageai.com.br/widget/tryon-widget.js?v=6.2`;
+  const wUrl      = `https://app.mirageai.com.br/widget/tryon-widget.js?v=6.3`;
   const optional  = `  window.VTON_BTN_TEXT   = '${btnText}';
   window.VTON_BTN_BG     = '${btnBg}';
   window.VTON_BTN_COLOR  = '${btnColor}';
