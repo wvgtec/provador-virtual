@@ -1544,7 +1544,7 @@ function openSnippet(key, store) {
 function updateSnippet() {
   const platform = document.getElementById('snippet-platform').value;
   const base  = 'https://api.mirageai.com.br';
-  const wUrl  = `https://app.mirageai.com.br/widget/tryon-widget.js?v=6.3`;
+  const wUrl  = `https://app.mirageai.com.br/widget/tryon-widget.js`;
   const store = (_snippetStore || 'Minha Loja').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/'/g, "\\'");
   const garments = {
     shopify:       "{{ product.featured_image | img_url: 'master' }}",
