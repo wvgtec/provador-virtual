@@ -1082,7 +1082,13 @@ ${optional}
   window.VTON_API_URL    = '${base}';
   window.VTON_CLIENT_KEY = '${st.clientKey}';
   window.VTON_STORE_NAME = '${storeName}';
-  /* Olist/VNDA: imagem detectada automaticamente pelo widget */
+  (function(){
+    var up=function(s){return s.replace(/\/\d+x\//,'/1200x/');};
+    var z=document.querySelector('.swiper-slide-active [data-zoom-src]')||document.querySelector('[data-zoom-src]');
+    if(z){var s=z.getAttribute('data-zoom-src')||'';if(s.includes('cdn.vnda.com.br')){window.VTON_GARMENT_URL=up(s);return;}}
+    var img=document.querySelector('.swiper-slide-active img');
+    if(img&&img.src&&img.src.includes('cdn.vnda.com.br')){window.VTON_GARMENT_URL=up(img.src);}
+  })();
 ${optional}
 <\/script>
 <div id="vton-anchor"><\/div>
@@ -1217,7 +1223,13 @@ ${optional}
   window.VTON_API_URL    = '${base}';
   window.VTON_CLIENT_KEY = '${st.clientKey}';
   window.VTON_STORE_NAME = '${storeName}';
-  /* Olist/VNDA: imagem detectada automaticamente pelo widget */
+  (function(){
+    var up=function(s){return s.replace(/\/\d+x\//,'/1200x/');};
+    var z=document.querySelector('.swiper-slide-active [data-zoom-src]')||document.querySelector('[data-zoom-src]');
+    if(z){var s=z.getAttribute('data-zoom-src')||'';if(s.includes('cdn.vnda.com.br')){window.VTON_GARMENT_URL=up(s);return;}}
+    var img=document.querySelector('.swiper-slide-active img');
+    if(img&&img.src&&img.src.includes('cdn.vnda.com.br')){window.VTON_GARMENT_URL=up(img.src);}
+  })();
 ${optional}
 <\/script>
 <div id="vton-anchor"><\/div>
