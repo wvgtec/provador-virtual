@@ -418,30 +418,32 @@
   function detectVndaImage() {
     // Troca prefixo de tamanho para 1200x (ex: /150x/ → /1200x/)
     const upsize = src => src.replace(/\/\d+x\//, '/1200x/');
+    // Reconhece CDN de produção (cdn.vnda.com.br) e desenvolvimento (cdn.vnda.dev)
+    const isVnda = src => src.includes('cdn.vnda.com.br') || src.includes('cdn.vnda.dev');
 
-    // 1. data-zoom-src no slide ativo (já vem em 1200px, mas fazemos upsize por segurança)
+    // 1. data-zoom-src no slide ativo
     const activeZoom = document.querySelector('.swiper-slide-active [data-zoom-src]');
     if (activeZoom) {
       const src = activeZoom.getAttribute('data-zoom-src') || '';
-      if (src.includes('cdn.vnda.com.br')) return upsize(src);
+      if (isVnda(src)) return upsize(src);
     }
 
     // 2. Primeiro data-zoom-src da galeria
     const firstZoom = document.querySelector('[data-zoom-src]');
     if (firstZoom) {
       const src = firstZoom.getAttribute('data-zoom-src') || '';
-      if (src.includes('cdn.vnda.com.br')) return upsize(src);
+      if (isVnda(src)) return upsize(src);
     }
 
     // 3. Imagem carregada no slide ativo (com upgrade de tamanho)
     const activeImg = document.querySelector('.swiper-slide-active img');
-    if (activeImg && activeImg.src && activeImg.src.includes('cdn.vnda.com.br')) {
+    if (activeImg && isVnda(activeImg.src || '')) {
       return upsize(activeImg.src);
     }
 
-    // 4. Imagem carregada com CDN da VNDA (qualquer img visível)
+    // 4. Qualquer img visível com CDN da VNDA
     const loaded = Array.from(document.querySelectorAll('img')).find(img =>
-      img.src && img.src.includes('cdn.vnda.com.br') && img.naturalWidth > 0
+      img.src && isVnda(img.src) && img.naturalWidth > 0
     );
     if (loaded) return upsize(loaded.src);
 
