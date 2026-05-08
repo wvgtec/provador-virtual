@@ -1065,14 +1065,20 @@ function obBuildSnippet() {
   window.VTON_API_URL    = '${base}';
   window.VTON_CLIENT_KEY = '${st.clientKey}';
   window.VTON_STORE_NAME = '${storeName}';
-  window.addEventListener('load', function() {
-    var img = document.querySelector('[class*="productImageTag"]')
-           || document.querySelector('[class*="product-image"] img')
-           || document.querySelector('.product-gallery__image img')
-           || document.querySelector('.product-featured-image img')
-           || document.querySelector('[data-product-image]');
-    if (img) window.VTON_GARMENT_URL = img.src || img.dataset.src || '';
-  });
+  (function(){
+    var host=location.origin;
+    try{
+      var st=window.__STATE__||{};
+      var k=Object.keys(st).find(function(k){return k.startsWith('Image:')&&st[k]&&st[k].imageTag;});
+      if(k){var m=st[k].imageTag.match(/arquivos\/ids\/(\d+-#width#-#height#\/[^?]+)\?v=(\d+)/);
+        if(m){window.VTON_GARMENT_URL=host+'/arquivos/ids/'+m[1].replace('#width#-#height#','1200-1200')+'?v='+m[2];return;}}
+    }catch(e){}
+    var img=document.querySelector('[class*="productImageTag"]')
+          ||document.querySelector('[class*="carousel__slide"] img')
+          ||document.querySelector('[class*="swiper-slide-active"] img')
+          ||document.querySelector('figure img');
+    if(img)window.VTON_GARMENT_URL=img.src||img.getAttribute('data-src')||'';
+  })();
 ${optional}
 <\/script>
 <div id="vton-anchor"><\/div>
@@ -1200,14 +1206,20 @@ function buildSnippet() {
   window.VTON_API_URL    = '${base}';
   window.VTON_CLIENT_KEY = '${st.clientKey}';
   window.VTON_STORE_NAME = '${storeName}';
-  window.addEventListener('load', function() {
-    var img = document.querySelector('[class*="productImageTag"]')
-           || document.querySelector('[class*="product-image"] img')
-           || document.querySelector('.product-gallery__image img')
-           || document.querySelector('.product-featured-image img')
-           || document.querySelector('[data-product-image]');
-    if (img) window.VTON_GARMENT_URL = img.src || img.dataset.src || '';
-  });
+  (function(){
+    var host=location.origin;
+    try{
+      var st=window.__STATE__||{};
+      var k=Object.keys(st).find(function(k){return k.startsWith('Image:')&&st[k]&&st[k].imageTag;});
+      if(k){var m=st[k].imageTag.match(/arquivos\/ids\/(\d+-#width#-#height#\/[^?]+)\?v=(\d+)/);
+        if(m){window.VTON_GARMENT_URL=host+'/arquivos/ids/'+m[1].replace('#width#-#height#','1200-1200')+'?v='+m[2];return;}}
+    }catch(e){}
+    var img=document.querySelector('[class*="productImageTag"]')
+          ||document.querySelector('[class*="carousel__slide"] img')
+          ||document.querySelector('[class*="swiper-slide-active"] img')
+          ||document.querySelector('figure img');
+    if(img)window.VTON_GARMENT_URL=img.src||img.getAttribute('data-src')||'';
+  })();
 ${optional}
 <\/script>
 <div id="vton-anchor"><\/div>
