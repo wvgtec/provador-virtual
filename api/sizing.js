@@ -100,9 +100,15 @@ export default async function handler(req, res) {
     if (!productId) return res.status(400).json({ error: 'productId é obrigatório.' });
 
     const raw = await redis.get(`fit:product:${clientKey}:${productId}`);
-    if (!raw) return res.json({ found: false });
-    const product = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return res.json({ found: true, product });
+    if (raw) {
+      const product = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return res.json({ found: true, product });
+    }
+    // Fallback: tabela padrão da loja
+    const defRaw = await redis.get(`fit:product:${clientKey}:__default__`);
+    if (!defRaw) return res.json({ found: false });
+    const product = typeof defRaw === 'string' ? JSON.parse(defRaw) : defRaw;
+    return res.json({ found: true, product, isDefault: true });
   }
 
   // Demais actions requerem POST e cliente ativo

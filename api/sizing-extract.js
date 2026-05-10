@@ -103,11 +103,11 @@ Regras: tamanhos podem ser PP/P/M/G/GG/XGG ou numéricos (34-48).
 Se a tabela estiver em polegadas, converter para cm (× 2,54).
 Retornar APENAS o JSON, sem markdown.`;
 
-async function callGemini(accessToken, textContent, imageBase64) {
+async function callGemini(accessToken, textContent, imageBase64, imageMimeType) {
   const parts = [];
 
   if (imageBase64) {
-    parts.push({ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } });
+    parts.push({ inlineData: { mimeType: imageMimeType || 'image/jpeg', data: imageBase64 } });
   } else {
     parts.push({ text: textContent });
   }
@@ -139,7 +139,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { clientKey, password, productUrl, imageBase64, productId: externalProductId, productName } = req.body || {};
+  const { clientKey, password, productUrl, imageBase64, imageMimeType, productId: externalProductId, productName } = req.body || {};
 
   if (!isValidClientKey(clientKey)) return res.status(400).json({ error: 'clientKey inválido.' });
   if (!password) return res.status(400).json({ error: 'password é obrigatório.' });
@@ -175,7 +175,7 @@ export default async function handler(req, res) {
     // Remove prefixo data URI se presente
     if (imgData && imgData.includes(',')) imgData = imgData.split(',')[1];
 
-    const extracted = await callGemini(accessToken, textContent, imgData);
+    const extracted = await callGemini(accessToken, textContent, imgData, imageMimeType);
 
     const now     = new Date().toISOString();
     const product = {
