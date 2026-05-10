@@ -333,62 +333,143 @@
     .nksw-tab-btn.active { color: #111; border-bottom-color: #F5C53F; }
     .nksw-tab-btn:hover:not(.active) { color: #555; }
 
-    /* ── Sizing Pane ── */
-    .nksw-sizing-pane {
-      display: none; padding: 20px; flex-direction: column; gap: 16px; flex: 1;
-    }
+    /* ── Sizing Pane — Multi-Step ── */
+    .nksw-sizing-pane { display: none; flex-direction: column; flex: 1; }
     .nksw-sizing-pane.active { display: flex; }
-    .nksw-sizing-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .nksw-sizing-field { display: flex; flex-direction: column; gap: 5px; }
-    .nksw-sizing-field label { font-size: 12px; font-weight: 600; color: #555; }
-    .nksw-sizing-field input {
-      padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
-      font-size: 15px; font-family: inherit; outline: none;
-      transition: border-color 0.2s; width: 100%; box-sizing: border-box;
+
+    /* Step indicator */
+    .nksw-fit-steps {
+      display: flex; align-items: center; justify-content: center;
+      padding: 14px 20px 0; gap: 0;
     }
-    .nksw-sizing-field input:focus { border-color: #111; }
-    .nksw-sizing-label { font-size: 12px; font-weight: 600; color: #555; margin: 0; }
-    .nksw-biotypes { display: flex; gap: 8px; justify-content: space-between; }
-    .nksw-biotype-btn {
-      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-      padding: 8px 4px; border: 1.5px solid #e0e0e0; border-radius: 10px;
-      background: none; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    .nksw-fit-step-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #e0e0e0;
+      flex-shrink: 0; transition: background 0.25s, box-shadow 0.25s;
     }
-    .nksw-biotype-btn:hover { border-color: #bbb; background: #fafafa; }
-    .nksw-biotype-btn.active { border-color: #F5C53F; background: #fffbe6; }
-    .nksw-biotype-btn svg { width: 28px; height: 40px; }
-    .nksw-biotype-btn span { font-size: 9px; color: #777; letter-spacing: 0.02em; text-align: center; line-height: 1.2; }
-    .nksw-biotype-btn.active span { color: #111; font-weight: 700; }
-    .nksw-fit-calc-btn {
-      width: 100%; padding: 14px; background: #111; color: #fff;
-      border: none; border-radius: 12px; font-size: 13px; font-weight: 700;
-      cursor: pointer; letter-spacing: 1.4px; text-transform: uppercase;
-      transition: background 0.2s; margin-top: 4px;
+    .nksw-fit-step-dot.done   { background: #111; }
+    .nksw-fit-step-dot.active { background: #F5C53F; box-shadow: 0 0 0 3px rgba(245,197,63,0.28); }
+    .nksw-fit-step-line {
+      flex: 1; height: 2px; background: #e0e0e0; max-width: 40px; transition: background 0.25s;
     }
-    .nksw-fit-calc-btn:hover { background: #2a2a2a; }
-    .nksw-fit-calc-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .nksw-fit-result {
-      background: #f9f9f9; border-radius: 14px; padding: 16px;
-      display: flex; flex-direction: column; gap: 12px;
+    .nksw-fit-step-line.done { background: #111; }
+
+    /* Step panels */
+    .nksw-fit-step-panel {
+      display: none; flex-direction: column; gap: 14px;
+      padding: 14px 20px 20px; flex: 1;
     }
-    .nksw-fit-size-row { display: flex; align-items: center; justify-content: space-between; }
-    .nksw-fit-size-label { font-size: 13px; color: #666; }
-    .nksw-fit-size-value { font-size: 28px; font-weight: 800; color: #111; letter-spacing: -0.02em; }
-    .nksw-fit-badge {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-      padding: 3px 8px; border-radius: 20px;
+    .nksw-fit-step-panel.active { display: flex; }
+
+    .nksw-fit-step-title { font-size: 16px; font-weight: 800; color: #111; margin: 0; letter-spacing: -0.02em; }
+    .nksw-fit-step-sub   { font-size: 12px; color: #999; margin: -8px 0 0; line-height: 1.5; }
+
+    /* Input fields */
+    .nksw-fit-field-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .nksw-fit-field-header { display: flex; align-items: center; justify-content: space-between; }
+    .nksw-fit-field-label { font-size: 12px; font-weight: 600; color: #555; }
+    .nksw-fit-unit-toggle { display: flex; background: #f2f2f2; border-radius: 6px; padding: 2px; gap: 2px; }
+    .nksw-fit-unit-btn {
+      padding: 2px 9px; border: none; background: none; cursor: pointer;
+      font-size: 11px; font-weight: 600; color: #aaa; border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
     }
-    .nksw-fit-badge.high   { background: #e6f9ee; color: #1a7a3a; }
-    .nksw-fit-badge.medium { background: #fff8e1; color: #a06000; }
-    .nksw-fit-badge.low    { background: #f5f5f5; color: #888; }
-    .nksw-fit-measures {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-      border-top: 1px solid #eee; padding-top: 12px;
+    .nksw-fit-unit-btn.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .nksw-fit-input {
+      padding: 11px 14px; border: 1.5px solid #e4e4e4; border-radius: 10px;
+      font-size: 20px; font-weight: 700; font-family: inherit; outline: none;
+      transition: border-color 0.2s; width: 100%; box-sizing: border-box; color: #111;
     }
-    .nksw-fit-measure { display: flex; flex-direction: column; gap: 1px; }
-    .nksw-fit-measure-label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.05em; }
-    .nksw-fit-measure-val   { font-size: 14px; font-weight: 700; color: #111; }
-    .nksw-fit-note { font-size: 11px; color: #999; text-align: center; line-height: 1.5; margin: 0; }
+    .nksw-fit-input:focus { border-color: #F5C53F; }
+    .nksw-fit-input::placeholder { font-weight: 400; color: #ccc; font-size: 16px; }
+
+    /* Avatar */
+    .nksw-fit-avatar-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .nksw-fit-avatar-svg { width: 80px; height: auto; }
+
+    /* Skin tone */
+    .nksw-fit-skin-row { display: flex; align-items: center; gap: 8px; justify-content: center; }
+    .nksw-fit-skin-dot {
+      width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+      border: 2.5px solid transparent; transition: border-color 0.2s, transform 0.15s; flex-shrink: 0;
+    }
+    .nksw-fit-skin-dot:hover { transform: scale(1.1); }
+    .nksw-fit-skin-dot.active { border-color: #F5C53F; transform: scale(1.12); }
+
+    /* Sliders */
+    .nksw-fit-sliders { display: flex; flex-direction: column; gap: 10px; }
+    .nksw-fit-slider-row { display: flex; flex-direction: column; gap: 4px; }
+    .nksw-fit-slider-header { display: flex; align-items: center; justify-content: space-between; }
+    .nksw-fit-slider-label { font-size: 12px; font-weight: 600; color: #555; }
+    .nksw-fit-slider-val   { font-size: 13px; font-weight: 800; color: #111; }
+    .nksw-fit-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+      background: linear-gradient(to right, #F5C53F 0%, #F5C53F var(--pct,0%), #e4e4e4 var(--pct,0%), #e4e4e4 100%);
+    }
+    .nksw-fit-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+      background: #111; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.22); cursor: pointer;
+    }
+    .nksw-fit-slider::-moz-range-thumb {
+      width: 18px; height: 18px; border-radius: 50%; background: #111;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.22); cursor: pointer; border: 2.5px solid #fff;
+    }
+
+    /* Result */
+    .nksw-fit-result-wrap { display: flex; flex-direction: column; gap: 12px; }
+    .nksw-fit-result-size-card {
+      background: #111; border-radius: 16px; padding: 20px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nksw-fit-result-label { font-size: 11px; color: #888; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 4px; }
+    .nksw-fit-result-size  { font-size: 48px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -0.03em; }
+    .nksw-fit-conf-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 20px;
+    }
+    .nksw-fit-conf-badge.high   { background: #dcfce7; color: #166534; }
+    .nksw-fit-conf-badge.medium { background: #fef9c3; color: #854d0e; }
+    .nksw-fit-conf-badge.low    { background: #f3f4f6; color: #6b7280; }
+    .nksw-fit-alt-sizes { display: flex; flex-direction: column; gap: 6px; }
+    .nksw-fit-alt-label { font-size: 10px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.07em; }
+    .nksw-fit-alt-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .nksw-fit-alt-pill {
+      padding: 5px 14px; border: 1.5px solid #e4e4e4; border-radius: 20px;
+      font-size: 13px; font-weight: 700; color: #555;
+    }
+    .nksw-fit-measures-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      background: #f9f9f9; border-radius: 14px; padding: 14px;
+    }
+    .nksw-fit-measure-item { display: flex; flex-direction: column; gap: 1px; }
+    .nksw-fit-measure-name { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.05em; }
+    .nksw-fit-measure-num  { font-size: 15px; font-weight: 800; color: #111; }
+    .nksw-fit-no-table {
+      background: #fffbe6; border: 1px solid #F5C53F; border-radius: 12px;
+      padding: 12px 14px; font-size: 12px; color: #7a5c00; line-height: 1.6; text-align: center;
+    }
+
+    /* Nav buttons */
+    .nksw-fit-nav { display: flex; gap: 8px; margin-top: auto; padding-top: 8px; }
+    .nksw-fit-back-btn {
+      flex: 0 0 44px; height: 44px; background: #f4f4f4; border: none; border-radius: 10px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: #555; font-size: 18px; transition: background 0.15s; line-height: 1;
+    }
+    .nksw-fit-back-btn:hover { background: #e8e8e8; color: #111; }
+    .nksw-fit-next-btn {
+      flex: 1; padding: 13px; background: #111; color: #fff;
+      border: none; border-radius: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; letter-spacing: 1.2px; text-transform: uppercase; transition: background 0.2s;
+    }
+    .nksw-fit-next-btn:hover:not(:disabled) { background: #2a2a2a; }
+    .nksw-fit-next-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .nksw-fit-edit-btn {
+      flex: 1; background: none; border: 1.5px solid #ddd; border-radius: 10px;
+      padding: 13px; font-size: 13px; font-weight: 600; color: #555; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .nksw-fit-edit-btn:hover { border-color: #999; color: #111; }
 
     @media (max-width: 480px) {
       .nksw-modal { max-height: 100dvh; border-radius: 20px 20px 0 0; }
@@ -660,43 +741,107 @@
 
         </div>
 
-        <!-- Painel Meu Tamanho -->
+        <!-- Painel Meu Tamanho — Multi-Step -->
         <div class="nksw-sizing-pane" id="nksw-sizing-pane">
-          <div class="nksw-sizing-fields">
-            <div class="nksw-sizing-field">
-              <label for="nksw-fit-height">Altura (cm)</label>
-              <input type="number" id="nksw-fit-height" min="120" max="220" placeholder="Ex: 165" />
+
+          <!-- Step indicator -->
+          <div class="nksw-fit-steps">
+            <div class="nksw-fit-step-dot active" id="nksw-fit-dot-0"></div>
+            <div class="nksw-fit-step-line" id="nksw-fit-line-0"></div>
+            <div class="nksw-fit-step-dot" id="nksw-fit-dot-1"></div>
+            <div class="nksw-fit-step-line" id="nksw-fit-line-1"></div>
+            <div class="nksw-fit-step-dot" id="nksw-fit-dot-2"></div>
+          </div>
+
+          <!-- Step 1: dados básicos -->
+          <div class="nksw-fit-step-panel active" id="nksw-fit-panel-0">
+            <p class="nksw-fit-step-title">Suas medidas</p>
+            <p class="nksw-fit-step-sub">Usadas apenas para estimar seu tamanho</p>
+            <div class="nksw-fit-field-wrap">
+              <div class="nksw-fit-field-header">
+                <span class="nksw-fit-field-label">Altura</span>
+                <div class="nksw-fit-unit-toggle">
+                  <button class="nksw-fit-unit-btn active" id="nksw-height-cm" data-unit="cm" type="button">cm</button>
+                  <button class="nksw-fit-unit-btn" id="nksw-height-in" data-unit="in" type="button">in</button>
+                </div>
+              </div>
+              <input class="nksw-fit-input" type="number" id="nksw-fit-height" placeholder="165" min="100" max="230" />
             </div>
-            <div class="nksw-sizing-field">
-              <label for="nksw-fit-weight">Peso (kg)</label>
-              <input type="number" id="nksw-fit-weight" min="30" max="250" placeholder="Ex: 60" />
+            <div class="nksw-fit-field-wrap">
+              <div class="nksw-fit-field-header">
+                <span class="nksw-fit-field-label">Peso</span>
+                <div class="nksw-fit-unit-toggle">
+                  <button class="nksw-fit-unit-btn active" id="nksw-weight-kg" data-unit="kg" type="button">kg</button>
+                  <button class="nksw-fit-unit-btn" id="nksw-weight-lb" data-unit="lb" type="button">lb</button>
+                </div>
+              </div>
+              <input class="nksw-fit-input" type="number" id="nksw-fit-weight" placeholder="60" min="30" max="300" />
+            </div>
+            <div class="nksw-fit-field-wrap">
+              <div class="nksw-fit-field-header">
+                <span class="nksw-fit-field-label">Idade <span style="color:#ccc;font-weight:400">(opcional)</span></span>
+              </div>
+              <input class="nksw-fit-input" type="number" id="nksw-fit-age" placeholder="25" min="10" max="99" />
+            </div>
+            <div class="nksw-fit-nav">
+              <button class="nksw-fit-next-btn" id="nksw-fit-next-0" disabled>PRÓXIMO →</button>
             </div>
           </div>
-          <p class="nksw-sizing-label">Seu biotipo</p>
-          <div class="nksw-biotypes" id="nksw-biotypes">
-            <button class="nksw-biotype-btn" data-biotype="hourglass" type="button">
-              <svg viewBox="0 0 28 40" fill="none"><ellipse cx="14" cy="7" rx="7" ry="6" fill="#ddd"/><path d="M7 13 C4 20 4 22 7 26 L14 28 L21 26 C24 22 24 20 21 13Z" fill="#ddd"/><ellipse cx="14" cy="34" rx="7" ry="5" fill="#ddd"/></svg>
-              <span>Ampulheta</span>
-            </button>
-            <button class="nksw-biotype-btn" data-biotype="pear" type="button">
-              <svg viewBox="0 0 28 40" fill="none"><ellipse cx="14" cy="8" rx="6" ry="6" fill="#ddd"/><path d="M8 14 C6 18 5 22 5 27 L14 30 L23 27 C23 22 22 18 20 14Z" fill="#ddd"/></svg>
-              <span>Triângulo</span>
-            </button>
-            <button class="nksw-biotype-btn" data-biotype="apple" type="button">
-              <svg viewBox="0 0 28 40" fill="none"><ellipse cx="14" cy="8" rx="6" ry="6" fill="#ddd"/><ellipse cx="14" cy="22" rx="9" ry="10" fill="#ddd"/><path d="M8 30 L7 36 L21 36 L20 30Z" fill="#ddd"/></svg>
-              <span>Maçã</span>
-            </button>
-            <button class="nksw-biotype-btn" data-biotype="rectangle" type="button">
-              <svg viewBox="0 0 28 40" fill="none"><ellipse cx="14" cy="7" rx="6" ry="6" fill="#ddd"/><rect x="7" y="13" width="14" height="22" rx="4" fill="#ddd"/></svg>
-              <span>Retângulo</span>
-            </button>
-            <button class="nksw-biotype-btn" data-biotype="invertedTri" type="button">
-              <svg viewBox="0 0 28 40" fill="none"><ellipse cx="14" cy="8" rx="6" ry="6" fill="#ddd"/><path d="M4 14 L24 14 L20 36 L8 36Z" fill="#ddd"/></svg>
-              <span>Triâng. inv.</span>
-            </button>
+
+          <!-- Step 2: silhueta -->
+          <div class="nksw-fit-step-panel" id="nksw-fit-panel-1">
+            <p class="nksw-fit-step-title">Ajuste sua silhueta</p>
+            <div class="nksw-fit-avatar-wrap">
+              <svg class="nksw-fit-avatar-svg" id="nksw-fit-avatar" viewBox="0 0 100 180" xmlns="http://www.w3.org/2000/svg">
+                <circle id="nksw-avatar-head" cx="50" cy="16" r="10" />
+                <path id="nksw-avatar-body" d="" />
+              </svg>
+              <div class="nksw-fit-skin-row" id="nksw-fit-skin-row">
+                <div class="nksw-fit-skin-dot active" data-skin="#FDDBB4" style="background:#FDDBB4" title="Clara"></div>
+                <div class="nksw-fit-skin-dot" data-skin="#E8B88A" style="background:#E8B88A" title="Média-clara"></div>
+                <div class="nksw-fit-skin-dot" data-skin="#C68642" style="background:#C68642" title="Média"></div>
+                <div class="nksw-fit-skin-dot" data-skin="#8D5524" style="background:#8D5524" title="Média-escura"></div>
+                <div class="nksw-fit-skin-dot" data-skin="#4A2912" style="background:#4A2912" title="Escura"></div>
+              </div>
+            </div>
+            <div class="nksw-fit-sliders">
+              <div class="nksw-fit-slider-row">
+                <div class="nksw-fit-slider-header">
+                  <span class="nksw-fit-slider-label">Busto</span>
+                  <span class="nksw-fit-slider-val" id="nksw-slider-bust-val">88 cm</span>
+                </div>
+                <input class="nksw-fit-slider" id="nksw-slider-bust" type="range" min="70" max="130" value="88" />
+              </div>
+              <div class="nksw-fit-slider-row">
+                <div class="nksw-fit-slider-header">
+                  <span class="nksw-fit-slider-label">Cintura</span>
+                  <span class="nksw-fit-slider-val" id="nksw-slider-waist-val">68 cm</span>
+                </div>
+                <input class="nksw-fit-slider" id="nksw-slider-waist" type="range" min="55" max="110" value="68" />
+              </div>
+              <div class="nksw-fit-slider-row">
+                <div class="nksw-fit-slider-header">
+                  <span class="nksw-fit-slider-label">Quadril</span>
+                  <span class="nksw-fit-slider-val" id="nksw-slider-hip-val">96 cm</span>
+                </div>
+                <input class="nksw-fit-slider" id="nksw-slider-hip" type="range" min="75" max="135" value="96" />
+              </div>
+            </div>
+            <div class="nksw-fit-nav">
+              <button class="nksw-fit-back-btn" id="nksw-fit-back-1" type="button">←</button>
+              <button class="nksw-fit-next-btn" id="nksw-fit-next-1" type="button">CALCULAR TAMANHO</button>
+            </div>
           </div>
-          <button class="nksw-fit-calc-btn" id="nksw-fit-calc-btn" disabled>DESCOBRIR MEU TAMANHO</button>
-          <div class="nksw-fit-result" id="nksw-fit-result" style="display:none"></div>
+
+          <!-- Step 3: resultado -->
+          <div class="nksw-fit-step-panel" id="nksw-fit-panel-2">
+            <p class="nksw-fit-step-title">Seu tamanho</p>
+            <div class="nksw-fit-result-wrap" id="nksw-fit-result-wrap"></div>
+            <div class="nksw-fit-nav">
+              <button class="nksw-fit-edit-btn" id="nksw-fit-edit-btn" type="button">← Editar medidas</button>
+            </div>
+          </div>
+
         </div>
 
         <!-- Footer com powered by Mirage -->
@@ -794,92 +939,289 @@
     const lgpdNotice    = $('nksw-lgpd-notice');
     const closeBtn      = overlay.querySelector('.nksw-close');
 
-    // ── Sizing: refs e lógica ──────────────────────────────────────────────
-    const tabTryon    = $('nksw-tab-tryon');
-    const tabSizing   = $('nksw-tab-sizing');
-    const tryonPane   = $('nksw-tryon-pane');
-    const sizingPane  = $('nksw-sizing-pane');
-    const fitHeight   = $('nksw-fit-height');
-    const fitWeight   = $('nksw-fit-weight');
-    const fitBiotypes = $('nksw-biotypes');
-    const fitCalcBtn  = $('nksw-fit-calc-btn');
-    const fitResult   = $('nksw-fit-result');
+    // ── Sizing: multi-step flow ────────────────────────────────────────────
+    const tabTryon       = $('nksw-tab-tryon');
+    const tabSizing      = $('nksw-tab-sizing');
+    const tryonPane      = $('nksw-tryon-pane');
+    const sizingPane     = $('nksw-sizing-pane');
 
-    const BIOTYPE_COEFF = {
-      hourglass:   { bust: 0.530, waist: 0.395, hip: 0.550, shoulder: 0.228 },
-      pear:        { bust: 0.500, waist: 0.408, hip: 0.580, shoulder: 0.220 },
-      apple:       { bust: 0.550, waist: 0.458, hip: 0.530, shoulder: 0.238 },
-      rectangle:   { bust: 0.520, waist: 0.438, hip: 0.520, shoulder: 0.230 },
-      invertedTri: { bust: 0.560, waist: 0.418, hip: 0.510, shoulder: 0.252 },
-    };
+    const fitHeightInput = $('nksw-fit-height');
+    const fitWeightInput = $('nksw-fit-weight');
+    const fitNextBtn0    = $('nksw-fit-next-0');
+    const fitBackBtn1    = $('nksw-fit-back-1');
+    const fitNextBtn1    = $('nksw-fit-next-1');
+    const fitEditBtn     = $('nksw-fit-edit-btn');
+    const fitResultWrap  = $('nksw-fit-result-wrap');
 
-    function bmiAdjust(w, h) {
-      const bmi = w / ((h / 100) ** 2);
-      return bmi < 18.5 ? 0.97 : bmi < 25 ? 1.00 : bmi < 30 ? 1.03 : 1.06;
+    const sliderBust     = $('nksw-slider-bust');
+    const sliderWaist    = $('nksw-slider-waist');
+    const sliderHip      = $('nksw-slider-hip');
+    const sliderBustVal  = $('nksw-slider-bust-val');
+    const sliderWaistVal = $('nksw-slider-waist-val');
+    const sliderHipVal   = $('nksw-slider-hip-val');
+    const avatarBody     = $('nksw-avatar-body');
+    const avatarHead     = $('nksw-avatar-head');
+    const skinRow        = $('nksw-fit-skin-row');
+
+    let heightUnit = 'cm';
+    let weightUnit = 'kg';
+    let skinColor  = '#FDDBB4';
+
+    // ── Avatar SVG ──────────────────────────────────────────────────────────
+    function buildAvatarPath(bust, waist, hip) {
+      const cx = 50;
+      const bw = Math.max(14, Math.min(26, 14 + (bust  - 75) / 3));
+      const ww = Math.max(9,  Math.min(20, 9  + (waist - 60) / 3));
+      const hw = Math.max(16, Math.min(28, 16 + (hip   - 85) / 3));
+      const sw = 20, nk = 6;
+      return [
+        `M ${cx-nk} 26`,
+        `C ${cx-sw} 28 ${cx-sw} 40 ${cx-sw} 44`,
+        `C ${cx-sw} 52 ${cx-bw} 60 ${cx-bw} 70`,
+        `C ${cx-bw} 76 ${cx-ww} 82 ${cx-ww} 88`,
+        `C ${cx-ww} 96 ${cx-hw} 100 ${cx-hw} 108`,
+        `C ${cx-hw} 116 ${cx-12} 120 ${cx-12} 124`,
+        `C ${cx-11} 136 ${cx-9} 148 ${cx-9} 158`,
+        `L ${cx-8} 168 L ${cx+8} 168`,
+        `C ${cx+9} 148 ${cx+11} 136 ${cx+12} 124`,
+        `C ${cx+12} 120 ${cx+hw} 116 ${cx+hw} 108`,
+        `C ${cx+hw} 100 ${cx+ww} 96 ${cx+ww} 88`,
+        `C ${cx+ww} 82 ${cx+bw} 76 ${cx+bw} 70`,
+        `C ${cx+bw} 60 ${cx+sw} 52 ${cx+sw} 44`,
+        `C ${cx+sw} 40 ${cx+sw} 28 ${cx+nk} 26 Z`,
+      ].join(' ');
     }
 
-    function estimateMeasurements(h, w, biotype) {
-      const c = BIOTYPE_COEFF[biotype] || BIOTYPE_COEFF.rectangle;
-      const a = bmiAdjust(w, h);
+    function updateSliderTrack(slider) {
+      const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+      slider.style.setProperty('--pct', pct + '%');
+    }
+
+    function refreshAvatar() {
+      const bust  = Number(sliderBust.value);
+      const waist = Number(sliderWaist.value);
+      const hip   = Number(sliderHip.value);
+      if (avatarBody) avatarBody.setAttribute('d', buildAvatarPath(bust, waist, hip));
+      updateSliderTrack(sliderBust);
+      updateSliderTrack(sliderWaist);
+      updateSliderTrack(sliderHip);
+      sliderBustVal.textContent  = bust  + ' cm';
+      sliderWaistVal.textContent = waist + ' cm';
+      sliderHipVal.textContent   = hip   + ' cm';
+    }
+
+    function setAvatarColor(color) {
+      if (avatarBody) avatarBody.style.fill = color;
+      if (avatarHead) avatarHead.style.fill = color;
+    }
+
+    refreshAvatar();
+    setAvatarColor(skinColor);
+
+    skinRow.addEventListener('click', e => {
+      const dot = e.target.closest('.nksw-fit-skin-dot');
+      if (!dot) return;
+      skinRow.querySelectorAll('.nksw-fit-skin-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      skinColor = dot.dataset.skin;
+      setAvatarColor(skinColor);
+    });
+
+    sliderBust.addEventListener('input',  refreshAvatar);
+    sliderWaist.addEventListener('input', refreshAvatar);
+    sliderHip.addEventListener('input',   refreshAvatar);
+
+    // ── Step navigation ──────────────────────────────────────────────────────
+    function goToStep(n) {
+      for (let i = 0; i < 3; i++) {
+        const panel = $(`nksw-fit-panel-${i}`);
+        if (panel) panel.classList.toggle('active', i === n);
+        const dot = $(`nksw-fit-dot-${i}`);
+        if (dot) {
+          dot.classList.remove('active', 'done');
+          if (i < n) dot.classList.add('done');
+          else if (i === n) dot.classList.add('active');
+        }
+      }
+      for (let i = 0; i < 2; i++) {
+        const line = $(`nksw-fit-line-${i}`);
+        if (line) line.classList.toggle('done', i < n);
+      }
+    }
+
+    // ── Unit helpers ─────────────────────────────────────────────────────────
+    function getHeightCm() {
+      const v = parseFloat(fitHeightInput.value);
+      return isNaN(v) ? 0 : (heightUnit === 'in' ? v * 2.54 : v);
+    }
+    function getWeightKg() {
+      const v = parseFloat(fitWeightInput.value);
+      return isNaN(v) ? 0 : (weightUnit === 'lb' ? v * 0.453592 : v);
+    }
+    function validateStep0() {
+      const h = getHeightCm(), w = getWeightKg();
+      return h >= 100 && h <= 230 && w >= 30 && w <= 300;
+    }
+
+    fitHeightInput.addEventListener('input', () => { fitNextBtn0.disabled = !validateStep0(); });
+    fitWeightInput.addEventListener('input', () => { fitNextBtn0.disabled = !validateStep0(); });
+
+    $('nksw-height-cm').addEventListener('click', () => {
+      if (heightUnit === 'cm') return;
+      const v = parseFloat(fitHeightInput.value);
+      heightUnit = 'cm';
+      $('nksw-height-cm').classList.add('active'); $('nksw-height-in').classList.remove('active');
+      if (!isNaN(v)) fitHeightInput.value = Math.round(v * 2.54);
+      fitHeightInput.placeholder = '165';
+      fitNextBtn0.disabled = !validateStep0();
+    });
+    $('nksw-height-in').addEventListener('click', () => {
+      if (heightUnit === 'in') return;
+      const v = parseFloat(fitHeightInput.value);
+      heightUnit = 'in';
+      $('nksw-height-in').classList.add('active'); $('nksw-height-cm').classList.remove('active');
+      if (!isNaN(v)) fitHeightInput.value = Math.round(v / 2.54 * 10) / 10;
+      fitHeightInput.placeholder = '65';
+      fitNextBtn0.disabled = !validateStep0();
+    });
+    $('nksw-weight-kg').addEventListener('click', () => {
+      if (weightUnit === 'kg') return;
+      const v = parseFloat(fitWeightInput.value);
+      weightUnit = 'kg';
+      $('nksw-weight-kg').classList.add('active'); $('nksw-weight-lb').classList.remove('active');
+      if (!isNaN(v)) fitWeightInput.value = Math.round(v * 0.453592);
+      fitWeightInput.placeholder = '60';
+      fitNextBtn0.disabled = !validateStep0();
+    });
+    $('nksw-weight-lb').addEventListener('click', () => {
+      if (weightUnit === 'lb') return;
+      const v = parseFloat(fitWeightInput.value);
+      weightUnit = 'lb';
+      $('nksw-weight-lb').classList.add('active'); $('nksw-weight-kg').classList.remove('active');
+      if (!isNaN(v)) fitWeightInput.value = Math.round(v / 0.453592);
+      fitWeightInput.placeholder = '130';
+      fitNextBtn0.disabled = !validateStep0();
+    });
+
+    // Step 0 → 1: prefill sliders from height/weight
+    function estimateMeasurements(hCm, wKg) {
+      const bmi = wKg / ((hCm / 100) ** 2);
+      const a   = bmi < 18.5 ? 0.97 : bmi < 25 ? 1.00 : bmi < 30 ? 1.03 : 1.06;
       return {
-        bust:     Math.round(h * c.bust * a),
-        waist:    Math.round(h * c.waist * a),
-        hip:      Math.round(h * c.hip * a),
-        shoulder: Math.round(h * c.shoulder),
+        bust:  Math.round(hCm * 0.530 * a),
+        waist: Math.round(hCm * 0.395 * a),
+        hip:   Math.round(hCm * 0.550 * a),
       };
     }
 
-    function matchSize(meas, sizes) {
-      if (!sizes || !Object.keys(sizes).length) return null;
-      const scores = {};
-      for (const [sz, ranges] of Object.entries(sizes)) {
-        let score = 0, checks = 0;
-        const chk = (val, range) => {
-          if (!range || range.length < 2) return;
-          const mid = (range[0] + range[1]) / 2;
-          const span = Math.max(range[1] - range[0], 4);
-          score += Math.max(0, 1 - Math.abs(val - mid) / span);
-          checks++;
-        };
-        chk(meas.bust, ranges.bust); chk(meas.waist, ranges.waist); chk(meas.hip, ranges.hip);
-        scores[sz] = checks > 0 ? score / checks : 0;
-      }
-      const [bestSize, bestScore] = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-      return { size: bestSize, confidence: bestScore > 0.75 ? 'high' : bestScore > 0.45 ? 'medium' : 'low' };
-    }
-
-    let selectedBiotype = null;
-
-    // Carrega perfil salvo
-    try {
-      const saved = JSON.parse(localStorage.getItem('_mf_profile') || 'null');
-      if (saved) {
-        if (saved.height) fitHeight.value = saved.height;
-        if (saved.weight) fitWeight.value = saved.weight;
-        if (saved.biotype) {
-          selectedBiotype = saved.biotype;
-          fitBiotypes.querySelector(`[data-biotype="${saved.biotype}"]`)?.classList.add('active');
-        }
-      }
-    } catch (_) {}
-
-    function updateCalcBtn() {
-      fitCalcBtn.disabled = !(fitHeight.value && fitWeight.value && selectedBiotype);
-    }
-
-    fitHeight.addEventListener('input', updateCalcBtn);
-    fitWeight.addEventListener('input', updateCalcBtn);
-    updateCalcBtn();
-
-    fitBiotypes.addEventListener('click', e => {
-      const btn = e.target.closest('.nksw-biotype-btn');
-      if (!btn) return;
-      fitBiotypes.querySelectorAll('.nksw-biotype-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedBiotype = btn.dataset.biotype;
-      updateCalcBtn();
+    fitNextBtn0.addEventListener('click', () => {
+      if (!validateStep0()) return;
+      const est = estimateMeasurements(getHeightCm(), getWeightKg());
+      sliderBust.value  = Math.max(+sliderBust.min,  Math.min(+sliderBust.max,  est.bust));
+      sliderWaist.value = Math.max(+sliderWaist.min, Math.min(+sliderWaist.max, est.waist));
+      sliderHip.value   = Math.max(+sliderHip.min,   Math.min(+sliderHip.max,   est.hip));
+      refreshAvatar();
+      try {
+        localStorage.setItem('_mf_h', getHeightCm().toFixed(1));
+        localStorage.setItem('_mf_w', getWeightKg().toFixed(1));
+      } catch (_) {}
+      goToStep(1);
     });
 
+    fitBackBtn1.addEventListener('click', () => goToStep(0));
+
+    // Step 1 → 2: calculate and show result
+    fitNextBtn1.addEventListener('click', async () => {
+      const bust  = Number(sliderBust.value);
+      const waist = Number(sliderWaist.value);
+      const hip   = Number(sliderHip.value);
+      const shoulder = Math.round(bust * 0.43);
+      const meas = { bust, waist, hip, shoulder };
+
+      try { localStorage.setItem('_mf_meas', JSON.stringify(meas)); } catch (_) {}
+
+      const productId = window.VTON_PRODUCT_ID || '';
+      let rec = null, altSizes = [];
+
+      if (productId) {
+        try {
+          const r = await fetch(`${apiUrl}/api/sizing?action=getProduct&clientKey=${encodeURIComponent(clientKey)}&productId=${encodeURIComponent(productId)}`);
+          const d = await r.json();
+          if (d.found && d.product?.sizes) {
+            const scores = {};
+            for (const [sz, ranges] of Object.entries(d.product.sizes)) {
+              let score = 0, checks = 0;
+              const chk = (val, range) => {
+                if (!range || range.length < 2) return;
+                const mid  = (range[0] + range[1]) / 2;
+                const span = Math.max(range[1] - range[0], 4);
+                score += Math.max(0, 1 - Math.abs(val - mid) / span);
+                checks++;
+              };
+              chk(bust, ranges.bust); chk(waist, ranges.waist); chk(hip, ranges.hip);
+              scores[sz] = checks > 0 ? score / checks : 0;
+            }
+            const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            if (sorted.length > 0) {
+              const [bestSz, bestSc] = sorted[0];
+              rec = { size: bestSz, confidence: bestSc > 0.75 ? 'high' : bestSc > 0.45 ? 'medium' : 'low' };
+              altSizes = sorted.slice(1, 3).map(([sz]) => sz);
+            }
+          }
+        } catch (_) {}
+      }
+
+      const confLabel = { high: 'Alta confiança', medium: 'Confiança média', low: 'Estimativa' };
+      fitResultWrap.innerHTML = rec
+        ? `<div class="nksw-fit-result-size-card">
+            <div>
+              <p class="nksw-fit-result-label">Tamanho recomendado</p>
+              <div class="nksw-fit-result-size">${rec.size}</div>
+            </div>
+            <span class="nksw-fit-conf-badge ${rec.confidence}">${confLabel[rec.confidence]}</span>
+          </div>
+          ${altSizes.length ? `<div class="nksw-fit-alt-sizes">
+            <span class="nksw-fit-alt-label">Pode servir também</span>
+            <div class="nksw-fit-alt-pills">${altSizes.map(s => `<span class="nksw-fit-alt-pill">${s}</span>`).join('')}</div>
+          </div>` : ''}
+          <div class="nksw-fit-measures-grid">
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Busto</span><span class="nksw-fit-measure-num">${meas.bust} cm</span></div>
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Cintura</span><span class="nksw-fit-measure-num">${meas.waist} cm</span></div>
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Quadril</span><span class="nksw-fit-measure-num">${meas.hip} cm</span></div>
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Ombro</span><span class="nksw-fit-measure-num">${meas.shoulder} cm</span></div>
+          </div>`
+        : `<div class="nksw-fit-no-table">
+            A loja ainda não cadastrou a tabela de medidas desta peça. Use suas medidas abaixo como referência.
+          </div>
+          <div class="nksw-fit-measures-grid">
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Busto</span><span class="nksw-fit-measure-num">${meas.bust} cm</span></div>
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Cintura</span><span class="nksw-fit-measure-num">${meas.waist} cm</span></div>
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Quadril</span><span class="nksw-fit-measure-num">${meas.hip} cm</span></div>
+            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Ombro</span><span class="nksw-fit-measure-num">${meas.shoulder} cm</span></div>
+          </div>`;
+
+      goToStep(2);
+
+      // Salva outcome em background
+      try {
+        const sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now();
+        fetch(`${apiUrl}/api/sizing`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'saveOutcome', clientKey, sessionId,
+            productId:       productId || null,
+            recommendedSize: rec?.size || null,
+            confidence:      rec?.confidence || null,
+            method:          rec ? 'matching' : 'anthropometric',
+            inputs:          { bust, waist, hip },
+          }),
+        }).catch(() => {});
+      } catch (_) {}
+    });
+
+    fitEditBtn.addEventListener('click', () => goToStep(1));
+
+    // Tabs
     tabTryon.addEventListener('click', () => {
       tabTryon.classList.add('active'); tabSizing.classList.remove('active');
       tryonPane.style.display = ''; sizingPane.classList.remove('active');
@@ -887,75 +1229,20 @@
     tabSizing.addEventListener('click', () => {
       tabSizing.classList.add('active'); tabTryon.classList.remove('active');
       tryonPane.style.display = 'none'; sizingPane.classList.add('active');
-    });
-
-    fitCalcBtn.addEventListener('click', async () => {
-      const h = Number(fitHeight.value);
-      const w = Number(fitWeight.value);
-      if (!h || !w || !selectedBiotype) return;
-
-      try { localStorage.setItem('_mf_profile', JSON.stringify({ height: h, weight: w, biotype: selectedBiotype })); } catch (_) {}
-
-      const meas = estimateMeasurements(h, w, selectedBiotype);
-      const productId = window.VTON_PRODUCT_ID || '';
-      let rec = null;
-
-      if (productId) {
-        try {
-          const r = await fetch(`${apiUrl}/api/sizing?action=getProduct&clientKey=${encodeURIComponent(clientKey)}&productId=${encodeURIComponent(productId)}`);
-          const d = await r.json();
-          if (d.found && d.product?.sizes) rec = matchSize(meas, d.product.sizes);
-        } catch (_) {}
-      }
-
-      const confLabel = { high: 'Alta confiança', medium: 'Confiança média', low: 'Estimativa' };
-      fitResult.style.display = '';
-      if (rec) {
-        fitResult.innerHTML = `
-          <div class="nksw-fit-size-row">
-            <div>
-              <div class="nksw-fit-size-label">Tamanho recomendado</div>
-              <div class="nksw-fit-size-value">${rec.size}</div>
-            </div>
-            <span class="nksw-fit-badge ${rec.confidence}">${confLabel[rec.confidence] || rec.confidence}</span>
-          </div>
-          <div class="nksw-fit-measures">
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Busto</span><span class="nksw-fit-measure-val">${meas.bust} cm</span></div>
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Cintura</span><span class="nksw-fit-measure-val">${meas.waist} cm</span></div>
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Quadril</span><span class="nksw-fit-measure-val">${meas.hip} cm</span></div>
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Ombro</span><span class="nksw-fit-measure-val">${meas.shoulder} cm</span></div>
-          </div>`;
-      } else {
-        fitResult.innerHTML = `
-          <div class="nksw-fit-size-row">
-            <div>
-              <div class="nksw-fit-size-label">Suas medidas estimadas</div>
-            </div>
-          </div>
-          <div class="nksw-fit-measures">
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Busto</span><span class="nksw-fit-measure-val">${meas.bust} cm</span></div>
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Cintura</span><span class="nksw-fit-measure-val">${meas.waist} cm</span></div>
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Quadril</span><span class="nksw-fit-measure-val">${meas.hip} cm</span></div>
-            <div class="nksw-fit-measure"><span class="nksw-fit-measure-label">Ombro</span><span class="nksw-fit-measure-val">${meas.shoulder} cm</span></div>
-          </div>
-          <p class="nksw-fit-note">A loja ainda não cadastrou a tabela de medidas desta peça. Use as medidas acima como referência.</p>`;
-      }
-
-      // Salva outcome em background
+      // Restaura perfil salvo
       try {
-        const sessionId = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now());
-        fetch(`${apiUrl}/api/sizing`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'saveOutcome', clientKey, sessionId,
-            productId:       productId || null,
-            recommendedSize: rec?.size || null,
-            confidence:      rec?.confidence || null,
-            method:          rec ? 'matching' : 'anthropometric',
-            inputs:          { height: h, weight: w, biotype: selectedBiotype },
-          }),
-        }).catch(() => {});
+        const savedH = localStorage.getItem('_mf_h');
+        const savedW = localStorage.getItem('_mf_w');
+        const savedM = JSON.parse(localStorage.getItem('_mf_meas') || 'null');
+        if (savedH && !fitHeightInput.value) fitHeightInput.value = parseFloat(savedH).toFixed(0);
+        if (savedW && !fitWeightInput.value) fitWeightInput.value = parseFloat(savedW).toFixed(0);
+        if (savedM) {
+          if (savedM.bust  >= +sliderBust.min  && savedM.bust  <= +sliderBust.max)  sliderBust.value  = savedM.bust;
+          if (savedM.waist >= +sliderWaist.min && savedM.waist <= +sliderWaist.max) sliderWaist.value = savedM.waist;
+          if (savedM.hip   >= +sliderHip.min   && savedM.hip   <= +sliderHip.max)   sliderHip.value   = savedM.hip;
+          refreshAvatar();
+        }
+        fitNextBtn0.disabled = !validateStep0();
       } catch (_) {}
     });
 
