@@ -1250,50 +1250,56 @@
             <button class="nksw-fit-sz-arrow" id="nksw-fit-sz-next" type="button">›</button>
           </div>
           <div class="nksw-fit-mannequin-wrap">
-            <svg viewBox="0 0 100 240" width="100" height="210" style="display:block;position:absolute;left:0;top:0">
+            <svg viewBox="0 0 100 240" width="100" height="210" overflow="visible" style="display:block;position:absolute;left:0;top:0">
               <defs>
                 <radialGradient id="mf-body-g" cx="35%" cy="28%" r="65%" gradientUnits="objectBoundingBox">
-                  <stop offset="0%"   stop-color="#fde8ce"/>
-                  <stop offset="55%"  stop-color="#e8b87c"/>
-                  <stop offset="100%" stop-color="#b8763c"/>
+                  <stop offset="0%"   stop-color="#ffffff"/>
+                  <stop offset="60%"  stop-color="#eeeeee"/>
+                  <stop offset="100%" stop-color="#cccccc"/>
                 </radialGradient>
                 <radialGradient id="mf-head-g" cx="38%" cy="32%" r="58%">
-                  <stop offset="0%"   stop-color="#fde8ce"/>
-                  <stop offset="100%" stop-color="#c8864c"/>
+                  <stop offset="0%"   stop-color="#ffffff"/>
+                  <stop offset="100%" stop-color="#d0d0d0"/>
                 </radialGradient>
                 <radialGradient id="mf-band-hi" cx="50%" cy="50%" r="55%">
-                  <stop offset="0%"   stop-color="#fff" stop-opacity="0.35"/>
-                  <stop offset="60%"  stop-color="#fff" stop-opacity="0"/>
-                  <stop offset="100%" stop-color="#000" stop-opacity="0.3"/>
+                  <stop offset="0%"   stop-color="#fff" stop-opacity="0.40"/>
+                  <stop offset="55%"  stop-color="#fff" stop-opacity="0"/>
+                  <stop offset="100%" stop-color="#000" stop-opacity="0.22"/>
                 </radialGradient>
+                <filter id="mf-shadow" x="-25%" y="-5%" width="160%" height="120%">
+                  <feDropShadow dx="2" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.18"/>
+                </filter>
                 <clipPath id="mf-clip">
                   <path d="M44,32 L56,32 C62,34 72,40 80,48 C84,54 86,62 84,68 C82,72 80,76 80,80 C78,90 74,100 72,112 C72,122 76,134 80,142 C80,152 80,160 78,168 C76,176 74,186 72,200 C71,212 71,226 71,240 L58,240 C58,228 58,216 58,204 C57,192 56,182 55,174 C53,166 51,162 50,158 C49,162 47,166 45,174 C44,182 43,192 42,204 C42,216 42,228 42,240 L29,240 C29,226 29,212 28,200 C26,186 24,176 22,168 C20,160 20,152 20,142 C24,134 28,122 28,112 C26,100 22,90 20,80 C18,76 16,72 14,68 C12,62 14,54 20,48 C28,40 38,34 44,32 Z"/>
                 </clipPath>
               </defs>
               <!-- Ground shadow -->
-              <ellipse cx="50" cy="238" rx="24" ry="4" fill="rgba(0,0,0,0.10)"/>
-              <!-- Hair -->
-              <ellipse cx="50" cy="14" rx="17" ry="14" fill="#5c3320"/>
-              <ellipse cx="34" cy="22" rx="7"  ry="14" fill="#5c3320"/>
-              <ellipse cx="66" cy="22" rx="7"  ry="14" fill="#5c3320"/>
-              <!-- Body fill -->
-              <path d="M44,32 L56,32 C62,34 72,40 80,48 C84,54 86,62 84,68 C82,72 80,76 80,80 C78,90 74,100 72,112 C72,122 76,134 80,142 C80,152 80,160 78,168 C76,176 74,186 72,200 C71,212 71,226 71,240 L58,240 C58,228 58,216 58,204 C57,192 56,182 55,174 C53,166 51,162 50,158 C49,162 47,166 45,174 C44,182 43,192 42,204 C42,216 42,228 42,240 L29,240 C29,226 29,212 28,200 C26,186 24,176 22,168 C20,160 20,152 20,142 C24,134 28,122 28,112 C26,100 22,90 20,80 C18,76 16,72 14,68 C12,62 14,54 20,48 C28,40 38,34 44,32 Z" fill="url(#mf-body-g)"/>
-              <!-- Head -->
-              <circle cx="50" cy="20" r="15" fill="url(#mf-head-g)"/>
+              <ellipse cx="50" cy="238" rx="22" ry="4" fill="rgba(0,0,0,0.10)"/>
+              <!-- Figure with drop shadow -->
+              <g filter="url(#mf-shadow)">
+                <!-- Left arm -->
+                <ellipse cx="9" cy="118" rx="7" ry="64" fill="url(#mf-body-g)"/>
+                <!-- Right arm -->
+                <ellipse cx="91" cy="118" rx="7" ry="64" fill="url(#mf-body-g)"/>
+                <!-- Body fill -->
+                <path d="M44,32 L56,32 C62,34 72,40 80,48 C84,54 86,62 84,68 C82,72 80,76 80,80 C78,90 74,100 72,112 C72,122 76,134 80,142 C80,152 80,160 78,168 C76,176 74,186 72,200 C71,212 71,226 71,240 L58,240 C58,228 58,216 58,204 C57,192 56,182 55,174 C53,166 51,162 50,158 C49,162 47,166 45,174 C44,182 43,192 42,204 C42,216 42,228 42,240 L29,240 C29,226 29,212 28,200 C26,186 24,176 22,168 C20,160 20,152 20,142 C24,134 28,122 28,112 C26,100 22,90 20,80 C18,76 16,72 14,68 C12,62 14,54 20,48 C28,40 38,34 44,32 Z" fill="url(#mf-body-g)"/>
+                <!-- Head -->
+                <circle cx="50" cy="20" r="15" fill="url(#mf-head-g)"/>
+              </g>
               <!-- Fit bands (clipped to body, then highlight overlay) -->
               <g clip-path="url(#mf-clip)">
-                <ellipse id="nksw-fit-band-bust"  cx="50" cy="80"  rx="32" ry="10" fill="#22c55e" fill-opacity="0.70"/>
-                <ellipse id="nksw-fit-band-waist" cx="50" cy="116" rx="24" ry="9"  fill="#22c55e" fill-opacity="0.70"/>
-                <ellipse id="nksw-fit-band-hip"   cx="50" cy="148" rx="32" ry="10" fill="#22c55e" fill-opacity="0.70"/>
+                <ellipse id="nksw-fit-band-bust"  cx="50" cy="80"  rx="30" ry="7"  fill="#22c55e" fill-opacity="0.80"/>
+                <ellipse id="nksw-fit-band-waist" cx="50" cy="116" rx="22" ry="6"  fill="#22c55e" fill-opacity="0.80"/>
+                <ellipse id="nksw-fit-band-hip"   cx="50" cy="148" rx="30" ry="7"  fill="#22c55e" fill-opacity="0.80"/>
                 <!-- 3D shading overlay per band -->
-                <ellipse cx="50" cy="80"  rx="32" ry="10" fill="url(#mf-band-hi)"/>
-                <ellipse cx="50" cy="116" rx="24" ry="9"  fill="url(#mf-band-hi)"/>
-                <ellipse cx="50" cy="148" rx="32" ry="10" fill="url(#mf-band-hi)"/>
+                <ellipse cx="50" cy="80"  rx="30" ry="7"  fill="url(#mf-band-hi)"/>
+                <ellipse cx="50" cy="116" rx="22" ry="6"  fill="url(#mf-band-hi)"/>
+                <ellipse cx="50" cy="148" rx="30" ry="7"  fill="url(#mf-band-hi)"/>
               </g>
               <!-- Connector lines to labels -->
-              <line x1="82" y1="80"  x2="100" y2="80"  stroke="#ccc" stroke-width="1"/>
-              <line x1="74" y1="116" x2="100" y2="116" stroke="#ccc" stroke-width="1"/>
-              <line x1="82" y1="148" x2="100" y2="148" stroke="#ccc" stroke-width="1"/>
+              <line x1="80" y1="80"  x2="100" y2="80"  stroke="#ddd" stroke-width="1"/>
+              <line x1="72" y1="116" x2="100" y2="116" stroke="#ddd" stroke-width="1"/>
+              <line x1="80" y1="148" x2="100" y2="148" stroke="#ddd" stroke-width="1"/>
             </svg>
             <div class="nksw-fit-zone-row" style="top:58px">
               <span id="nksw-fit-zdot-bust" class="nksw-fit-zone-dot"></span>
