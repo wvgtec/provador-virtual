@@ -444,10 +444,10 @@
     }
     .nksw-fit-sz-pill.active { background: #111; border-color: #111; color: #fff; min-width: 40px; font-size: 14px; }
     .nksw-fit-sz-pill.adj    { color: #555; border-color: #ccc; }
-    .nksw-fit-mannequin-wrap { position: relative; height: 180px; margin: 2px 0; }
+    .nksw-fit-mannequin-wrap { position: relative; height: 210px; margin: 2px 0; }
     .nksw-fit-zone-row {
-      position: absolute; left: 97px;
-      display: flex; align-items: center; gap: 5px;
+      position: absolute; left: 112px;
+      display: flex; align-items: center; gap: 6px;
     }
     .nksw-fit-zone-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .nksw-fit-zone-name { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 1px; }
@@ -1250,26 +1250,60 @@
             <button class="nksw-fit-sz-arrow" id="nksw-fit-sz-next" type="button">›</button>
           </div>
           <div class="nksw-fit-mannequin-wrap">
-            <svg viewBox="0 0 100 210" width="90" height="180" style="display:block;position:absolute;left:0;top:0">
-              <path d="M50,30 L42,30 C39,32 37,36 37,42 C29,46 21,50 17,56 C15,62 17,68 19,74 C21,82 26,92 29,100 C27,108 19,118 17,124 C17,132 21,142 25,150 C27,162 29,174 31,190 C32,198 33,204 33,210 L44,210 C46,180 50,162 50,148 C50,162 54,180 56,210 L67,210 C67,204 68,198 69,190 C71,174 73,162 75,150 C79,142 83,132 83,124 C81,118 73,108 71,100 C74,92 79,82 81,74 C83,68 85,62 83,56 C79,50 71,46 63,42 C63,36 61,32 58,30 Z" fill="#ede0d4"/>
-              <circle cx="50" cy="18" r="12" fill="#ede0d4"/>
-              <ellipse cx="50" cy="11" rx="13" ry="8" fill="#7c5c46"/>
-              <ellipse id="nksw-fit-band-bust"  cx="50" cy="74"  rx="27" ry="7"  fill="#22c55e" fill-opacity="0.6"/>
-              <ellipse id="nksw-fit-band-waist" cx="50" cy="100" rx="20" ry="6"  fill="#22c55e" fill-opacity="0.6"/>
-              <ellipse id="nksw-fit-band-hip"   cx="50" cy="124" rx="30" ry="7"  fill="#22c55e" fill-opacity="0.6"/>
-              <line x1="77" y1="74"  x2="92" y2="74"  stroke="#ccc" stroke-width="1"/>
-              <line x1="70" y1="100" x2="92" y2="100" stroke="#ccc" stroke-width="1"/>
-              <line x1="80" y1="124" x2="92" y2="124" stroke="#ccc" stroke-width="1"/>
+            <svg viewBox="0 0 100 240" width="100" height="210" style="display:block;position:absolute;left:0;top:0">
+              <defs>
+                <radialGradient id="mf-body-g" cx="35%" cy="28%" r="65%" gradientUnits="objectBoundingBox">
+                  <stop offset="0%"   stop-color="#fde8ce"/>
+                  <stop offset="55%"  stop-color="#e8b87c"/>
+                  <stop offset="100%" stop-color="#b8763c"/>
+                </radialGradient>
+                <radialGradient id="mf-head-g" cx="38%" cy="32%" r="58%">
+                  <stop offset="0%"   stop-color="#fde8ce"/>
+                  <stop offset="100%" stop-color="#c8864c"/>
+                </radialGradient>
+                <radialGradient id="mf-band-hi" cx="50%" cy="50%" r="55%">
+                  <stop offset="0%"   stop-color="#fff" stop-opacity="0.35"/>
+                  <stop offset="60%"  stop-color="#fff" stop-opacity="0"/>
+                  <stop offset="100%" stop-color="#000" stop-opacity="0.3"/>
+                </radialGradient>
+                <clipPath id="mf-clip">
+                  <path d="M44,32 L56,32 C62,34 72,40 80,48 C84,54 86,62 84,68 C82,72 80,76 80,80 C78,90 74,100 72,112 C72,122 76,134 80,142 C80,152 80,160 78,168 C76,176 74,186 72,200 C71,212 71,226 71,240 L58,240 C58,228 58,216 58,204 C57,192 56,182 55,174 C53,166 51,162 50,158 C49,162 47,166 45,174 C44,182 43,192 42,204 C42,216 42,228 42,240 L29,240 C29,226 29,212 28,200 C26,186 24,176 22,168 C20,160 20,152 20,142 C24,134 28,122 28,112 C26,100 22,90 20,80 C18,76 16,72 14,68 C12,62 14,54 20,48 C28,40 38,34 44,32 Z"/>
+                </clipPath>
+              </defs>
+              <!-- Ground shadow -->
+              <ellipse cx="50" cy="238" rx="24" ry="4" fill="rgba(0,0,0,0.10)"/>
+              <!-- Hair -->
+              <ellipse cx="50" cy="14" rx="17" ry="14" fill="#5c3320"/>
+              <ellipse cx="34" cy="22" rx="7"  ry="14" fill="#5c3320"/>
+              <ellipse cx="66" cy="22" rx="7"  ry="14" fill="#5c3320"/>
+              <!-- Body fill -->
+              <path d="M44,32 L56,32 C62,34 72,40 80,48 C84,54 86,62 84,68 C82,72 80,76 80,80 C78,90 74,100 72,112 C72,122 76,134 80,142 C80,152 80,160 78,168 C76,176 74,186 72,200 C71,212 71,226 71,240 L58,240 C58,228 58,216 58,204 C57,192 56,182 55,174 C53,166 51,162 50,158 C49,162 47,166 45,174 C44,182 43,192 42,204 C42,216 42,228 42,240 L29,240 C29,226 29,212 28,200 C26,186 24,176 22,168 C20,160 20,152 20,142 C24,134 28,122 28,112 C26,100 22,90 20,80 C18,76 16,72 14,68 C12,62 14,54 20,48 C28,40 38,34 44,32 Z" fill="url(#mf-body-g)"/>
+              <!-- Head -->
+              <circle cx="50" cy="20" r="15" fill="url(#mf-head-g)"/>
+              <!-- Fit bands (clipped to body, then highlight overlay) -->
+              <g clip-path="url(#mf-clip)">
+                <ellipse id="nksw-fit-band-bust"  cx="50" cy="80"  rx="32" ry="10" fill="#22c55e" fill-opacity="0.70"/>
+                <ellipse id="nksw-fit-band-waist" cx="50" cy="116" rx="24" ry="9"  fill="#22c55e" fill-opacity="0.70"/>
+                <ellipse id="nksw-fit-band-hip"   cx="50" cy="148" rx="32" ry="10" fill="#22c55e" fill-opacity="0.70"/>
+                <!-- 3D shading overlay per band -->
+                <ellipse cx="50" cy="80"  rx="32" ry="10" fill="url(#mf-band-hi)"/>
+                <ellipse cx="50" cy="116" rx="24" ry="9"  fill="url(#mf-band-hi)"/>
+                <ellipse cx="50" cy="148" rx="32" ry="10" fill="url(#mf-band-hi)"/>
+              </g>
+              <!-- Connector lines to labels -->
+              <line x1="82" y1="80"  x2="100" y2="80"  stroke="#ccc" stroke-width="1"/>
+              <line x1="74" y1="116" x2="100" y2="116" stroke="#ccc" stroke-width="1"/>
+              <line x1="82" y1="148" x2="100" y2="148" stroke="#ccc" stroke-width="1"/>
             </svg>
-            <div class="nksw-fit-zone-row" style="top:50px">
+            <div class="nksw-fit-zone-row" style="top:58px">
               <span id="nksw-fit-zdot-bust" class="nksw-fit-zone-dot"></span>
               <div><span class="nksw-fit-zone-name">Busto</span><span id="nksw-fit-zlbl-bust" class="nksw-fit-zone-label">—</span></div>
             </div>
-            <div class="nksw-fit-zone-row" style="top:73px">
+            <div class="nksw-fit-zone-row" style="top:91px">
               <span id="nksw-fit-zdot-waist" class="nksw-fit-zone-dot"></span>
               <div><span class="nksw-fit-zone-name">Cintura</span><span id="nksw-fit-zlbl-waist" class="nksw-fit-zone-label">—</span></div>
             </div>
-            <div class="nksw-fit-zone-row" style="top:93px">
+            <div class="nksw-fit-zone-row" style="top:122px">
               <span id="nksw-fit-zdot-hip" class="nksw-fit-zone-dot"></span>
               <div><span class="nksw-fit-zone-name">Quadril</span><span id="nksw-fit-zlbl-hip" class="nksw-fit-zone-label">—</span></div>
             </div>
