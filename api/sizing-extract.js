@@ -9,8 +9,7 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-const GCP_PROJECT  = 'provador-virtual-494213';
-const GEMINI_URL   = `https://us-central1-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT}/locations/us-central1/publishers/google/models/gemini-1.5-flash-001:generateContent`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
 
 function isValidClientKey(key) {
   return typeof key === 'string' && /^pvk_[a-f0-9]{32}$/.test(key);
@@ -103,9 +102,11 @@ Regras: tamanhos podem ser PP/P/M/G/GG/XGG ou numéricos (34-48).
 Se a tabela estiver em polegadas, converter para cm (× 2,54).
 Retornar APENAS o JSON, sem markdown.`;
 
-async function callGemini(accessToken, textContent, imageBase64, imageMimeType) {
-  const parts = [];
+async function callGemini(textContent, imageBase64, imageMimeType) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY não configurado nas variáveis de ambiente.');
 
+  const parts = [];
   if (imageBase64) {
     parts.push({ inlineData: { mimeType: imageMimeType || 'image/jpeg', data: imageBase64 } });
   } else {
@@ -113,9 +114,9 @@ async function callGemini(accessToken, textContent, imageBase64, imageMimeType) 
   }
   parts.push({ text: EXTRACTION_PROMPT });
 
-  const res = await fetch(GEMINI_URL, {
+  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method:  'POST',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents:         [{ role: 'user', parts }],
       generationConfig: { temperature: 0.1, responseMimeType: 'application/json' },
@@ -158,8 +159,6 @@ export default async function handler(req, res) {
   if (!productId) return res.status(400).json({ error: 'Não foi possível determinar o productId.' });
 
   try {
-    const accessToken = await getGoogleAccessToken();
-
     let textContent = null;
     let imgData     = imageBase64 || null;
 
@@ -175,7 +174,7 @@ export default async function handler(req, res) {
     // Remove prefixo data URI se presente
     if (imgData && imgData.includes(',')) imgData = imgData.split(',')[1];
 
-    const extracted = await callGemini(accessToken, textContent, imgData, imageMimeType);
+    const extracted = await callGemini(textContent, imgData, imageMimeType);
 
     const now     = new Date().toISOString();
     const product = {
