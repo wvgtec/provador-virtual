@@ -119,7 +119,7 @@ async function callGemini(textContent, imageBase64, imageMimeType) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents:         [{ role: 'user', parts }],
-      generationConfig: { temperature: 0.1, responseMimeType: 'application/json' },
+      generationConfig: { temperature: 0.1 },
     }),
   });
 
@@ -129,8 +129,10 @@ async function callGemini(textContent, imageBase64, imageMimeType) {
   }
 
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  let text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Gemini não retornou conteúdo: ' + JSON.stringify(data));
+  // Remove markdown code fences se presentes
+  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
   return JSON.parse(text);
 }
 
