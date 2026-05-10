@@ -1252,54 +1252,58 @@
           <div class="nksw-fit-mannequin-wrap">
             <svg viewBox="0 0 100 240" width="100" height="210" overflow="visible" style="display:block;position:absolute;left:0;top:0">
               <defs>
-                <radialGradient id="mf-body-g" cx="35%" cy="28%" r="65%" gradientUnits="objectBoundingBox">
-                  <stop offset="0%"   stop-color="#ffffff"/>
-                  <stop offset="60%"  stop-color="#eeeeee"/>
-                  <stop offset="100%" stop-color="#cccccc"/>
-                </radialGradient>
-                <radialGradient id="mf-head-g" cx="38%" cy="32%" r="58%">
-                  <stop offset="0%"   stop-color="#ffffff"/>
-                  <stop offset="100%" stop-color="#d0d0d0"/>
+                <!-- Directional shading: light from top-left to bottom-right -->
+                <linearGradient id="mf-body-g" x1="18" y1="10" x2="82" y2="230" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%"   stop-color="#f6f6f6"/>
+                  <stop offset="45%"  stop-color="#e2e2e2"/>
+                  <stop offset="100%" stop-color="#c4c4c4"/>
+                </linearGradient>
+                <!-- Specular highlight centered upper-left -->
+                <radialGradient id="mf-spec" cx="35" cy="30" r="80" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.50"/>
+                  <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
                 </radialGradient>
                 <radialGradient id="mf-band-hi" cx="50%" cy="50%" r="55%">
                   <stop offset="0%"   stop-color="#fff" stop-opacity="0.40"/>
                   <stop offset="55%"  stop-color="#fff" stop-opacity="0"/>
                   <stop offset="100%" stop-color="#000" stop-opacity="0.22"/>
                 </radialGradient>
-                <filter id="mf-shadow" x="-25%" y="-5%" width="160%" height="120%">
-                  <feDropShadow dx="2" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.18"/>
+                <filter id="mf-shadow" x="-28%" y="-5%" width="170%" height="120%">
+                  <feDropShadow dx="2" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.16"/>
                 </filter>
+                <!-- Clip to torso+legs only (not arms) -->
                 <clipPath id="mf-clip">
-                  <path d="M44,32 L56,32 C62,34 72,40 80,48 C84,54 86,62 84,68 C82,72 80,76 80,80 C78,90 74,100 72,112 C72,122 76,134 80,142 C80,152 80,160 78,168 C76,176 74,186 72,200 C71,212 71,226 71,240 L58,240 C58,228 58,216 58,204 C57,192 56,182 55,174 C53,166 51,162 50,158 C49,162 47,166 45,174 C44,182 43,192 42,204 C42,216 42,228 42,240 L29,240 C29,226 29,212 28,200 C26,186 24,176 22,168 C20,160 20,152 20,142 C24,134 28,122 28,112 C26,100 22,90 20,80 C18,76 16,72 14,68 C12,62 14,54 20,48 C28,40 38,34 44,32 Z"/>
+                  <path d="M43,28 C46,24 54,24 57,28 C62,29 74,31 78,38 C80,44 80,52 80,60 C80,68 82,76 82,82 C82,94 72,108 70,118 C68,128 82,138 84,150 C86,160 82,164 78,165 C72,166 62,163 60,163 C62,167 66,180 67,196 C67,212 66,222 66,228 L68,235 L32,235 L34,228 C34,222 33,212 33,196 C34,180 38,167 40,163 C38,163 28,166 22,165 C18,164 14,160 16,150 C18,138 32,128 30,118 C28,108 18,94 18,82 C18,76 20,68 20,60 C20,52 20,44 22,38 C26,31 38,29 43,28 Z"/>
                 </clipPath>
               </defs>
               <!-- Ground shadow -->
-              <ellipse cx="50" cy="238" rx="22" ry="4" fill="rgba(0,0,0,0.10)"/>
-              <!-- Figure with drop shadow -->
+              <ellipse cx="50" cy="237" rx="20" ry="3" fill="rgba(0,0,0,0.12)"/>
               <g filter="url(#mf-shadow)">
-                <!-- Left arm -->
-                <ellipse cx="9" cy="118" rx="7" ry="64" fill="url(#mf-body-g)"/>
+                <!-- Left arm (tapered, separate from torso) -->
+                <path d="M16,40 C14,46 12,58 11,74 C10,92 10,110 11,128 C12,140 13,150 14,158 L8,158 C7,150 6,140 5,128 C4,110 4,92 5,74 C6,58 8,46 10,40 Z" fill="url(#mf-body-g)"/>
                 <!-- Right arm -->
-                <ellipse cx="91" cy="118" rx="7" ry="64" fill="url(#mf-body-g)"/>
-                <!-- Body fill -->
-                <path d="M44,32 L56,32 C62,34 72,40 80,48 C84,54 86,62 84,68 C82,72 80,76 80,80 C78,90 74,100 72,112 C72,122 76,134 80,142 C80,152 80,160 78,168 C76,176 74,186 72,200 C71,212 71,226 71,240 L58,240 C58,228 58,216 58,204 C57,192 56,182 55,174 C53,166 51,162 50,158 C49,162 47,166 45,174 C44,182 43,192 42,204 C42,216 42,228 42,240 L29,240 C29,226 29,212 28,200 C26,186 24,176 22,168 C20,160 20,152 20,142 C24,134 28,122 28,112 C26,100 22,90 20,80 C18,76 16,72 14,68 C12,62 14,54 20,48 C28,40 38,34 44,32 Z" fill="url(#mf-body-g)"/>
+                <path d="M84,40 C86,46 88,58 89,74 C90,92 90,110 89,128 C88,140 87,150 86,158 L92,158 C93,150 94,140 95,128 C96,110 96,92 95,74 C94,58 92,46 90,40 Z" fill="url(#mf-body-g)"/>
+                <!-- Body: shoulders → bust → waist → hip → legs, with feminine curves -->
+                <path d="M43,28 C46,24 54,24 57,28 C62,29 74,31 78,38 C80,44 80,52 80,60 C80,68 82,76 82,82 C82,94 72,108 70,118 C68,128 82,138 84,150 C86,160 82,164 78,165 C72,166 62,163 60,163 C62,167 66,180 67,196 C67,212 66,222 66,228 L68,235 L32,235 L34,228 C34,222 33,212 33,196 C34,180 38,167 40,163 C38,163 28,166 22,165 C18,164 14,160 16,150 C18,138 32,128 30,118 C28,108 18,94 18,82 C18,76 20,68 20,60 C20,52 20,44 22,38 C26,31 38,29 43,28 Z" fill="url(#mf-body-g)"/>
+                <!-- Specular overlay on body -->
+                <path d="M43,28 C46,24 54,24 57,28 C62,29 74,31 78,38 C80,44 80,52 80,60 C80,68 82,76 82,82 C82,94 72,108 70,118 C68,128 82,138 84,150 C86,160 82,164 78,165 C72,166 62,163 60,163 C62,167 66,180 67,196 C67,212 66,222 66,228 L68,235 L32,235 L34,228 C34,222 33,212 33,196 C34,180 38,167 40,163 C38,163 28,166 22,165 C18,164 14,160 16,150 C18,138 32,128 30,118 C28,108 18,94 18,82 C18,76 20,68 20,60 C20,52 20,44 22,38 C26,31 38,29 43,28 Z" fill="url(#mf-spec)"/>
                 <!-- Head -->
-                <circle cx="50" cy="20" r="15" fill="url(#mf-head-g)"/>
+                <circle cx="50" cy="15" r="13" fill="url(#mf-body-g)"/>
+                <circle cx="50" cy="15" r="13" fill="url(#mf-spec)"/>
               </g>
-              <!-- Fit bands (clipped to body, then highlight overlay) -->
+              <!-- Fit bands (clipped to torso) -->
               <g clip-path="url(#mf-clip)">
                 <ellipse id="nksw-fit-band-bust"  cx="50" cy="80"  rx="30" ry="7"  fill="#22c55e" fill-opacity="0.80"/>
-                <ellipse id="nksw-fit-band-waist" cx="50" cy="116" rx="22" ry="6"  fill="#22c55e" fill-opacity="0.80"/>
+                <ellipse id="nksw-fit-band-waist" cx="50" cy="116" rx="18" ry="6"  fill="#22c55e" fill-opacity="0.80"/>
                 <ellipse id="nksw-fit-band-hip"   cx="50" cy="148" rx="30" ry="7"  fill="#22c55e" fill-opacity="0.80"/>
-                <!-- 3D shading overlay per band -->
                 <ellipse cx="50" cy="80"  rx="30" ry="7"  fill="url(#mf-band-hi)"/>
-                <ellipse cx="50" cy="116" rx="22" ry="6"  fill="url(#mf-band-hi)"/>
+                <ellipse cx="50" cy="116" rx="18" ry="6"  fill="url(#mf-band-hi)"/>
                 <ellipse cx="50" cy="148" rx="30" ry="7"  fill="url(#mf-band-hi)"/>
               </g>
-              <!-- Connector lines to labels -->
-              <line x1="80" y1="80"  x2="100" y2="80"  stroke="#ddd" stroke-width="1"/>
-              <line x1="72" y1="116" x2="100" y2="116" stroke="#ddd" stroke-width="1"/>
-              <line x1="80" y1="148" x2="100" y2="148" stroke="#ddd" stroke-width="1"/>
+              <!-- Connector lines bridging SVG edge to labels at 112px -->
+              <line x1="80" y1="80"  x2="114" y2="80"  stroke="#ddd" stroke-width="1"/>
+              <line x1="70" y1="116" x2="114" y2="116" stroke="#ddd" stroke-width="1"/>
+              <line x1="82" y1="148" x2="114" y2="148" stroke="#ddd" stroke-width="1"/>
             </svg>
             <div class="nksw-fit-zone-row" style="top:58px">
               <span id="nksw-fit-zdot-bust" class="nksw-fit-zone-dot"></span>
