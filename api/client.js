@@ -286,6 +286,114 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
+    // ─── MIRAGE FIT — configuração ───────────────────────────────────────────
+
+    if (action === 'getSizingConfig') {
+      const raw = await redis.get(`fit:cfg:${clientKey}`);
+      const cfg = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : { sizingEnabled: false, defaultUnit: 'cm', extractionCount: 0 };
+      return res.json({ ok: true, config: cfg });
+    }
+
+    if (action === 'saveSizingConfig') {
+      const { sizingEnabled, defaultUnit } = params;
+      const raw = await redis.get(`fit:cfg:${clientKey}`);
+      const current = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : { extractionCount: 0 };
+      const cfg = {
+        ...current,
+        sizingEnabled: sizingEnabled !== undefined ? Boolean(sizingEnabled) : current.sizingEnabled,
+        defaultUnit:   ['cm', 'in'].includes(defaultUnit) ? defaultUnit : (current.defaultUnit || 'cm'),
+      };
+      await redis.set(`fit:cfg:${clientKey}`, JSON.stringify(cfg));
+      return res.json({ ok: true, config: cfg });
+    }
+
+    // ─── MIRAGE FIT — produtos ────────────────────────────────────────────────
+
+    if (action === 'listSizingProducts') {
+      const page  = Math.max(1, Number(params.page)  || 1);
+      const limit = Math.min(100, Number(params.limit) || 20);
+      const total = await redis.zcard(`fit:products:${clientKey}`);
+      if (!total) return res.json({ ok: true, products: [], total: 0 });
+      const start      = (page - 1) * limit;
+      const productIds = await redis.zrange(`fit:products:${clientKey}`, start, start + limit - 1, { rev: true });
+      if (!productIds?.length) return res.json({ ok: true, products: [], total });
+      const raws    = await Promise.all(productIds.map(id => redis.get(`fit:product:${clientKey}:${id}`)));
+      const products = raws.map(r => r ? (typeof r === 'string' ? JSON.parse(r) : r) : null).filter(Boolean);
+      return res.json({ ok: true, products, total, page, limit });
+    }
+
+    if (action === 'getSizingProduct') {
+      const { productId } = params;
+      if (!productId) return res.status(400).json({ error: 'productId é obrigatório.' });
+      const raw = await redis.get(`fit:product:${clientKey}:${productId}`);
+      if (!raw) return res.json({ ok: true, found: false });
+      return res.json({ ok: true, found: true, product: typeof raw === 'string' ? JSON.parse(raw) : raw });
+    }
+
+    if (action === 'saveSizingProduct') {
+      const { productId, productName, productUrl, sizes, unit, notes, confidence } = params;
+      if (!productId) return res.status(400).json({ error: 'productId é obrigatório.' });
+      if (!sizes || typeof sizes !== 'object') return res.status(400).json({ error: 'sizes é obrigatório.' });
+      const now     = new Date().toISOString();
+      const existing = await redis.get(`fit:product:${clientKey}:${productId}`);
+      const current  = existing ? (typeof existing === 'string' ? JSON.parse(existing) : existing) : {};
+      const product  = {
+        ...current,
+        productId,
+        productName:  productName  ?? current.productName  ?? null,
+        productUrl:   productUrl   ?? current.productUrl   ?? null,
+        updatedAt:    now,
+        createdAt:    current.createdAt || now,
+        source:       current.source    || 'manual',
+        confidence:   confidence        || current.confidence || 'medium',
+        sizes,
+        unit:         unit || current.unit || 'cm',
+        notes:        notes ?? current.notes ?? null,
+      };
+      await Promise.all([
+        redis.set(`fit:product:${clientKey}:${productId}`, JSON.stringify(product)),
+        redis.zadd(`fit:products:${clientKey}`, { score: Date.now(), member: productId }),
+      ]);
+      return res.json({ ok: true, product });
+    }
+
+    if (action === 'deleteSizingProduct') {
+      const { productId } = params;
+      if (!productId) return res.status(400).json({ error: 'productId é obrigatório.' });
+      await Promise.all([
+        redis.del(`fit:product:${clientKey}:${productId}`),
+        redis.zrem(`fit:products:${clientKey}`, productId),
+      ]);
+      return res.json({ ok: true });
+    }
+
+    if (action === 'importSizingProducts') {
+      const { products } = params;
+      if (!Array.isArray(products) || products.length === 0) return res.status(400).json({ error: 'products deve ser um array não vazio.' });
+      if (products.length > 200) return res.status(400).json({ error: 'Máximo de 200 produtos por importação.' });
+      const now = new Date().toISOString();
+      await Promise.all(products.map(p => {
+        if (!p.productId || !p.sizes) return null;
+        const product = {
+          productId:   p.productId,
+          productName: p.productName  || null,
+          productUrl:  p.productUrl   || null,
+          createdAt:   now,
+          updatedAt:   now,
+          source:      'import',
+          confidence:  p.confidence   || 'medium',
+          sizes:       p.sizes,
+          unit:        p.unit         || 'cm',
+          notes:       p.notes        || null,
+        };
+        return Promise.all([
+          redis.set(`fit:product:${clientKey}:${p.productId}`, JSON.stringify(product)),
+          redis.zadd(`fit:products:${clientKey}`, { score: Date.now(), member: p.productId }),
+        ]);
+      }).filter(Boolean));
+      return res.json({ ok: true, imported: products.length });
+    }
+
     return res.status(400).json({ error: 'Ação inválida.' });
 
   } catch (err) {
