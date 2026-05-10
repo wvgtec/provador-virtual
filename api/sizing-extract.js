@@ -10,7 +10,7 @@ const redis = new Redis({
 });
 
 const GCP_PROJECT  = 'provador-virtual-494213';
-const GEMINI_URL   = `https://us-central1-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT}/locations/us-central1/publishers/google/models/gemini-2.0-flash-001:generateContent`;
+const GEMINI_URL   = `https://us-central1-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT}/locations/us-central1/publishers/google/models/gemini-2.0-flash:generateContent`;
 
 function isValidClientKey(key) {
   return typeof key === 'string' && /^pvk_[a-f0-9]{32}$/.test(key);

@@ -540,15 +540,16 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
               <button class="btn btn-primary" onclick="extractMedidasFromImage()" id="fitImgExtractBtn">Extrair</button>
             </div>
           </div>
+          <!-- Opção padrão — sempre visível -->
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:10px;cursor:pointer;color:var(--muted);">
+            <input type="checkbox" id="fitExtractAsDefault" style="width:15px;height:15px;accent-color:var(--primary);">
+            Usar como tabela padrão para produtos sem medidas cadastradas
+          </label>
           <div id="fitExtractMsg" style="font-size:13px;min-height:18px;"></div>
           <!-- Tabela editável após extração -->
           <div id="fitExtractResult" style="display:none;margin-top:16px;">
             <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Medidas extraídas — revise e salve</div>
             <div id="fitExtractTable"></div>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:12px;cursor:pointer;">
-              <input type="checkbox" id="fitExtractAsDefault" style="width:15px;height:15px;accent-color:var(--primary);">
-              Usar como tabela padrão para todos os produtos sem medidas cadastradas
-            </label>
             <div style="display:flex;gap:8px;margin-top:10px;">
               <button class="btn btn-primary btn-sm" onclick="saveExtractedProduct()">Salvar produto</button>
               <button class="btn btn-secondary btn-sm" onclick="cancelExtract()">Cancelar</button>
