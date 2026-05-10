@@ -75,10 +75,6 @@
     "api/sizing.js": {
       "maxDuration": 10,
       "memory": 128
-    },
-    "api/sizing-extract.js": {
-      "maxDuration": 30,
-      "memory": 256
     }
   },
   "headers": [
