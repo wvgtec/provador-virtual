@@ -181,6 +181,10 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
         Primeiros passos
         <span id="onboardingBadge" class="nav-badge" style="background:var(--primary)">1</span>
       </div>
+      <div class="nav-item" onclick="nav('medidas')">
+        <svg fill="none" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Medidas
+      </div>
       <div class="nav-item" onclick="nav('integracao')">
         <svg fill="none" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="8 6 2 12 8 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Integração
@@ -481,6 +485,87 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--bg)}
             <tbody id="invoicesTbody"></tbody></table>
           </div>
           <div id="invoicesEmpty" class="empty" style="display:none;"><div class="empty-icon">🧾</div><div class="empty-title">Sem faturas ainda</div></div>
+        </div>
+      </div>
+
+      <div id="view-medidas" class="view">
+        <!-- Toggle de ativação -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Mirage Fit</div>
+              <div class="card-sub">Recomendação inteligente de tamanho no widget</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <span style="font-size:13px;color:var(--muted);" id="fitToggleLabel">Desativado</span>
+              <div style="position:relative;width:44px;height:24px;">
+                <input type="checkbox" id="fitToggle" style="opacity:0;width:0;height:0;position:absolute;" onchange="toggleFit(this.checked)">
+                <div id="fitToggleTrack" style="position:absolute;inset:0;background:#ccc;border-radius:12px;transition:background .2s;"></div>
+                <div id="fitToggleThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);"></div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Auto-extração por URL -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Extrair medidas de um produto</div>
+              <div class="card-sub">Cole a URL do produto — o Mirage Fit extrai a tabela de medidas automaticamente via IA</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <input type="url" id="fitExtractUrl" placeholder="https://minha-loja.com/produto/vestido-floral" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
+            <input type="text" id="fitExtractName" placeholder="Nome do produto (opcional)" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
+            <button class="btn btn-primary" onclick="extractMedidas()">Extrair</button>
+          </div>
+          <div id="fitExtractMsg" style="font-size:13px;min-height:18px;"></div>
+          <!-- Tabela editável após extração -->
+          <div id="fitExtractResult" style="display:none;margin-top:16px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Medidas extraídas — revise e salve</div>
+            <div id="fitExtractTable"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary btn-sm" onclick="saveExtractedProduct()">Salvar produto</button>
+              <button class="btn btn-secondary btn-sm" onclick="cancelExtract()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Adição manual -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Adicionar manualmente</div>
+              <div class="card-sub">Preencha a tabela de medidas diretamente</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="toggleManualForm()">+ Novo produto</button>
+          </div>
+          <div id="fitManualForm" style="display:none;margin-bottom:16px;padding:16px;background:var(--bg);border-radius:10px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div class="field"><label>ID do produto</label><input id="fitManualId" type="text" placeholder="Ex: vestido-floral-p"></div>
+              <div class="field"><label>Nome do produto</label><input id="fitManualName" type="text" placeholder="Ex: Vestido Floral"></div>
+            </div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Medidas por tamanho (cm)</div>
+            <div id="fitManualSizes"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="addManualSize()">+ Tamanho</button>
+              <button class="btn btn-primary btn-sm" onclick="saveManualProduct()">Salvar</button>
+              <button class="btn btn-secondary btn-sm" onclick="toggleManualForm()">Cancelar</button>
+            </div>
+            <div id="fitManualMsg" style="font-size:13px;margin-top:8px;min-height:16px;"></div>
+          </div>
+        </div>
+
+        <!-- Lista de produtos cadastrados -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Produtos com medidas cadastradas</div>
+            <span id="fitProductCount" style="font-size:12px;color:var(--muted);">0 produtos</span>
+          </div>
+          <div id="fitProductsTable">
+            <div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">Nenhum produto cadastrado ainda.</div>
+          </div>
         </div>
       </div>
 
@@ -839,7 +924,7 @@ function showSuspendedBanner() {
   document.getElementById('app').style.paddingTop = '54px';
 }
 
-const VIEW_TITLES = { dashboard:'Dashboard', geracoes:'Gerações', produtos:'Produtos', leads:'Leads', onboarding:'Primeiros passos', integracao:'Integração', billing:'Billing', config:'Configurações' };
+const VIEW_TITLES = { dashboard:'Dashboard', geracoes:'Gerações', produtos:'Produtos', leads:'Leads', onboarding:'Primeiros passos', medidas:'Medidas', integracao:'Integração', billing:'Billing', config:'Configurações' };
 
 function nav(id) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -855,6 +940,7 @@ function nav(id) {
   else if (id==='produtos')   loadProducts();
   else if (id==='leads')      loadLeads();
   else if (id==='onboarding') initOnboarding();
+  else if (id==='medidas')    loadMedidas();
   else if (id==='integracao') loadIntegracao();
   else if (id==='billing')    renderBilling();
 }
@@ -984,6 +1070,216 @@ function exportLeadsCSV() {
   a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
 }
+
+// ─── Mirage Fit — Medidas ─────────────────────────────────────────────────────
+
+let fitState = { config: null, products: [], extractedProduct: null, manualSizes: [] };
+
+async function loadMedidas() {
+  const [cfgRes, listRes] = await Promise.all([
+    api('client', 'getSizingConfig'),
+    api('client', 'listSizingProducts', { limit: 100 }),
+  ]);
+  if (cfgRes.ok) {
+    fitState.config = cfgRes.config;
+    const enabled = cfgRes.config?.sizingEnabled || false;
+    const toggle = document.getElementById('fitToggle');
+    const track  = document.getElementById('fitToggleTrack');
+    const thumb  = document.getElementById('fitToggleThumb');
+    const label  = document.getElementById('fitToggleLabel');
+    toggle.checked       = enabled;
+    track.style.background = enabled ? 'var(--primary)' : '#ccc';
+    thumb.style.left       = enabled ? '23px' : '3px';
+    label.textContent      = enabled ? 'Ativado' : 'Desativado';
+  }
+  if (listRes.ok) {
+    fitState.products = listRes.products || [];
+    renderFitProductsTable();
+  }
+}
+
+async function toggleFit(enabled) {
+  const track = document.getElementById('fitToggleTrack');
+  const thumb = document.getElementById('fitToggleThumb');
+  const label = document.getElementById('fitToggleLabel');
+  track.style.background = enabled ? 'var(--primary)' : '#ccc';
+  thumb.style.left       = enabled ? '23px' : '3px';
+  label.textContent      = enabled ? 'Ativado' : 'Desativado';
+  await api('client', 'saveSizingConfig', { sizingEnabled: enabled });
+}
+
+async function extractMedidas() {
+  const url  = document.getElementById('fitExtractUrl').value.trim();
+  const name = document.getElementById('fitExtractName').value.trim();
+  const msg  = document.getElementById('fitExtractMsg');
+  if (!url) { msg.textContent = 'Informe a URL do produto.'; msg.style.color = 'var(--error)'; return; }
+  msg.textContent = 'Extraindo medidas via IA...'; msg.style.color = 'var(--muted)';
+  document.querySelector('[onclick="extractMedidas()"]').disabled = true;
+  try {
+    const res = await fetch(`${API_URL}/api/sizing-extract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientKey: st.clientKey, password: st.password, productUrl: url, productName: name || null }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Falha na extração.');
+    fitState.extractedProduct = data.product;
+    msg.textContent = '✅ Medidas extraídas! Revise abaixo antes de salvar.'; msg.style.color = 'var(--success)';
+    renderExtractedTable(data.product);
+    document.getElementById('fitExtractResult').style.display = '';
+  } catch(e) {
+    msg.textContent = e.message; msg.style.color = 'var(--error)';
+  } finally {
+    document.querySelector('[onclick="extractMedidas()"]').disabled = false;
+  }
+}
+
+function renderExtractedTable(product) {
+  const sizes = product.sizes || {};
+  let html = `<div class="table-wrap"><table><thead><tr><th>Tamanho</th><th>Busto (min-max)</th><th>Cintura (min-max)</th><th>Quadril (min-max)</th></tr></thead><tbody>`;
+  for (const [sz, ranges] of Object.entries(sizes)) {
+    const f = (r) => r?.length >= 2 ? `<input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${r[0]}" data-sz="${sz}" data-field="${Object.keys({bust:1,waist:1,hip:1}).find(k => ranges[k] === r) || ''}" data-idx="0"> – <input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${r[1]}">` : '—';
+    html += `<tr>
+      <td><strong>${sz}</strong></td>
+      <td>${ranges.bust?.length>=2 ? `<input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${ranges.bust[0]}" id="ex_${sz}_bust_0"> – <input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${ranges.bust[1]}" id="ex_${sz}_bust_1">` : '—'}</td>
+      <td>${ranges.waist?.length>=2 ? `<input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${ranges.waist[0]}" id="ex_${sz}_waist_0"> – <input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${ranges.waist[1]}" id="ex_${sz}_waist_1">` : '—'}</td>
+      <td>${ranges.hip?.length>=2 ? `<input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${ranges.hip[0]}" id="ex_${sz}_hip_0"> – <input type="number" style="width:52px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" value="${ranges.hip[1]}" id="ex_${sz}_hip_1">` : '—'}</td>
+    </tr>`;
+  }
+  html += '</tbody></table></div>';
+  document.getElementById('fitExtractTable').innerHTML = html;
+}
+
+async function saveExtractedProduct() {
+  const p = fitState.extractedProduct;
+  if (!p) return;
+  const sizes = {};
+  for (const sz of Object.keys(p.sizes || {})) {
+    sizes[sz] = {};
+    for (const field of ['bust','waist','hip']) {
+      const v0 = document.getElementById(`ex_${sz}_${field}_0`);
+      const v1 = document.getElementById(`ex_${sz}_${field}_1`);
+      if (v0 && v1) sizes[sz][field] = [Number(v0.value), Number(v1.value)];
+    }
+  }
+  const res = await api('client', 'saveSizingProduct', {
+    productId: p.productId, productName: p.productName, productUrl: p.productUrl,
+    sizes, unit: p.unit || 'cm', confidence: p.confidence, source: 'auto',
+  });
+  if (res.ok) {
+    document.getElementById('fitExtractMsg').textContent = '✅ Produto salvo!';
+    document.getElementById('fitExtractMsg').style.color = 'var(--success)';
+    document.getElementById('fitExtractResult').style.display = 'none';
+    document.getElementById('fitExtractUrl').value = '';
+    document.getElementById('fitExtractName').value = '';
+    fitState.extractedProduct = null;
+    await loadMedidas();
+  }
+}
+
+function cancelExtract() {
+  document.getElementById('fitExtractResult').style.display = 'none';
+  document.getElementById('fitExtractMsg').textContent = '';
+  fitState.extractedProduct = null;
+}
+
+function toggleManualForm() {
+  const f = document.getElementById('fitManualForm');
+  const visible = f.style.display !== 'none';
+  f.style.display = visible ? 'none' : '';
+  if (!visible) {
+    document.getElementById('fitManualId').value = '';
+    document.getElementById('fitManualName').value = '';
+    document.getElementById('fitManualMsg').textContent = '';
+    fitState.manualSizes = ['P','M','G'];
+    renderManualSizes();
+  }
+}
+
+function renderManualSizes() {
+  const container = document.getElementById('fitManualSizes');
+  container.innerHTML = fitState.manualSizes.map(sz => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <strong style="width:30px;">${sz}</strong>
+      <span style="font-size:12px;color:var(--muted);">Busto</span>
+      <input type="number" id="mn_${sz}_bust_0" placeholder="min" style="width:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <span>–</span>
+      <input type="number" id="mn_${sz}_bust_1" placeholder="max" style="width:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <span style="font-size:12px;color:var(--muted);">Cintura</span>
+      <input type="number" id="mn_${sz}_waist_0" placeholder="min" style="width:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <span>–</span>
+      <input type="number" id="mn_${sz}_waist_1" placeholder="max" style="width:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <span style="font-size:12px;color:var(--muted);">Quadril</span>
+      <input type="number" id="mn_${sz}_hip_0" placeholder="min" style="width:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <span>–</span>
+      <input type="number" id="mn_${sz}_hip_1" placeholder="max" style="width:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+    </div>`).join('');
+}
+
+function addManualSize() {
+  const next = ['PP','P','M','G','GG','XGG'].find(s => !fitState.manualSizes.includes(s)) || `T${fitState.manualSizes.length+1}`;
+  fitState.manualSizes.push(next);
+  renderManualSizes();
+}
+
+async function saveManualProduct() {
+  const id   = document.getElementById('fitManualId').value.trim();
+  const name = document.getElementById('fitManualName').value.trim();
+  const msg  = document.getElementById('fitManualMsg');
+  if (!id) { msg.textContent = 'ID do produto é obrigatório.'; msg.style.color = 'var(--error)'; return; }
+  const sizes = {};
+  for (const sz of fitState.manualSizes) {
+    sizes[sz] = {};
+    for (const field of ['bust','waist','hip']) {
+      const v0 = Number(document.getElementById(`mn_${sz}_${field}_0`)?.value);
+      const v1 = Number(document.getElementById(`mn_${sz}_${field}_1`)?.value);
+      if (v0 && v1) sizes[sz][field] = [v0, v1];
+    }
+  }
+  const res = await api('client', 'saveSizingProduct', { productId: id, productName: name || null, sizes, unit: 'cm', source: 'manual' });
+  if (res.ok) {
+    msg.textContent = '✅ Salvo!'; msg.style.color = 'var(--success)';
+    setTimeout(() => toggleManualForm(), 800);
+    await loadMedidas();
+  } else {
+    msg.textContent = res.error || 'Erro ao salvar.'; msg.style.color = 'var(--error)';
+  }
+}
+
+async function deleteFitProduct(productId) {
+  if (!confirm('Remover este produto?')) return;
+  await api('client', 'deleteSizingProduct', { productId });
+  await loadMedidas();
+}
+
+function renderFitProductsTable() {
+  const products = fitState.products;
+  document.getElementById('fitProductCount').textContent = `${products.length} produto${products.length !== 1 ? 's' : ''}`;
+  if (!products.length) {
+    document.getElementById('fitProductsTable').innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px;">Nenhum produto cadastrado ainda.</div>';
+    return;
+  }
+  const confBadge = { high:'badge-success', medium:'badge-warning', low:'badge-muted' };
+  const confLabel = { high:'Alta', medium:'Média', low:'Baixa' };
+  const srcLabel  = { auto:'IA', manual:'Manual', import:'Import', image:'Imagem' };
+  let html = `<div class="table-wrap"><table><thead><tr><th>Produto</th><th>Tamanhos</th><th>Confiança</th><th>Origem</th><th>Atualizado</th><th></th></tr></thead><tbody>`;
+  for (const p of products) {
+    const sizes = Object.keys(p.sizes || {}).join(', ') || '—';
+    const date  = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('pt-BR') : '—';
+    html += `<tr>
+      <td><div style="font-weight:600;font-size:13px;">${p.productName || p.productId}</div><div style="font-size:11px;color:var(--muted);">${p.productId}</div></td>
+      <td>${sizes}</td>
+      <td><span class="badge ${confBadge[p.confidence]||'badge-muted'}">${confLabel[p.confidence]||p.confidence||'—'}</span></td>
+      <td><span class="badge badge-muted">${srcLabel[p.source]||p.source||'—'}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${date}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteFitProduct('${p.productId}')">Remover</button></td>
+    </tr>`;
+  }
+  html += '</tbody></table></div>';
+  document.getElementById('fitProductsTable').innerHTML = html;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function loadIntegracao() {
   document.getElementById('integStoreUrl').textContent = st.client?.store || 'Não configurado';
