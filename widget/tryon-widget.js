@@ -415,28 +415,43 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.22); cursor: pointer; border: 2.5px solid #fff;
     }
 
-    /* Result */
-    .nksw-fit-result-wrap { display: flex; flex-direction: column; gap: 12px; }
-    .nksw-fit-result-size-card {
-      background: #111; border-radius: 16px; padding: 20px 20px;
-      display: flex; align-items: center; justify-content: space-between;
+    /* Result — Sizebay style */
+    .nksw-fit-result-wrap { display: flex; flex-direction: column; gap: 10px; }
+    .nksw-fit-sz-header { display: flex; align-items: flex-end; justify-content: space-between; }
+    .nksw-fit-sz-number { font-size: 50px; font-weight: 900; color: #111; line-height: 1; letter-spacing: -0.04em; }
+    .nksw-fit-quality-badge {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 20px; margin-bottom: 6px;
     }
-    .nksw-fit-result-label { font-size: 11px; color: #888; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 4px; }
-    .nksw-fit-result-size  { font-size: 48px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -0.03em; }
-    .nksw-fit-conf-badge {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 4px 10px; border-radius: 20px;
+    .nksw-fit-quality-badge.best { background: #111; color: #F5C53F; }
+    .nksw-fit-quality-badge.alt  { background: #f3f4f6; color: #6b7280; }
+    .nksw-fit-sz-nav { display: flex; align-items: center; gap: 6px; }
+    .nksw-fit-sz-arrow {
+      width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #e0e0e0;
+      background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: #555; transition: all 0.15s; flex-shrink: 0; line-height: 1;
+      padding: 0;
     }
-    .nksw-fit-conf-badge.high   { background: #dcfce7; color: #166534; }
-    .nksw-fit-conf-badge.medium { background: #fef9c3; color: #854d0e; }
-    .nksw-fit-conf-badge.low    { background: #f3f4f6; color: #6b7280; }
-    .nksw-fit-alt-sizes { display: flex; flex-direction: column; gap: 6px; }
-    .nksw-fit-alt-label { font-size: 10px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.07em; }
-    .nksw-fit-alt-pills { display: flex; gap: 6px; flex-wrap: wrap; }
-    .nksw-fit-alt-pill {
-      padding: 5px 14px; border: 1.5px solid #e4e4e4; border-radius: 20px;
-      font-size: 13px; font-weight: 700; color: #555;
+    .nksw-fit-sz-arrow:hover:not([disabled]) { border-color: #999; color: #111; }
+    .nksw-fit-sz-arrow[disabled] { opacity: 0.28; cursor: not-allowed; }
+    .nksw-fit-sz-pills { display: flex; gap: 5px; flex: 1; }
+    .nksw-fit-sz-pill {
+      height: 32px; min-width: 32px; padding: 0 10px; border-radius: 16px;
+      border: 2px solid #e0e0e0; background: #fff;
+      font-size: 12px; font-weight: 700; color: #aaa;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s;
     }
+    .nksw-fit-sz-pill.active { background: #111; border-color: #111; color: #fff; min-width: 40px; font-size: 14px; }
+    .nksw-fit-sz-pill.adj    { color: #555; border-color: #ccc; }
+    .nksw-fit-mannequin-wrap { position: relative; height: 180px; margin: 2px 0; }
+    .nksw-fit-zone-row {
+      position: absolute; left: 97px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .nksw-fit-zone-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .nksw-fit-zone-name { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 1px; }
+    .nksw-fit-zone-label { font-size: 12px; font-weight: 700; color: #111; display: block; }
     .nksw-fit-measures-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
       background: #f9f9f9; border-radius: 14px; padding: 14px;
@@ -1141,15 +1156,14 @@
       try { localStorage.setItem('_mf_meas', JSON.stringify(meas)); } catch (_) {}
 
       const productId = window.VTON_PRODUCT_ID || '';
-      let rec = null, altSizes = [];
+      let fitSortedSizes = [];
 
       if (productId) {
         try {
           const r = await fetch(`${apiUrl}/api/sizing?action=getProduct&clientKey=${encodeURIComponent(clientKey)}&productId=${encodeURIComponent(productId)}`);
           const d = await r.json();
           if (d.found && d.product?.sizes) {
-            const scores = {};
-            for (const [sz, ranges] of Object.entries(d.product.sizes)) {
+            fitSortedSizes = Object.entries(d.product.sizes).map(([sz, ranges]) => {
               let score = 0, checks = 0;
               const chk = (val, range) => {
                 if (!range || range.length < 2) return;
@@ -1159,47 +1173,114 @@
                 checks++;
               };
               chk(bust, ranges.bust); chk(waist, ranges.waist); chk(hip, ranges.hip);
-              scores[sz] = checks > 0 ? score / checks : 0;
-            }
-            const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-            if (sorted.length > 0) {
-              const [bestSz, bestSc] = sorted[0];
-              rec = { size: bestSz, confidence: bestSc > 0.75 ? 'high' : bestSc > 0.45 ? 'medium' : 'low' };
-              altSizes = sorted.slice(1, 3).map(([sz]) => sz);
-            }
+              return { size: sz, score: checks > 0 ? score / checks : 0, ranges };
+            }).sort((a, b) => b.score - a.score);
           }
         } catch (_) {}
       }
 
-      const confLabel = { high: 'Alta confiança', medium: 'Confiança média', low: 'Estimativa' };
-      fitResultWrap.innerHTML = rec
-        ? `<div class="nksw-fit-result-size-card">
-            <div>
-              <p class="nksw-fit-result-label">Tamanho recomendado</p>
-              <div class="nksw-fit-result-size">${rec.size}</div>
-            </div>
-            <span class="nksw-fit-conf-badge ${rec.confidence}">${confLabel[rec.confidence]}</span>
+      function getFit(measured, range) {
+        if (!range || range.length < 2) return { label: '—', color: '#d1d5db' };
+        const lo = range[0], hi = range[1], span = Math.max(hi - lo, 4);
+        if (measured >= lo && measured <= hi) return { label: 'Ideal', color: '#22c55e' };
+        if (measured > hi) {
+          const over = measured - hi;
+          if (over <= span * 0.3) return { label: 'Levemente justo', color: '#86efac' };
+          if (over <= span * 0.7) return { label: 'Justo', color: '#f59e0b' };
+          return { label: 'Muito justo', color: '#ef4444' };
+        }
+        const under = lo - measured;
+        if (under <= span * 0.3) return { label: 'Levemente folgado', color: '#86efac' };
+        if (under <= span * 0.7) return { label: 'Folgado', color: '#f59e0b' };
+        return { label: 'Muito folgado', color: '#ef4444' };
+      }
+
+      function showSizeResult(idx) {
+        const { size, score, ranges } = fitSortedSizes[idx];
+        const $q = sel => fitResultWrap.querySelector(sel);
+
+        $q('#nksw-fit-sz-num').textContent = size;
+        const badge = $q('#nksw-fit-quality-badge');
+        badge.textContent = idx === 0 ? 'MELHOR OPÇÃO' : 'TAMBÉM SERVE';
+        badge.className = 'nksw-fit-quality-badge ' + (idx === 0 ? 'best' : 'alt');
+
+        const pillsEl = $q('#nksw-fit-sz-pills');
+        pillsEl.innerHTML = fitSortedSizes
+          .map((s, i) => Math.abs(i - idx) <= 1
+            ? `<button class="nksw-fit-sz-pill ${i === idx ? 'active' : 'adj'}" data-idx="${i}" type="button">${s.size}</button>`
+            : '')
+          .join('');
+        pillsEl.querySelectorAll('button').forEach(btn =>
+          btn.addEventListener('click', () => showSizeResult(+btn.dataset.idx))
+        );
+
+        const prevBtn = $q('#nksw-fit-sz-prev');
+        const nextBtn = $q('#nksw-fit-sz-next');
+        prevBtn.disabled = idx === 0;
+        nextBtn.disabled = idx === fitSortedSizes.length - 1;
+        prevBtn.onclick = () => showSizeResult(idx - 1);
+        nextBtn.onclick = () => showSizeResult(idx + 1);
+
+        [['bust', bust], ['waist', waist], ['hip', hip]].forEach(([zone, val]) => {
+          const fit = getFit(val, ranges?.[zone]);
+          $q(`#nksw-fit-band-${zone}`)?.setAttribute('fill', fit.color);
+          const dot = $q(`#nksw-fit-zdot-${zone}`);
+          if (dot) dot.style.background = fit.color;
+          const lbl = $q(`#nksw-fit-zlbl-${zone}`);
+          if (lbl) lbl.textContent = fit.label;
+        });
+      }
+
+      const measGrid = `
+        <div class="nksw-fit-measures-grid">
+          <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Busto</span><span class="nksw-fit-measure-num">${meas.bust} cm</span></div>
+          <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Cintura</span><span class="nksw-fit-measure-num">${meas.waist} cm</span></div>
+          <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Quadril</span><span class="nksw-fit-measure-num">${meas.hip} cm</span></div>
+          <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Ombro</span><span class="nksw-fit-measure-num">${meas.shoulder} cm</span></div>
+        </div>`;
+
+      fitResultWrap.innerHTML = fitSortedSizes.length
+        ? `<div class="nksw-fit-sz-header">
+            <div class="nksw-fit-sz-number" id="nksw-fit-sz-num">—</div>
+            <span class="nksw-fit-quality-badge best" id="nksw-fit-quality-badge">MELHOR OPÇÃO</span>
           </div>
-          ${altSizes.length ? `<div class="nksw-fit-alt-sizes">
-            <span class="nksw-fit-alt-label">Pode servir também</span>
-            <div class="nksw-fit-alt-pills">${altSizes.map(s => `<span class="nksw-fit-alt-pill">${s}</span>`).join('')}</div>
-          </div>` : ''}
-          <div class="nksw-fit-measures-grid">
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Busto</span><span class="nksw-fit-measure-num">${meas.bust} cm</span></div>
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Cintura</span><span class="nksw-fit-measure-num">${meas.waist} cm</span></div>
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Quadril</span><span class="nksw-fit-measure-num">${meas.hip} cm</span></div>
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Ombro</span><span class="nksw-fit-measure-num">${meas.shoulder} cm</span></div>
-          </div>`
+          <div class="nksw-fit-sz-nav">
+            <button class="nksw-fit-sz-arrow" id="nksw-fit-sz-prev" type="button">‹</button>
+            <div class="nksw-fit-sz-pills" id="nksw-fit-sz-pills"></div>
+            <button class="nksw-fit-sz-arrow" id="nksw-fit-sz-next" type="button">›</button>
+          </div>
+          <div class="nksw-fit-mannequin-wrap">
+            <svg viewBox="0 0 100 210" width="90" height="180" style="display:block;position:absolute;left:0;top:0">
+              <path d="M50,30 L42,30 C39,32 37,36 37,42 C29,46 21,50 17,56 C15,62 17,68 19,74 C21,82 26,92 29,100 C27,108 19,118 17,124 C17,132 21,142 25,150 C27,162 29,174 31,190 C32,198 33,204 33,210 L44,210 C46,180 50,162 50,148 C50,162 54,180 56,210 L67,210 C67,204 68,198 69,190 C71,174 73,162 75,150 C79,142 83,132 83,124 C81,118 73,108 71,100 C74,92 79,82 81,74 C83,68 85,62 83,56 C79,50 71,46 63,42 C63,36 61,32 58,30 Z" fill="#ede0d4"/>
+              <circle cx="50" cy="18" r="12" fill="#ede0d4"/>
+              <ellipse cx="50" cy="11" rx="13" ry="8" fill="#7c5c46"/>
+              <ellipse id="nksw-fit-band-bust"  cx="50" cy="74"  rx="27" ry="7"  fill="#22c55e" fill-opacity="0.6"/>
+              <ellipse id="nksw-fit-band-waist" cx="50" cy="100" rx="20" ry="6"  fill="#22c55e" fill-opacity="0.6"/>
+              <ellipse id="nksw-fit-band-hip"   cx="50" cy="124" rx="30" ry="7"  fill="#22c55e" fill-opacity="0.6"/>
+              <line x1="77" y1="74"  x2="92" y2="74"  stroke="#ccc" stroke-width="1"/>
+              <line x1="70" y1="100" x2="92" y2="100" stroke="#ccc" stroke-width="1"/>
+              <line x1="80" y1="124" x2="92" y2="124" stroke="#ccc" stroke-width="1"/>
+            </svg>
+            <div class="nksw-fit-zone-row" style="top:50px">
+              <span id="nksw-fit-zdot-bust" class="nksw-fit-zone-dot"></span>
+              <div><span class="nksw-fit-zone-name">Busto</span><span id="nksw-fit-zlbl-bust" class="nksw-fit-zone-label">—</span></div>
+            </div>
+            <div class="nksw-fit-zone-row" style="top:73px">
+              <span id="nksw-fit-zdot-waist" class="nksw-fit-zone-dot"></span>
+              <div><span class="nksw-fit-zone-name">Cintura</span><span id="nksw-fit-zlbl-waist" class="nksw-fit-zone-label">—</span></div>
+            </div>
+            <div class="nksw-fit-zone-row" style="top:93px">
+              <span id="nksw-fit-zdot-hip" class="nksw-fit-zone-dot"></span>
+              <div><span class="nksw-fit-zone-name">Quadril</span><span id="nksw-fit-zlbl-hip" class="nksw-fit-zone-label">—</span></div>
+            </div>
+          </div>
+          ${measGrid}`
         : `<div class="nksw-fit-no-table">
             A loja ainda não cadastrou a tabela de medidas desta peça. Use suas medidas abaixo como referência.
           </div>
-          <div class="nksw-fit-measures-grid">
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Busto</span><span class="nksw-fit-measure-num">${meas.bust} cm</span></div>
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Cintura</span><span class="nksw-fit-measure-num">${meas.waist} cm</span></div>
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Quadril</span><span class="nksw-fit-measure-num">${meas.hip} cm</span></div>
-            <div class="nksw-fit-measure-item"><span class="nksw-fit-measure-name">Ombro</span><span class="nksw-fit-measure-num">${meas.shoulder} cm</span></div>
-          </div>`;
+          ${measGrid}`;
 
+      if (fitSortedSizes.length) showSizeResult(0);
       goToStep(2);
 
       // Salva outcome em background
@@ -1210,9 +1291,9 @@
           body: JSON.stringify({
             action: 'saveOutcome', clientKey, sessionId,
             productId:       productId || null,
-            recommendedSize: rec?.size || null,
-            confidence:      rec?.confidence || null,
-            method:          rec ? 'matching' : 'anthropometric',
+            recommendedSize: fitSortedSizes[0]?.size || null,
+            confidence:      fitSortedSizes[0]?.score > 0.75 ? 'high' : fitSortedSizes[0]?.score > 0.45 ? 'medium' : 'low',
+            method:          fitSortedSizes.length ? 'matching' : 'anthropometric',
             inputs:          { bust, waist, hip },
           }),
         }).catch(() => {});
