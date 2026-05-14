@@ -141,8 +141,11 @@ export default async function handler(req, res) {
   if (!garmentGcsUrl || !String(garmentGcsUrl).startsWith('https://storage.googleapis.com/')) {
     return res.status(400).json({ error: 'garmentGcsUrl inválida.' });
   }
-  if (!prompt || typeof prompt !== 'string' || prompt.length < 10 || prompt.length > 1000) {
-    return res.status(400).json({ error: 'prompt deve ter entre 10 e 1000 caracteres.' });
+  const hasModel = modelGcsUrl && String(modelGcsUrl).startsWith('https://storage.googleapis.com/');
+  if (!hasModel) {
+    if (!prompt || typeof prompt !== 'string' || prompt.length < 10 || prompt.length > 1000) {
+      return res.status(400).json({ error: 'prompt deve ter entre 10 e 1000 caracteres.' });
+    }
   }
 
   const jobId     = randomUUID();
