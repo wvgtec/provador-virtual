@@ -392,6 +392,25 @@
 
         <div class="divider"></div>
 
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="field-label" style="margin:0">Foto da modelo <span style="font-weight:400;color:var(--gray3)">(opcional)</span></span>
+          <span id="model-uploaded-badge" style="display:none;font-size:12px;font-weight:600;color:#48bb78;">✓ Modelo carregada</span>
+        </div>
+
+        <div class="upload-zone" id="model-upload-zone" style="padding:20px 16px;">
+          <input type="file" id="model-file-input" accept="image/jpeg,image/jpg,image/png,image/webp">
+          <div class="icon" style="font-size:24px;">🧍</div>
+          <p style="font-size:13px;"><strong>Arraste ou clique</strong> para enviar foto da modelo</p>
+          <p style="font-size:11px;margin-top:3px;color:var(--gray3)">Se não enviar, o modelo será gerado por IA</p>
+        </div>
+
+        <div class="garment-preview" id="model-preview" style="margin-bottom:12px;">
+          <img id="model-thumb" src="" alt="Modelo selecionada">
+          <button class="remove-btn" id="remove-model" title="Remover">✕</button>
+        </div>
+
+        <div class="divider"></div>
+
         <label class="field-label" for="category-select">Tipo da peça</label>
         <select id="category-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;outline:none;margin-bottom:16px;background:#fff;cursor:pointer;">
           <option value="auto">Detectar automaticamente</option>
@@ -401,9 +420,9 @@
           <option value="dresses">Vestido / Saída de praia</option>
         </select>
 
-        <label class="field-label" for="prompt-input">Prompt da foto</label>
+        <label class="field-label" for="prompt-input" id="prompt-label">Prompt do modelo e ambiente</label>
         <textarea id="prompt-input" rows="5" placeholder="Modelo feminina, 25 anos, pele morena, cabelo cacheado, posando de frente, estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda"></textarea>
-        <div class="field-hint">Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.</div>
+        <div class="field-hint" id="prompt-hint">Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.</div>
 
         <button class="btn btn-primary" id="generate-btn">
           <span>✨</span> Gerar foto do modelo
@@ -503,7 +522,8 @@
 
   // ─── Estado ───────────────────────────────────────────────────────────────
   let token        = sessionStorage.getItem('studio_token') || '';
-  let garmentUrl   = null;   // URL GCS da peça após upload
+  let garmentUrl   = null;
+  let modelUrl     = null;   // URL GCS da foto da modelo (opcional)
   let imageJobId   = null;
   let videoJobId   = null;
   let imagePollTimer = null;
@@ -607,6 +627,88 @@
     fileInput.value              = '';
   });
 
+  // ─── Upload de modelo (opcional) ──────────────────────────────────────────
+  const modelUploadZone = document.getElementById('model-upload-zone');
+  const modelFileInput  = document.getElementById('model-file-input');
+  const modelPreview    = document.getElementById('model-preview');
+  const modelThumb      = document.getElementById('model-thumb');
+  const modelBadge      = document.getElementById('model-uploaded-badge');
+  const promptLabel     = document.getElementById('prompt-label');
+  const promptHint      = document.getElementById('prompt-hint');
+  const promptInput     = document.getElementById('prompt-input');
+
+  modelUploadZone.addEventListener('dragover', e => { e.preventDefault(); modelUploadZone.classList.add('drag-over'); });
+  modelUploadZone.addEventListener('dragleave', () => modelUploadZone.classList.remove('drag-over'));
+  modelUploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    modelUploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleModelFile(file);
+  });
+  modelFileInput.addEventListener('change', () => {
+    if (modelFileInput.files[0]) handleModelFile(modelFileInput.files[0]);
+  });
+
+  document.getElementById('remove-model').addEventListener('click', () => {
+    modelUrl = null;
+    modelPreview.style.display    = 'none';
+    modelUploadZone.style.display = 'block';
+    modelFileInput.value          = '';
+    modelBadge.style.display      = 'none';
+    updatePromptLabel();
+  });
+
+  async function handleModelFile(file) {
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!ALLOWED.includes(file.type)) { toast('Formato não suportado. Use JPEG, PNG ou WebP.', true); return; }
+    if (file.size > 5 * 1024 * 1024)  { toast('Imagem muito grande. Máximo 5 MB.', true); return; }
+
+    modelThumb.src                = URL.createObjectURL(file);
+    modelPreview.style.display    = 'block';
+    modelUploadZone.style.display = 'none';
+    toast('Enviando foto da modelo...');
+
+    try {
+      const urlRes = await fetch('/api/studio-upload-url', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error('Falha ao obter URL de upload.');
+      const { signedUrl, gcsUrl } = await urlRes.json();
+
+      const putRes = await fetch(signedUrl, {
+        method:  'PUT',
+        headers: { 'Content-Type': file.type },
+        body:    file,
+      });
+      if (!putRes.ok) throw new Error('Falha ao enviar para o GCS.');
+
+      modelUrl = gcsUrl;
+      modelBadge.style.display = 'inline';
+      updatePromptLabel();
+      toast('Modelo carregada ✓');
+    } catch (err) {
+      toast(err.message, true);
+      modelPreview.style.display    = 'none';
+      modelUploadZone.style.display = 'block';
+      modelUrl = null;
+      updatePromptLabel();
+    }
+  }
+
+  function updatePromptLabel() {
+    if (modelUrl) {
+      promptLabel.textContent = 'Prompt do ambiente';
+      promptInput.placeholder = 'Estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda';
+      promptHint.textContent  = 'Com modelo carregada, descreva apenas o ambiente e estilo. 10–1000 caracteres.';
+    } else {
+      promptLabel.textContent = 'Prompt do modelo e ambiente';
+      promptInput.placeholder = 'Modelo feminina, 25 anos, pele morena, cabelo cacheado, posando de frente, estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda';
+      promptHint.textContent  = 'Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.';
+    }
+  }
+
   async function handleFile(file) {
     const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!ALLOWED.includes(file.type)) { toast('Formato não suportado. Use JPEG, PNG ou WebP.', true); return; }
@@ -674,7 +776,12 @@
       const res = await fetch('/api/studio-generate', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body:    JSON.stringify({ garmentGcsUrl: garmentUrl, prompt, category }),
+        body:    JSON.stringify({
+          garmentGcsUrl: garmentUrl,
+          prompt,
+          category,
+          ...(modelUrl ? { modelGcsUrl: modelUrl } : {}),
+        }),
       });
 
       const data = await res.json();

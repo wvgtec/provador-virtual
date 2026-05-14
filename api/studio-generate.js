@@ -135,7 +135,7 @@ export default async function handler(req, res) {
 
   if (!isAuthorized(req)) return res.status(401).json({ error: 'Não autorizado.' });
 
-  const { garmentGcsUrl, prompt, category } = req.body || {};
+  const { garmentGcsUrl, prompt, category, modelGcsUrl } = req.body || {};
 
   if (!garmentGcsUrl || !String(garmentGcsUrl).startsWith('https://storage.googleapis.com/')) {
     return res.status(400).json({ error: 'garmentGcsUrl inválida.' });
@@ -163,10 +163,19 @@ export default async function handler(req, res) {
     if (!garmentRes.ok) throw new Error(`Falha ao buscar peça do GCS: ${garmentRes.status}`);
     const garmentBase64 = Buffer.from(await garmentRes.arrayBuffer()).toString('base64');
 
-    console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_imagen3_start', jobId }));
+    let personBase64;
 
-    // Etapa 1: gera modelo base
-    const personBase64 = await callImagen3({ prompt, accessToken });
+    if (modelGcsUrl && String(modelGcsUrl).startsWith('https://storage.googleapis.com/')) {
+      // Modelo fornecida: usa direto, pula Imagen 3
+      console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_model_provided', jobId }));
+      const modelRes = await fetch(modelGcsUrl);
+      if (!modelRes.ok) throw new Error(`Falha ao buscar foto da modelo: ${modelRes.status}`);
+      personBase64 = Buffer.from(await modelRes.arrayBuffer()).toString('base64');
+    } else {
+      // Sem modelo: gera com Imagen 3
+      console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_imagen3_start', jobId }));
+      personBase64 = await callImagen3({ prompt, accessToken });
+    }
 
     console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_tryon_start', jobId, category: category || 'auto' }));
 
