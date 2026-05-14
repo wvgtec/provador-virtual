@@ -204,17 +204,26 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
 }
 
 // ─── Veo 3 — Verifica LRO uma vez (não bloqueia) ─────────────────────────────
+// IMPORTANTE: o endpoint de polling de operações do Vertex AI NÃO aceita
+// autenticação por API key — exige sempre Bearer token (service account).
 async function checkVeo3LRO({ operationName, accessToken }) {
-  const LOCATION    = 'us-central1';
-  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${operationName}${veo3AuthQuery()}`;
+  const LOCATION     = 'us-central1';
+  // Sem ?key= aqui — operações do Vertex AI exigem OAuth2 Bearer token
+  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${operationName}`;
 
   const pollRes = await fetch(pollEndpoint, {
-    headers: veo3AuthHeaders(accessToken),
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!pollRes.ok) {
-    // Erro transitório — não lança, apenas re-enfileira
-    log('veo3_lro_poll_warn', { operationName, httpStatus: pollRes.status });
+    // Loga o erro real para diagnóstico — não engole silenciosamente
+    const errText = await pollRes.text().catch(() => '');
+    log('veo3_lro_poll_error', { operationName, httpStatus: pollRes.status, body: errText.slice(0, 300) });
+    // Erro 4xx permanente → lança para salvar como error no Redis
+    if (pollRes.status >= 400 && pollRes.status < 500) {
+      throw new Error(`LRO poll retornou ${pollRes.status}: ${errText.slice(0, 200)}`);
+    }
+    // Erro 5xx transitório → re-enfileira
     return { done: false };
   }
 
