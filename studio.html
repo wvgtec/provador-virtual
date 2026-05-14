@@ -404,8 +404,8 @@
           <p style="font-size:11px;margin-top:3px;color:var(--gray3)">Se não enviar, o modelo será gerado por IA</p>
         </label>
 
-        <div class="garment-preview" id="model-preview" style="margin-bottom:12px;">
-          <img id="model-thumb" src="" alt="Modelo selecionada">
+        <div id="model-preview" style="display:none;position:relative;margin-bottom:12px;">
+          <img id="model-thumb" src="" alt="Modelo selecionada" style="width:100%;height:200px;object-fit:contain;border-radius:8px;background:var(--gray1);">
           <button class="remove-btn" id="remove-model" title="Remover">✕</button>
         </div>
 
@@ -783,6 +783,21 @@
       garmentPreview.style.display = 'none';
       uploadZone.style.display     = 'block';
       garmentUrl = null;
+    } finally {
+      // Garante que o estado da modelo não foi afetado
+      refreshModelDisplay();
+    }
+  }
+
+  function refreshModelDisplay() {
+    const mp = document.getElementById('model-preview');
+    const mz = document.getElementById('model-upload-zone');
+    if (modelUrl) {
+      mp.style.display = 'block';
+      mz.style.display = 'none';
+    } else {
+      mp.style.display = 'none';
+      mz.style.display = 'block';
     }
   }
 
