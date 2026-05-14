@@ -71,6 +71,34 @@
     "api/create-checkout.js": {
       "maxDuration": 10,
       "memory": 128
+    },
+    "api/sizing.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/sizing-extract.js": {
+      "maxDuration": 30,
+      "memory": 256
+    },
+    "api/studio-auth.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/studio-upload-url.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/studio-generate.js": {
+      "maxDuration": 60,
+      "memory": 512
+    },
+    "api/studio-result.js": {
+      "maxDuration": 10,
+      "memory": 128
+    },
+    "api/studio-video.js": {
+      "maxDuration": 10,
+      "memory": 128
     }
   },
   "headers": [
@@ -88,6 +116,17 @@
       "headers": [
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
+    {
+      "source": "/studio.html",
+      "headers": [
+        { "key": "Cache-Control",          "value": "no-store, no-cache, must-revalidate" },
+        { "key": "X-Frame-Options",        "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-XSS-Protection",       "value": "1; mode=block" },
+        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" },
+        { "key": "Content-Security-Policy","value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://storage.googleapis.com; img-src 'self' data: https://storage.googleapis.com blob:; media-src 'self' https://storage.googleapis.com blob:; frame-ancestors 'none'" }
       ]
     },
     {

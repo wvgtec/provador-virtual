@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mirage Studio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:   #111111;
+      --yellow:  #F5C53F;
+      --gray1:   #f5f5f5;
+      --gray2:   #e8e8e8;
+      --gray3:   #999999;
+      --red:     #e53e3e;
+      --radius:  10px;
+      --shadow:  0 2px 12px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fafafa;
+      color: var(--black);
+      min-height: 100vh;
+    }
+
+    /* ── Tela de senha ── */
+    #auth-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .auth-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+    .auth-card .logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .auth-card .logo span { color: var(--yellow); }
+    .auth-card p {
+      color: var(--gray3);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+    .auth-card input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--gray2);
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color .15s;
+      margin-bottom: 14px;
+    }
+    .auth-card input[type="password"]:focus { border-color: var(--black); }
+    .auth-error {
+      color: var(--red);
+      font-size: 13px;
+      margin-bottom: 12px;
+      min-height: 18px;
+    }
+
+    /* ── Botões ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: opacity .15s, transform .1s;
+      text-decoration: none;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn-primary  { background: var(--black); color: #fff; width: 100%; }
+    .btn-yellow   { background: var(--yellow); color: var(--black); }
+    .btn-outline  { background: transparent; color: var(--black); border: 1.5px solid var(--gray2); }
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+    /* ── App layout ── */
+    #app { display: none; }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--gray2);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    .header-logo span { color: var(--yellow); }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--yellow);
+      color: var(--black);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 780px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    /* ── Painel esquerdo ── */
+    .panel {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--gray3);
+      margin-bottom: 18px;
+    }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      border: 2px dashed var(--gray2);
+      border-radius: 8px;
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--yellow);
+      background: #fffdf0;
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
+    .upload-zone p { font-size: 14px; color: var(--gray3); }
+    .upload-zone strong { color: var(--black); }
+
+    .garment-preview {
+      display: none;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .garment-preview img {
+      width: 100%;
+      height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: var(--gray1);
+    }
+    .garment-preview .remove-btn {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: rgba(0,0,0,.6);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 7px;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      border: 1.5px solid var(--gray2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color .15s;
+    }
+    textarea:focus, input[type="text"]:focus { border-color: var(--black); }
+    .field-hint { font-size: 12px; color: var(--gray3); margin-top: 5px; margin-bottom: 16px; }
+
+    /* ── Painel direito — resultados ── */
+    .results-area { display: flex; flex-direction: column; gap: 20px; }
+
+    .result-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .result-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--gray2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .result-card-header h3 { font-size: 15px; font-weight: 600; }
+    .result-card-body { padding: 20px; }
+
+    /* ── Skeleton ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--gray1) 25%, var(--gray2) 50%, var(--gray1) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .skeleton-img { width: 100%; aspect-ratio: 3/4; }
+    .skeleton-video { width: 100%; aspect-ratio: 9/16; max-height: 420px; }
+
+    /* ── Imagem resultado ── */
+    .result-image {
+      width: 100%;
+      border-radius: 8px;
+      display: block;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+    }
+
+    /* ── Vídeo resultado ── */
+    .result-video {
+      width: 100%;
+      border-radius: 8px;
+      display: block;
+      max-height: 500px;
+    }
+
+    /* ── Status badge ── */
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot.processing { background: var(--yellow); animation: pulse 1s infinite; }
+    .status-dot.done       { background: #48bb78; }
+    .status-dot.error      { background: var(--red); }
+    .status-dot.pending    { background: var(--gray3); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+    .status-label { font-size: 13px; color: var(--gray3); }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      height: 4px;
+      background: var(--gray2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--yellow);
+      border-radius: 2px;
+      animation: progress-indeterminate 1.5s ease-in-out infinite;
+    }
+    @keyframes progress-indeterminate {
+      0%   { width: 0%;   margin-left: 0; }
+      50%  { width: 50%;  margin-left: 25%; }
+      100% { width: 0%;   margin-left: 100%; }
+    }
+
+    /* ── Histórico ── */
+    #history-section { display: none; }
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+    }
+    .history-thumb {
+      cursor: pointer;
+      border-radius: 6px;
+      overflow: hidden;
+      aspect-ratio: 3/4;
+      border: 2px solid transparent;
+      transition: border-color .15s;
+    }
+    .history-thumb:hover { border-color: var(--yellow); }
+    .history-thumb.active { border-color: var(--black); }
+    .history-thumb img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--gray3);
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: var(--black);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .2s, transform .2s;
+      pointer-events: none;
+      z-index: 999;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { background: var(--red); }
+
+    .divider { height: 1px; background: var(--gray2); margin: 16px 0; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ TELA DE SENHA ═══════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="logo">Mirage <span>Studio</span></div>
+    <p>Ferramenta interna — uso exclusivo</p>
+    <input type="password" id="password-input" placeholder="Senha de acesso" autocomplete="current-password">
+    <div class="auth-error" id="auth-error"></div>
+    <button class="btn btn-primary" id="login-btn">Entrar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ APP ═══════════════════ -->
+<div id="app">
+  <header>
+    <div class="header-logo">Mirage <span>Studio</span></div>
+    <div class="header-actions">
+      <span class="badge">Interno</span>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Painel esquerdo — controles -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Peça de roupa</div>
+
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="file-input" accept="image/jpeg,image/jpg,image/png,image/webp">
+          <div class="icon">👗</div>
+          <p><strong>Arraste ou clique</strong> para enviar</p>
+          <p style="font-size:12px;margin-top:4px">JPEG, PNG ou WebP — máx. 5 MB</p>
+        </div>
+
+        <div class="garment-preview" id="garment-preview">
+          <img id="garment-thumb" src="" alt="Peça selecionada">
+          <button class="remove-btn" id="remove-garment" title="Remover">✕</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <label class="field-label" for="prompt-input">Prompt da foto</label>
+        <textarea id="prompt-input" rows="5" placeholder="Modelo feminina, 25 anos, pele morena, cabelo cacheado, posando de frente, estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda"></textarea>
+        <div class="field-hint">Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.</div>
+
+        <button class="btn btn-primary" id="generate-btn">
+          <span>✨</span> Gerar foto do modelo
+        </button>
+      </div>
+
+      <!-- Prompt de vídeo — aparece após ter imagem -->
+      <div class="panel" id="video-panel" style="margin-top:16px;display:none;">
+        <div class="panel-title">Gerar vídeo</div>
+
+        <label class="field-label" for="video-prompt-input">Prompt do vídeo</label>
+        <textarea id="video-prompt-input" rows="3" placeholder="modelo caminhando levemente, cabelo ao vento, câmera lenta, 8 segundos"></textarea>
+        <div class="field-hint" style="margin-bottom:16px">Descreva o movimento e atmosfera do vídeo. 5–500 caracteres.</div>
+
+        <button class="btn btn-yellow" id="video-btn" style="width:100%">
+          <span>🎬</span> Gerar vídeo
+        </button>
+      </div>
+    </div>
+
+    <!-- Painel direito — resultados -->
+    <div class="results-area">
+
+      <!-- Estado vazio -->
+      <div class="result-card" id="empty-card">
+        <div class="empty-state">
+          <div class="icon">🪄</div>
+          <p>Envie uma peça e escreva um prompt<br>para gerar a primeira foto.</p>
+        </div>
+      </div>
+
+      <!-- Resultado da imagem -->
+      <div class="result-card" id="image-card" style="display:none;">
+        <div class="result-card-header">
+          <h3>Foto gerada</h3>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="status-dot" id="image-status-dot"></span>
+            <span class="status-label" id="image-status-label"></span>
+          </div>
+        </div>
+        <div class="result-card-body">
+          <div id="image-progress" class="progress-bar" style="display:none;">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div id="image-skeleton" class="skeleton skeleton-img" style="display:none;"></div>
+          <img id="result-img" class="result-image" src="" alt="Resultado" style="display:none;">
+          <div id="image-error-msg" style="color:var(--red);font-size:13px;display:none;margin-bottom:12px;"></div>
+          <div id="image-actions" style="display:none;margin-top:14px;display:none;gap:8px;flex-wrap:wrap;">
+            <a id="download-image-btn" class="btn btn-outline btn-sm" download="mirage-studio.png">⬇ Baixar foto</a>
+            <button class="btn btn-yellow btn-sm" id="use-for-video-btn">🎬 Gerar vídeo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultado do vídeo -->
+      <div class="result-card" id="video-card" style="display:none;">
+        <div class="result-card-header">
+          <h3>Vídeo gerado</h3>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="status-dot" id="video-status-dot"></span>
+            <span class="status-label" id="video-status-label"></span>
+          </div>
+        </div>
+        <div class="result-card-body">
+          <div id="video-progress" class="progress-bar" style="display:none;">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div id="video-skeleton" class="skeleton skeleton-video" style="display:none;"></div>
+          <video id="result-video" class="result-video" controls style="display:none;"></video>
+          <div id="video-error-msg" style="color:var(--red);font-size:13px;display:none;margin-bottom:12px;"></div>
+          <div id="video-actions" style="display:none;margin-top:14px;gap:8px;">
+            <a id="download-video-btn" class="btn btn-outline btn-sm" download="mirage-studio.mp4">⬇ Baixar vídeo</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Histórico da sessão -->
+      <div class="result-card" id="history-section">
+        <div class="result-card-header">
+          <h3>Histórico da sessão</h3>
+          <span class="status-label" id="history-count">0 geração</span>
+        </div>
+        <div class="result-card-body">
+          <div class="history-grid" id="history-grid"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ─── Estado ───────────────────────────────────────────────────────────────
+  let token        = sessionStorage.getItem('studio_token') || '';
+  let garmentUrl   = null;   // URL GCS da peça após upload
+  let imageJobId   = null;
+  let videoJobId   = null;
+  let imagePollTimer = null;
+  let videoPollTimer = null;
+  const history    = []; // { imageUrl, jobId }
+
+  // ─── Utilitários ──────────────────────────────────────────────────────────
+  function toast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className   = 'show' + (isError ? ' error' : '');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.className = ''; }, 3500);
+  }
+
+  function setLoading(btn, loading, label) {
+    btn.disabled    = loading;
+    btn.textContent = loading ? label : btn.dataset.label || btn.textContent;
+  }
+
+  // ─── Auth ─────────────────────────────────────────────────────────────────
+  const authScreen = document.getElementById('auth-screen');
+  const appEl      = document.getElementById('app');
+
+  function showApp() {
+    authScreen.style.display = 'none';
+    appEl.style.display = 'block';
+  }
+
+  if (token) {
+    // Valida token salvo antes de exibir a UI
+    fetch('/api/studio-auth', {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(r => {
+      if (r.ok) { showApp(); }
+      else { sessionStorage.removeItem('studio_token'); token = ''; }
+    }).catch(() => {});
+  }
+
+  document.getElementById('login-btn').addEventListener('click', async () => {
+    const pwd = document.getElementById('password-input').value.trim();
+    const err = document.getElementById('auth-error');
+    if (!pwd) { err.textContent = 'Digite a senha.'; return; }
+
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Verificando...';
+
+    try {
+      const res = await fetch('/api/studio-auth', {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${pwd}` },
+      });
+      if (res.ok) {
+        token = pwd;
+        sessionStorage.setItem('studio_token', token);
+        err.textContent = '';
+        showApp();
+      } else {
+        err.textContent = 'Senha incorreta.';
+      }
+    } catch {
+      err.textContent = 'Erro de conexão. Tente novamente.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  });
+
+  document.getElementById('password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('login-btn').click();
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('studio_token');
+    location.reload();
+  });
+
+  // ─── Upload de peça ───────────────────────────────────────────────────────
+  const uploadZone    = document.getElementById('upload-zone');
+  const fileInput     = document.getElementById('file-input');
+  const garmentPreview = document.getElementById('garment-preview');
+  const garmentThumb  = document.getElementById('garment-thumb');
+
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  document.getElementById('remove-garment').addEventListener('click', () => {
+    garmentUrl = null;
+    garmentPreview.style.display = 'none';
+    uploadZone.style.display     = 'block';
+    fileInput.value              = '';
+  });
+
+  async function handleFile(file) {
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!ALLOWED.includes(file.type)) { toast('Formato não suportado. Use JPEG, PNG ou WebP.', true); return; }
+    if (file.size > 5 * 1024 * 1024)  { toast('Imagem muito grande. Máximo 5 MB.', true); return; }
+
+    // Exibe preview local imediatamente
+    const localUrl = URL.createObjectURL(file);
+    garmentThumb.src           = localUrl;
+    garmentPreview.style.display = 'block';
+    uploadZone.style.display   = 'none';
+
+    toast('Enviando peça...');
+
+    try {
+      // Obtém URL assinada
+      const urlRes = await fetch('/api/studio-upload-url', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ contentType: file.type }),
+      });
+      if (!urlRes.ok) throw new Error('Falha ao obter URL de upload.');
+      const { signedUrl, gcsUrl } = await urlRes.json();
+
+      // PUT direto no GCS
+      const putRes = await fetch(signedUrl, {
+        method:  'PUT',
+        headers: { 'Content-Type': file.type },
+        body:    file,
+      });
+      if (!putRes.ok) throw new Error('Falha ao enviar para o GCS.');
+
+      garmentUrl = gcsUrl;
+      toast('Peça enviada ✓');
+    } catch (err) {
+      toast(err.message, true);
+      garmentPreview.style.display = 'none';
+      uploadZone.style.display     = 'block';
+      garmentUrl = null;
+    }
+  }
+
+  // ─── Gerar imagem ─────────────────────────────────────────────────────────
+  const generateBtn = document.getElementById('generate-btn');
+  generateBtn.dataset.label = generateBtn.textContent;
+
+  generateBtn.addEventListener('click', async () => {
+    if (!garmentUrl) { toast('Envie uma peça de roupa primeiro.', true); return; }
+    const prompt = document.getElementById('prompt-input').value.trim();
+    if (prompt.length < 10) { toast('Prompt muito curto. Mínimo 10 caracteres.', true); return; }
+    if (prompt.length > 1000) { toast('Prompt muito longo. Máximo 1000 caracteres.', true); return; }
+
+    // Reset estado anterior
+    if (imagePollTimer) { clearInterval(imagePollTimer); imagePollTimer = null; }
+    imageJobId = null;
+    setImageState('loading');
+    document.getElementById('empty-card').style.display = 'none';
+    document.getElementById('image-card').style.display = 'block';
+    document.getElementById('video-panel').style.display = 'none';
+    document.getElementById('video-card').style.display  = 'none';
+
+    generateBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/studio-generate', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ garmentGcsUrl: garmentUrl, prompt }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setImageState('error', data.error || 'Erro ao gerar imagem.');
+        toast(data.error || 'Erro ao gerar imagem.', true);
+        generateBtn.disabled = false;
+        return;
+      }
+
+      // Imagem retornou diretamente (geração síncrona)
+      if (data.resultImage) {
+        imageJobId = data.jobId;
+        setImageDone(data.resultImage);
+        addHistory(data.jobId, data.resultImage);
+        generateBtn.disabled = false;
+        return;
+      }
+
+      // Fallback: jobId retornado, inicia polling
+      if (data.jobId) {
+        imageJobId = data.jobId;
+        startImagePolling();
+      }
+
+    } catch (err) {
+      setImageState('error', 'Erro de conexão.');
+      toast('Erro de conexão.', true);
+    }
+
+    generateBtn.disabled = false;
+  });
+
+  function startImagePolling() {
+    if (imagePollTimer) clearInterval(imagePollTimer);
+    imagePollTimer = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/studio-result?jobId=${imageJobId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const d = await r.json();
+        if (d.status === 'done' && d.resultImage) {
+          clearInterval(imagePollTimer);
+          setImageDone(d.resultImage);
+          addHistory(imageJobId, d.resultImage);
+          generateBtn.disabled = false;
+        } else if (d.status === 'error') {
+          clearInterval(imagePollTimer);
+          setImageState('error', d.error || 'Erro ao gerar imagem.');
+          generateBtn.disabled = false;
+        }
+      } catch {}
+    }, 2000);
+  }
+
+  function setImageState(state, errorMsg = '') {
+    const dot    = document.getElementById('image-status-dot');
+    const label  = document.getElementById('image-status-label');
+    const prog   = document.getElementById('image-progress');
+    const skel   = document.getElementById('image-skeleton');
+    const img    = document.getElementById('result-img');
+    const errMsg = document.getElementById('image-error-msg');
+    const actions = document.getElementById('image-actions');
+
+    dot.className   = `status-dot ${state === 'loading' ? 'processing' : state}`;
+    prog.style.display    = state === 'loading' ? 'block' : 'none';
+    skel.style.display    = state === 'loading' ? 'block' : 'none';
+    img.style.display     = 'none';
+    errMsg.style.display  = 'none';
+    actions.style.display = 'none';
+
+    if (state === 'loading') {
+      label.textContent = 'Gerando (~20s)…';
+    } else if (state === 'error') {
+      label.textContent       = 'Erro';
+      errMsg.textContent      = errorMsg;
+      errMsg.style.display    = 'block';
+    }
+  }
+
+  function setImageDone(url) {
+    const dot    = document.getElementById('image-status-dot');
+    const label  = document.getElementById('image-status-label');
+    const prog   = document.getElementById('image-progress');
+    const skel   = document.getElementById('image-skeleton');
+    const img    = document.getElementById('result-img');
+    const actions = document.getElementById('image-actions');
+    const dlBtn  = document.getElementById('download-image-btn');
+
+    dot.className        = 'status-dot done';
+    label.textContent    = 'Pronto';
+    prog.style.display   = 'none';
+    skel.style.display   = 'none';
+    img.src              = url;
+    img.style.display    = 'block';
+    dlBtn.href           = url;
+    actions.style.display = 'flex';
+
+    document.getElementById('video-panel').style.display = 'block';
+  }
+
+  // ─── Gerar vídeo ──────────────────────────────────────────────────────────
+  document.getElementById('use-for-video-btn').addEventListener('click', () => {
+    document.getElementById('video-panel').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('video-prompt-input').focus();
+  });
+
+  const videoBtn = document.getElementById('video-btn');
+  videoBtn.dataset.label = videoBtn.textContent;
+
+  videoBtn.addEventListener('click', async () => {
+    if (!imageJobId) { toast('Gere uma foto primeiro.', true); return; }
+    const videoPrompt = document.getElementById('video-prompt-input').value.trim();
+    if (videoPrompt.length < 5)  { toast('Prompt de vídeo muito curto.', true); return; }
+    if (videoPrompt.length > 500){ toast('Prompt de vídeo muito longo.', true); return; }
+
+    if (videoPollTimer) { clearInterval(videoPollTimer); videoPollTimer = null; }
+    setVideoState('loading');
+    document.getElementById('video-card').style.display = 'block';
+    videoBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/studio-video', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ sourceJobId: imageJobId, videoPrompt }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setVideoState('error', data.error || 'Erro ao enfileirar vídeo.');
+        toast(data.error || 'Erro.', true);
+        videoBtn.disabled = false;
+        return;
+      }
+
+      videoJobId = data.jobId;
+      startVideoPolling();
+
+    } catch {
+      setVideoState('error', 'Erro de conexão.');
+      videoBtn.disabled = false;
+    }
+  });
+
+  function startVideoPolling() {
+    if (videoPollTimer) clearInterval(videoPollTimer);
+    videoPollTimer = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/studio-result?jobId=${videoJobId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const d = await r.json();
+        if (d.status === 'done' && d.resultVideo) {
+          clearInterval(videoPollTimer);
+          setVideoDone(d.resultVideo);
+          videoBtn.disabled = false;
+        } else if (d.status === 'error') {
+          clearInterval(videoPollTimer);
+          setVideoState('error', d.error || 'Erro ao gerar vídeo.');
+          videoBtn.disabled = false;
+        }
+      } catch {}
+    }, 5000);
+  }
+
+  function setVideoState(state, errorMsg = '') {
+    const dot    = document.getElementById('video-status-dot');
+    const label  = document.getElementById('video-status-label');
+    const prog   = document.getElementById('video-progress');
+    const skel   = document.getElementById('video-skeleton');
+    const vid    = document.getElementById('result-video');
+    const errMsg = document.getElementById('video-error-msg');
+    const actions = document.getElementById('video-actions');
+
+    dot.className        = `status-dot ${state === 'loading' ? 'processing' : state}`;
+    prog.style.display   = state === 'loading' ? 'block' : 'none';
+    skel.style.display   = state === 'loading' ? 'block' : 'none';
+    vid.style.display    = 'none';
+    errMsg.style.display = 'none';
+    actions.style.display = 'none';
+
+    if (state === 'loading') {
+      label.textContent = 'Gerando… pode levar até 5 min';
+    } else if (state === 'error') {
+      label.textContent    = 'Erro';
+      errMsg.textContent   = errorMsg;
+      errMsg.style.display = 'block';
+    }
+  }
+
+  function setVideoDone(url) {
+    const dot    = document.getElementById('video-status-dot');
+    const label  = document.getElementById('video-status-label');
+    const prog   = document.getElementById('video-progress');
+    const skel   = document.getElementById('video-skeleton');
+    const vid    = document.getElementById('result-video');
+    const actions = document.getElementById('video-actions');
+    const dlBtn  = document.getElementById('download-video-btn');
+
+    dot.className        = 'status-dot done';
+    label.textContent    = 'Pronto';
+    prog.style.display   = 'none';
+    skel.style.display   = 'none';
+    vid.src              = url;
+    vid.style.display    = 'block';
+    dlBtn.href           = url;
+    actions.style.display = 'flex';
+  }
+
+  // ─── Histórico ────────────────────────────────────────────────────────────
+  function addHistory(jobId, imageUrl) {
+    history.unshift({ jobId, imageUrl });
+    if (history.length > 10) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const section = document.getElementById('history-section');
+    const grid    = document.getElementById('history-grid');
+    const count   = document.getElementById('history-count');
+
+    if (history.length === 0) { section.style.display = 'none'; return; }
+
+    section.style.display = 'block';
+    count.textContent     = `${history.length} geração${history.length > 1 ? 'ões' : ''}`;
+
+    grid.innerHTML = history.map((h, i) => `
+      <div class="history-thumb${i === 0 ? ' active' : ''}" data-idx="${i}" title="Ver geração">
+        <img src="${h.imageUrl}" alt="Geração ${i + 1}" loading="lazy">
+      </div>
+    `).join('');
+
+    grid.querySelectorAll('.history-thumb').forEach(el => {
+      el.addEventListener('click', () => {
+        const h = history[+el.dataset.idx];
+        if (!h) return;
+        grid.querySelectorAll('.history-thumb').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        setImageDone(h.imageUrl);
+        imageJobId = h.jobId;
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
