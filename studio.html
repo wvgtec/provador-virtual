@@ -611,6 +611,28 @@
     location.reload();
   });
 
+  // ─── Resize de imagem antes do upload ────────────────────────────────────
+  // Virtual Try-On rejeita base64 > 27M chars (~19MB). Redimensiona para max 1500px.
+  async function resizeForUpload(file, maxPx = 1500) {
+    return new Promise(resolve => {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objUrl);
+        let { width, height } = img;
+        if (width <= maxPx && height <= maxPx) { resolve(file); return; }
+        if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+        else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', 0.92);
+      };
+      img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
+      img.src = objUrl;
+    });
+  }
+
   // ─── Upload de peça ───────────────────────────────────────────────────────
   const uploadZone    = document.getElementById('upload-zone');
   const fileInput     = document.getElementById('file-input');
@@ -687,10 +709,12 @@
       if (!urlRes.ok) throw new Error('Falha ao obter URL de upload.');
       const { signedUrl, gcsUrl } = await urlRes.json();
 
+      const resizedModel = await resizeForUpload(file);
+
       const putRes = await fetch(signedUrl, {
         method:  'PUT',
-        headers: { 'Content-Type': file.type },
-        body:    file,
+        headers: { 'Content-Type': 'image/jpeg' },
+        body:    resizedModel,
       });
       if (!putRes.ok) throw new Error('Falha ao enviar para o GCS.');
 
@@ -742,11 +766,13 @@
       if (!urlRes.ok) throw new Error('Falha ao obter URL de upload.');
       const { signedUrl, gcsUrl } = await urlRes.json();
 
-      // PUT direto no GCS
+      // Redimensiona para max 1500px antes de enviar (limite do Try-On API)
+      const resized = await resizeForUpload(file);
+
       const putRes = await fetch(signedUrl, {
         method:  'PUT',
-        headers: { 'Content-Type': file.type },
-        body:    file,
+        headers: { 'Content-Type': 'image/jpeg' },
+        body:    resized,
       });
       if (!putRes.ok) throw new Error('Falha ao enviar para o GCS.');
 
