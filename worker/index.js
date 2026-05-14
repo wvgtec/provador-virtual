@@ -187,7 +187,7 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
     headers: { ...veo3AuthHeaders(accessToken), 'Content-Type': 'application/json' },
     body: JSON.stringify({
       instances: [{ prompt, image: { bytesBase64Encoded: imageBase64 } }],
-      parameters: { aspectRatio: '9:16', sampleCount: 1, durationSeconds: 8 },
+      parameters: { aspectRatio: '9:16', sampleCount: 1, durationSeconds: 5 },
     }),
   });
 
@@ -239,7 +239,7 @@ async function processStudioVideo(job) {
   const { jobId, resultImage, videoPrompt } = job;
   const operationName = job.operationName || null;
   const pollAttempts  = job.pollAttempts  || 0;
-  const MAX_POLLS     = 40; // 40 × 30s ≈ 20 min máximo
+  const MAX_POLLS     = 80; // 80 × 15s ≈ 20 min máximo
 
   const accessToken = await getGoogleAccessToken();
 
@@ -261,7 +261,7 @@ async function processStudioVideo(job) {
     }), { ex: 172800 });
 
     // Re-enfileira para checar status em 30s
-    await qstash.publishJSON({ url: WORKER_URL, body: { jobId }, delay: 30 });
+    await qstash.publishJSON({ url: WORKER_URL, body: { jobId }, delay: 15 });
     log('veo3_lro_enqueued_poll', { jobId, operationName: newOpName });
     return;
   }
@@ -279,7 +279,7 @@ async function processStudioVideo(job) {
     await redis.set(`studio:job:${jobId}`, JSON.stringify({
       ...job, pollAttempts: pollAttempts + 1,
     }), { ex: 172800 });
-    await qstash.publishJSON({ url: WORKER_URL, body: { jobId }, delay: 30 });
+    await qstash.publishJSON({ url: WORKER_URL, body: { jobId }, delay: 15 });
     log('veo3_lro_polling', { jobId, operationName, pollAttempts: pollAttempts + 1 });
     return;
   }
