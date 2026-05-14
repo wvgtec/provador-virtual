@@ -68,15 +68,28 @@ async function uploadToGCS(accessToken, objectPath, buffer, contentType = 'image
   return `https://storage.googleapis.com/${BUCKET}/${objectPath}`;
 }
 
-// Etapa 1: Gera modelo base com Imagen 3 (só texto, sem referência de peça)
-async function callImagen3({ prompt, accessToken }) {
+// Etapa 1: Gera modelo base com Imagen 3
+// Se modelBase64 for fornecido, usa a modelo como referência de sujeito para preservar a identidade
+// e aplica o prompt como ambiente/estilo. Sem modelBase64, gera do zero.
+async function callImagen3({ prompt, modelBase64, accessToken }) {
   const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-001:predict`;
+
+  const instance = modelBase64
+    ? {
+        prompt,
+        referenceImages: [{
+          referenceType:  'REFERENCE_TYPE_SUBJECT',
+          referenceId:    1,
+          referenceImage: { bytesBase64Encoded: modelBase64 },
+        }],
+      }
+    : { prompt };
 
   const res = await fetch(endpoint, {
     method:  'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      instances: [{ prompt }],
+      instances: [instance],
       parameters: {
         sampleCount:      1,
         aspectRatio:      '3:4',
@@ -88,6 +101,11 @@ async function callImagen3({ prompt, accessToken }) {
 
   if (!res.ok) {
     const err = await res.text();
+    // Fallback: se referenceImages não for suportado, tenta sem referência
+    if (modelBase64 && res.status === 400) {
+      console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'imagen3_ref_fallback' }));
+      return callImagen3({ prompt, accessToken });
+    }
     throw new Error(`Imagen 3 retornou ${res.status}: ${err}`);
   }
 
@@ -166,13 +184,21 @@ export default async function handler(req, res) {
     let personBase64;
 
     if (modelGcsUrl && String(modelGcsUrl).startsWith('https://storage.googleapis.com/')) {
-      // Modelo fornecida: usa direto, pula Imagen 3
-      console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_model_provided', jobId }));
       const modelRes = await fetch(modelGcsUrl);
       if (!modelRes.ok) throw new Error(`Falha ao buscar foto da modelo: ${modelRes.status}`);
-      personBase64 = Buffer.from(await modelRes.arrayBuffer()).toString('base64');
+      const modelBase64 = Buffer.from(await modelRes.arrayBuffer()).toString('base64');
+
+      // Modelo + prompt: Imagen 3 usa a modelo como referência e aplica o ambiente do prompt
+      // Modelo sem prompt: usa a foto direto, sem Imagen 3
+      if (prompt) {
+        console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_imagen3_with_model', jobId }));
+        personBase64 = await callImagen3({ prompt, modelBase64, accessToken });
+      } else {
+        console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_model_provided', jobId }));
+        personBase64 = modelBase64;
+      }
     } else {
-      // Sem modelo: gera com Imagen 3
+      // Sem modelo: gera do zero com Imagen 3
       console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_imagen3_start', jobId }));
       personBase64 = await callImagen3({ prompt, accessToken });
     }
