@@ -164,27 +164,16 @@ async function fetchGcsFile(gcsUri, accessToken) {
   return Buffer.from(await res.arrayBuffer());
 }
 
-// ─── Auth helper para Veo 3 ───────────────────────────────────────────────────
-// Prioriza API Key (GOOGLE_API_KEY) quando disponível — mais simples.
-// Fallback: Bearer token via service account.
-function veo3AuthHeaders(accessToken) {
-  if (process.env.GOOGLE_API_KEY) return {};          // auth via ?key= na URL
-  return { Authorization: `Bearer ${accessToken}` };
-}
-function veo3AuthQuery() {
-  return process.env.GOOGLE_API_KEY ? `?key=${process.env.GOOGLE_API_KEY}` : '';
-}
-
 // ─── Veo 3 — Inicia LRO (retorna operationName imediatamente) ────────────────
+// Vertex AI predictLongRunning exige OAuth2 Bearer token — API keys não são aceitas.
 async function callVeo3Start({ imageBase64, prompt, accessToken }) {
   const PROJECT_ID = 'provador-virtual-494213';
   const LOCATION   = 'us-central1';
-  const base       = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/veo-3.0-generate-preview:predictLongRunning`;
-  const endpoint   = `${base}${veo3AuthQuery()}`;
+  const endpoint   = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/veo-3.0-generate-preview:predictLongRunning`;
 
   const startRes = await fetch(endpoint, {
     method:  'POST',
-    headers: { ...veo3AuthHeaders(accessToken), 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       instances: [{ prompt, image: { bytesBase64Encoded: imageBase64 } }],
       parameters: { aspectRatio: '9:16', sampleCount: 1, durationSeconds: 5 },
@@ -199,16 +188,13 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
   const lro = await startRes.json();
   const operationName = lro.name;
   if (!operationName) throw new Error('Veo 3 não retornou operationName: ' + JSON.stringify(lro));
-  log('veo3_lro_started', { operationName, authMode: process.env.GOOGLE_API_KEY ? 'api_key' : 'service_account' });
+  log('veo3_lro_started', { operationName });
   return operationName;
 }
 
 // ─── Veo 3 — Verifica LRO uma vez (não bloqueia) ─────────────────────────────
-// IMPORTANTE: o endpoint de polling de operações do Vertex AI NÃO aceita
-// autenticação por API key — exige sempre Bearer token (service account).
 async function checkVeo3LRO({ operationName, accessToken }) {
   const LOCATION     = 'us-central1';
-  // Sem ?key= aqui — operações do Vertex AI exigem OAuth2 Bearer token
   const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${operationName}`;
 
   const pollRes = await fetch(pollEndpoint, {
