@@ -790,8 +790,10 @@
   generateBtn.addEventListener('click', async () => {
     if (!garmentUrl) { toast('Envie uma peça de roupa primeiro.', true); return; }
     const prompt = document.getElementById('prompt-input').value.trim();
-    if (prompt.length < 10) { toast('Prompt muito curto. Mínimo 10 caracteres.', true); return; }
-    if (prompt.length > 1000) { toast('Prompt muito longo. Máximo 1000 caracteres.', true); return; }
+    if (!modelUrl) {
+      if (prompt.length < 10)   { toast('Prompt muito curto. Mínimo 10 caracteres.', true); return; }
+      if (prompt.length > 1000) { toast('Prompt muito longo. Máximo 1000 caracteres.', true); return; }
+    }
 
     // Reset estado anterior
     if (imagePollTimer) { clearInterval(imagePollTimer); imagePollTimer = null; }
