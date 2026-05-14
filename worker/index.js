@@ -169,7 +169,7 @@ async function fetchGcsFile(gcsUri, accessToken) {
 async function callVeo3Start({ imageBase64, prompt, accessToken }) {
   const PROJECT_ID = 'provador-virtual-494213';
   const LOCATION   = 'us-central1';
-  const endpoint   = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/veo-3.0-generate-preview:predictLongRunning`;
+  const endpoint   = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/veo-2.0-generate-001:predictLongRunning`;
 
   const startRes = await fetch(endpoint, {
     method:  'POST',
