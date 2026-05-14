@@ -97,37 +97,6 @@ async function callImagen3({ prompt, accessToken }) {
   return imageBase64;
 }
 
-// Etapa 1b: Troca o fundo da foto da modelo preservando a pessoa (EDIT_MODE_BGSWAP)
-async function callImagen3BgSwap({ prompt, modelBase64, accessToken }) {
-  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-capability-001:predict`;
-
-  const res = await fetch(endpoint, {
-    method:  'POST',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      instances: [{
-        prompt,
-        image:      { bytesBase64Encoded: modelBase64 },
-        editConfig: { editMode: 'EDIT_MODE_BGSWAP' },
-      }],
-      parameters: {
-        sampleCount:      1,
-        safetySetting:    'block_few',
-        personGeneration: 'allow_all',
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Imagen 3 BgSwap retornou ${res.status}: ${err}`);
-  }
-
-  const data = await res.json();
-  const imageBase64 = data?.predictions?.[0]?.bytesBase64Encoded;
-  if (!imageBase64) throw new Error('Imagen 3 BgSwap não retornou imagem: ' + JSON.stringify(data));
-  return imageBase64;
-}
 
 // Etapa 2: Aplica a peça exata no modelo gerado via Virtual Try-On
 async function callVirtualTryOn({ personBase64, garmentBase64, category, accessToken }) {
@@ -198,19 +167,11 @@ export default async function handler(req, res) {
     let personBase64;
 
     if (modelGcsUrl && String(modelGcsUrl).startsWith('https://storage.googleapis.com/')) {
+      // Modelo fornecida (original ou já ajustada pelo studio-adjust-model) — usa direto
+      console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_model_provided', jobId }));
       const modelRes = await fetch(modelGcsUrl);
       if (!modelRes.ok) throw new Error(`Falha ao buscar foto da modelo: ${modelRes.status}`);
-      const modelBase64 = Buffer.from(await modelRes.arrayBuffer()).toString('base64');
-
-      // Modelo + prompt: Imagen 3 usa a modelo como referência e aplica o ambiente do prompt
-      // Modelo sem prompt: usa a foto direto, sem Imagen 3
-      if (prompt) {
-        console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_imagen3_bgswap', jobId }));
-        personBase64 = await callImagen3BgSwap({ prompt, modelBase64, accessToken });
-      } else {
-        console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_model_provided', jobId }));
-        personBase64 = modelBase64;
-      }
+      personBase64 = Buffer.from(await modelRes.arrayBuffer()).toString('base64');
     } else {
       // Sem modelo: gera do zero com Imagen 3
       console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_imagen3_start', jobId }));

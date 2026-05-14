@@ -95,6 +95,10 @@
     "api/studio-video.js": {
       "maxDuration": 10,
       "memory": 128
+    },
+    "api/studio-adjust-model.js": {
+      "maxDuration": 60,
+      "memory": 512
     }
   },
   "headers": [

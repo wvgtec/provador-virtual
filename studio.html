@@ -409,6 +409,24 @@
           <button class="remove-btn" id="remove-model" title="Remover">✕</button>
         </div>
 
+        <!-- Painel de ajuste de ambiente — só aparece quando modelo carregada -->
+        <div id="adjust-panel" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span class="field-label" style="margin:0">Ajustar ambiente <span style="font-weight:400;color:var(--gray3)">(opcional)</span></span>
+            <span id="adjust-done-badge" style="display:none;font-size:12px;font-weight:600;color:#48bb78;">✓ Aplicado</span>
+          </div>
+          <textarea id="adjust-prompt-input" rows="3" placeholder="Estúdio fotográfico com fundo cinza, iluminação suave…" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical;margin-bottom:8px;"></textarea>
+          <button class="btn btn-outline" id="adjust-btn" style="width:100%;margin-bottom:10px;">✨ Ajustar ambiente</button>
+
+          <div id="adjust-preview-area" style="display:none;">
+            <img id="adjust-preview-thumb" src="" alt="Prévia ajustada" style="width:100%;border-radius:8px;margin-bottom:8px;object-fit:cover;max-height:220px;">
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" id="use-adjusted-btn" style="flex:1">✓ Usar esta foto</button>
+              <button class="btn btn-outline btn-sm" id="readjust-btn" style="flex:1">↺ Gerar novamente</button>
+            </div>
+          </div>
+        </div>
+
         <div class="divider"></div>
 
         <label class="field-label" for="category-select">Tipo da peça</label>
@@ -420,9 +438,11 @@
           <option value="dresses">Vestido / Saída de praia</option>
         </select>
 
-        <label class="field-label" for="prompt-input" id="prompt-label">Prompt do modelo e ambiente</label>
-        <textarea id="prompt-input" rows="5" placeholder="Modelo feminina, 25 anos, pele morena, cabelo cacheado, posando de frente, estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda"></textarea>
-        <div class="field-hint" id="prompt-hint">Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.</div>
+        <div id="prompt-section">
+          <label class="field-label" for="prompt-input" id="prompt-label">Prompt do modelo e ambiente</label>
+          <textarea id="prompt-input" rows="5" placeholder="Modelo feminina, 25 anos, pele morena, cabelo cacheado, posando de frente, estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda"></textarea>
+          <div class="field-hint" id="prompt-hint">Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.</div>
+        </div>
 
         <button class="btn btn-primary" id="generate-btn">
           <span>✨</span> Gerar foto do modelo
@@ -531,9 +551,10 @@
   'use strict';
 
   // ─── Estado ───────────────────────────────────────────────────────────────
-  let token        = sessionStorage.getItem('studio_token') || '';
-  let garmentUrl   = null;
-  let modelUrl     = null;   // URL GCS da foto da modelo (opcional)
+  let token           = sessionStorage.getItem('studio_token') || '';
+  let garmentUrl      = null;
+  let modelUrl        = null;   // URL GCS da foto da modelo (opcional)
+  let adjustedModelUrl = null;  // URL GCS da modelo com ambiente ajustado
   let imageJobId   = null;
   let videoJobId   = null;
   let imagePollTimer = null;
@@ -685,7 +706,8 @@
   });
 
   document.getElementById('remove-model').addEventListener('click', () => {
-    modelUrl = null;
+    modelUrl         = null;
+    adjustedModelUrl = null;
     modelPreview.style.display    = 'none';
     modelUploadZone.style.display = 'block';
     modelFileInput.value          = '';
@@ -735,16 +757,69 @@
   }
 
   function updatePromptLabel() {
+    const adjustPanel   = document.getElementById('adjust-panel');
+    const promptSection = document.getElementById('prompt-section');
     if (modelUrl) {
-      promptLabel.textContent = 'Prompt do ambiente';
-      promptInput.placeholder = 'Estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda';
-      promptHint.textContent  = 'Com modelo carregada, descreva apenas o ambiente e estilo. 10–1000 caracteres.';
+      adjustPanel.style.display   = 'block';
+      promptSection.style.display = 'none';
     } else {
-      promptLabel.textContent = 'Prompt do modelo e ambiente';
-      promptInput.placeholder = 'Modelo feminina, 25 anos, pele morena, cabelo cacheado, posando de frente, estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda';
-      promptHint.textContent  = 'Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.';
+      adjustPanel.style.display   = 'none';
+      promptSection.style.display = 'block';
+      // reseta ajuste ao remover modelo
+      adjustedModelUrl = null;
+      document.getElementById('adjust-preview-area').style.display = 'none';
+      document.getElementById('adjust-done-badge').style.display   = 'none';
+      document.getElementById('adjust-prompt-input').value         = '';
     }
   }
+
+  // ─── Ajuste de ambiente ───────────────────────────────────────────────────
+  document.getElementById('adjust-btn').addEventListener('click', async () => {
+    const prompt = document.getElementById('adjust-prompt-input').value.trim();
+    if (!prompt) { toast('Digite um prompt de ambiente.', true); return; }
+    if (!modelUrl) { toast('Carregue uma foto de modelo primeiro.', true); return; }
+
+    const btn = document.getElementById('adjust-btn');
+    btn.disabled = true; btn.textContent = 'Ajustando…';
+    document.getElementById('adjust-preview-area').style.display = 'none';
+    document.getElementById('adjust-done-badge').style.display   = 'none';
+
+    try {
+      const res = await fetch('/api/studio-adjust-model', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ modelGcsUrl: modelUrl, prompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao ajustar ambiente.');
+
+      document.getElementById('adjust-preview-thumb').src      = data.adjustedImageUrl;
+      document.getElementById('adjust-preview-area').style.display = 'block';
+      // guarda temporariamente mas não aplica até o usuário confirmar
+      document.getElementById('adjust-btn')._pendingUrl = data.adjustedImageUrl;
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = '✨ Ajustar ambiente';
+    }
+  });
+
+  document.getElementById('use-adjusted-btn').addEventListener('click', () => {
+    const url = document.getElementById('adjust-btn')._pendingUrl;
+    if (!url) return;
+    adjustedModelUrl = url;
+    document.getElementById('adjust-done-badge').style.display = 'inline';
+    document.getElementById('model-thumb').src = url;
+    toast('Ambiente aplicado ✓');
+  });
+
+  document.getElementById('readjust-btn').addEventListener('click', () => {
+    adjustedModelUrl = null;
+    document.getElementById('adjust-preview-area').style.display = 'none';
+    document.getElementById('adjust-done-badge').style.display   = 'none';
+    document.getElementById('adjust-btn')._pendingUrl            = null;
+    document.getElementById('model-thumb').src = modelUrl;
+  });
 
   async function handleFile(file) {
     const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -818,7 +893,7 @@
           garmentGcsUrl: garmentUrl,
           prompt,
           category,
-          ...(modelUrl ? { modelGcsUrl: modelUrl } : {}),
+          ...(adjustedModelUrl ? { modelGcsUrl: adjustedModelUrl } : modelUrl ? { modelGcsUrl: modelUrl } : {}),
         }),
       });
 
