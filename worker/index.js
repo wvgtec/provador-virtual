@@ -197,10 +197,15 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
 
 // ─── Veo 3 — Verifica LRO uma vez (não bloqueia) ─────────────────────────────
 async function checkVeo3LRO({ operationName, accessToken }) {
-  const LOCATION = 'us-central1';
-  // Remove barra inicial se presente para evitar URL malformada
-  const cleanName    = operationName.replace(/^\//, '');
-  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${cleanName}`;
+  const LOCATION   = 'us-central1';
+  const PROJECT_ID = 'provador-virtual-494213';
+
+  // operationName retornado pelo Veo:
+  //   projects/{p}/locations/{l}/publishers/google/models/{m}/operations/{id}
+  // O endpoint de polling requer o caminho sem /publishers/google/models/{m}:
+  //   projects/{p}/locations/{l}/operations/{id}
+  const opId         = operationName.split('/operations/')[1];
+  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/operations/${opId}`;
   log('veo3_lro_poll_attempt', { pollEndpoint });
 
   const pollRes = await fetch(pollEndpoint, {
