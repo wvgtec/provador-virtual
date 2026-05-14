@@ -187,6 +187,8 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
   }
 
   const lro = await startRes.json();
+  // Loga a resposta completa para inspecionar o formato real do operationName
+  log('veo3_lro_raw_response', { lro: JSON.stringify(lro) });
   const operationName = lro.name;
   if (!operationName) throw new Error('Veo 3 não retornou operationName: ' + JSON.stringify(lro));
   log('veo3_lro_started', { operationName });
@@ -195,8 +197,11 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
 
 // ─── Veo 3 — Verifica LRO uma vez (não bloqueia) ─────────────────────────────
 async function checkVeo3LRO({ operationName, accessToken }) {
-  const LOCATION     = 'us-central1';
-  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${operationName}`;
+  const LOCATION = 'us-central1';
+  // Remove barra inicial se presente para evitar URL malformada
+  const cleanName    = operationName.replace(/^\//, '');
+  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${cleanName}`;
+  log('veo3_lro_poll_attempt', { pollEndpoint });
 
   const pollRes = await fetch(pollEndpoint, {
     headers: { Authorization: `Bearer ${accessToken}` },
