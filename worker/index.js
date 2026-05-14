@@ -175,7 +175,7 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
     method:  'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      instances: [{ prompt, image: { bytesBase64Encoded: imageBase64 } }],
+      instances: [{ prompt, image: { bytesBase64Encoded: imageBase64, mimeType: 'image/jpeg' } }],
       parameters: { aspectRatio: '9:16', sampleCount: 1, durationSeconds: 5 },
     }),
   });
