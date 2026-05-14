@@ -1074,6 +1074,7 @@
     const dot    = document.getElementById('video-status-dot');
     const label  = document.getElementById('video-status-label');
     const prog   = document.getElementById('video-progress');
+    const procUI = document.getElementById('video-processing-ui');
     const skel   = document.getElementById('video-skeleton');
     const vid    = document.getElementById('result-video');
     const actions = document.getElementById('video-actions');
@@ -1082,6 +1083,7 @@
     dot.className        = 'status-dot done';
     label.textContent    = 'Pronto';
     prog.style.display   = 'none';
+    procUI.style.display = 'none';
     skel.style.display   = 'none';
     vid.src              = url;
     vid.style.display    = 'block';
