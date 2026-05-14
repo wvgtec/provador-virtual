@@ -1,12 +1,16 @@
 // api/studio-generate.js
-// Recebe peça de roupa (URL GCS) + prompt, chama Imagen 3, salva resultado no GCS.
-// Roda direto no Vercel — Imagen 3 demora ~15-30s, cabe no limite de 60s.
+// Fluxo em 2 etapas:
+//   1. Imagen 3 gera foto do modelo a partir do prompt de texto
+//   2. Virtual Try-On (virtual-try-on-001) aplica a peça exata no modelo gerado
+// Roda direto no Vercel (limite 60s).
 
 import { Redis } from '@upstash/redis';
 import { randomUUID, timingSafeEqual } from 'crypto';
 
 const redis  = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
 const BUCKET = process.env.GCS_BUCKET || 'mirage-tryon';
+const PROJECT_ID = 'provador-virtual-494213';
+const LOCATION   = 'us-central1';
 
 function isAuthorized(req) {
   const token = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
@@ -26,7 +30,6 @@ function pemToBuffer(pem) {
 async function getGoogleAccessToken() {
   const sa  = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   const now = Math.floor(Date.now() / 1000);
-
   const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
   const unsignedToken = `${encode({ alg: 'RS256', typ: 'JWT' })}.${encode({
     iss:   sa.client_email,
@@ -35,14 +38,12 @@ async function getGoogleAccessToken() {
     iat:   now,
     exp:   now + 3600,
   })}`;
-
   const privateKey = await crypto.subtle.importKey(
     'pkcs8', pemToBuffer(sa.private_key),
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
   );
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, Buffer.from(unsignedToken));
   const jwt = `${unsignedToken}.${Buffer.from(signature).toString('base64url')}`;
-
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -53,7 +54,7 @@ async function getGoogleAccessToken() {
   return tokenData.access_token;
 }
 
-async function uploadToGCS(accessToken, objectPath, buffer, contentType = 'image/png') {
+async function uploadToGCS(accessToken, objectPath, buffer, contentType = 'image/jpeg') {
   const url = `https://storage.googleapis.com/upload/storage/v1/b/${BUCKET}/o?uploadType=media&name=${encodeURIComponent(objectPath)}`;
   const res = await fetch(url, {
     method:  'POST',
@@ -67,39 +68,14 @@ async function uploadToGCS(accessToken, objectPath, buffer, contentType = 'image
   return `https://storage.googleapis.com/${BUCKET}/${objectPath}`;
 }
 
-async function callImagen3({ prompt, garmentBase64, accessToken }) {
-  const PROJECT_ID = 'provador-virtual-494213';
-  const LOCATION   = 'us-central1';
-  const MODEL      = 'imagen-3.0-generate-001';
-  const endpoint   = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:predict`;
+// Etapa 1: Gera modelo base com Imagen 3 (só texto, sem referência de peça)
+async function callImagen3({ prompt, accessToken }) {
+  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/imagen-3.0-generate-001:predict`;
 
-  const bodyWithRef = {
-    instances: [{
-      prompt,
-      referenceImages: [{
-        referenceType:  'REFERENCE_TYPE_SUBJECT',
-        referenceId:    1,
-        referenceImage: { bytesBase64Encoded: garmentBase64 },
-      }],
-    }],
-    parameters: {
-      sampleCount:      1,
-      aspectRatio:      '3:4',
-      safetySetting:    'block_few',
-      personGeneration: 'allow_all',
-    },
-  };
-
-  let res = await fetch(endpoint, {
+  const res = await fetch(endpoint, {
     method:  'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify(bodyWithRef),
-  });
-
-  // Fallback sem referenceImages se a API não suportar
-  if (res.status === 400) {
-    console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'imagen3_fallback_no_ref' }));
-    const bodyNoRef = {
+    body: JSON.stringify({
       instances: [{ prompt }],
       parameters: {
         sampleCount:      1,
@@ -107,13 +83,8 @@ async function callImagen3({ prompt, garmentBase64, accessToken }) {
         safetySetting:    'block_few',
         personGeneration: 'allow_all',
       },
-    };
-    res = await fetch(endpoint, {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body:    JSON.stringify(bodyNoRef),
-    });
-  }
+    }),
+  });
 
   if (!res.ok) {
     const err = await res.text();
@@ -126,13 +97,45 @@ async function callImagen3({ prompt, garmentBase64, accessToken }) {
   return imageBase64;
 }
 
+// Etapa 2: Aplica a peça exata no modelo gerado via Virtual Try-On
+async function callVirtualTryOn({ personBase64, garmentBase64, category, accessToken }) {
+  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/virtual-try-on-001:predict`;
+
+  const res = await fetch(endpoint, {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      instances: [{
+        personImage:   { image: { bytesBase64Encoded: personBase64 } },
+        productImages: [{ image: { bytesBase64Encoded: garmentBase64 } }],
+      }],
+      parameters: {
+        sampleCount:      1,
+        safetySetting:    'block_few',
+        personGeneration: 'allow_all',
+        ...(category && category !== 'auto' ? { category } : {}),
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Virtual Try-On retornou ${res.status}: ${err}`);
+  }
+
+  const data = await res.json();
+  const imageBase64 = data?.predictions?.[0]?.bytesBase64Encoded;
+  if (!imageBase64) throw new Error('Virtual Try-On não retornou imagem: ' + JSON.stringify(data));
+  return imageBase64;
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (!isAuthorized(req)) return res.status(401).json({ error: 'Não autorizado.' });
 
-  const { garmentGcsUrl, prompt } = req.body || {};
+  const { garmentGcsUrl, prompt, category } = req.body || {};
 
   if (!garmentGcsUrl || !String(garmentGcsUrl).startsWith('https://storage.googleapis.com/')) {
     return res.status(400).json({ error: 'garmentGcsUrl inválida.' });
@@ -146,7 +149,7 @@ export default async function handler(req, res) {
 
   await redis.set(`studio:job:${jobId}`, JSON.stringify({
     jobId, type: 'image', status: 'processing',
-    prompt, garmentUrl: garmentGcsUrl,
+    prompt, garmentUrl: garmentGcsUrl, category: category || 'auto',
     resultImage: null, resultVideo: null,
     videoPrompt: null, sourceJobId: null, error: null,
     createdAt, startedAt: createdAt, completedAt: null,
@@ -155,20 +158,28 @@ export default async function handler(req, res) {
   try {
     const accessToken = await getGoogleAccessToken();
 
-    // Busca a peça de roupa do GCS como base64
+    // Busca peça de roupa do GCS
     const garmentRes = await fetch(garmentGcsUrl);
     if (!garmentRes.ok) throw new Error(`Falha ao buscar peça do GCS: ${garmentRes.status}`);
     const garmentBase64 = Buffer.from(await garmentRes.arrayBuffer()).toString('base64');
 
-    const imageBase64 = await callImagen3({ prompt, garmentBase64, accessToken });
+    console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_imagen3_start', jobId }));
 
-    const outputPath = `studio/images/${jobId}.png`;
-    const resultImage = await uploadToGCS(accessToken, outputPath, Buffer.from(imageBase64, 'base64'), 'image/png');
+    // Etapa 1: gera modelo base
+    const personBase64 = await callImagen3({ prompt, accessToken });
+
+    console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_tryon_start', jobId, category: category || 'auto' }));
+
+    // Etapa 2: aplica a peça no modelo
+    const finalBase64 = await callVirtualTryOn({ personBase64, garmentBase64, category, accessToken });
+
+    const outputPath  = `studio/images/${jobId}.jpg`;
+    const resultImage = await uploadToGCS(accessToken, outputPath, Buffer.from(finalBase64, 'base64'), 'image/jpeg');
     const completedAt = Date.now();
 
     await redis.set(`studio:job:${jobId}`, JSON.stringify({
       jobId, type: 'image', status: 'done',
-      prompt, garmentUrl: garmentGcsUrl,
+      prompt, garmentUrl: garmentGcsUrl, category: category || 'auto',
       resultImage, resultVideo: null,
       videoPrompt: null, sourceJobId: null, error: null,
       createdAt, startedAt: createdAt, completedAt,
@@ -181,7 +192,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.log(JSON.stringify({ ts: new Date().toISOString(), event: 'studio_image_error', jobId, error: err.message }));
-
     await redis.set(`studio:job:${jobId}`, JSON.stringify({
       jobId, type: 'image', status: 'error', error: err.message,
       prompt, garmentUrl: garmentGcsUrl,
@@ -189,7 +199,6 @@ export default async function handler(req, res) {
       videoPrompt: null, sourceJobId: null,
       createdAt, startedAt: createdAt, completedAt: null,
     }), { ex: 3600 });
-
     return res.status(500).json({ error: err.message });
   }
 }

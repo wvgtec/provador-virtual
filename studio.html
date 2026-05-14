@@ -392,6 +392,15 @@
 
         <div class="divider"></div>
 
+        <label class="field-label" for="category-select">Tipo da peça</label>
+        <select id="category-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:8px;font-size:14px;font-family:inherit;outline:none;margin-bottom:16px;background:#fff;cursor:pointer;">
+          <option value="auto">Detectar automaticamente</option>
+          <option value="tops">Top / Biquini top</option>
+          <option value="bottoms">Bottom / Calcinha</option>
+          <option value="one-pieces">Maiô / Body inteiro</option>
+          <option value="dresses">Vestido / Saída de praia</option>
+        </select>
+
         <label class="field-label" for="prompt-input">Prompt da foto</label>
         <textarea id="prompt-input" rows="5" placeholder="Modelo feminina, 25 anos, pele morena, cabelo cacheado, posando de frente, estúdio fotográfico com fundo branco, iluminação suave, foto editorial de moda"></textarea>
         <div class="field-hint">Descreva o modelo, pose, cenário e estilo. 10–1000 caracteres.</div>
@@ -661,10 +670,11 @@
     generateBtn.disabled = true;
 
     try {
+      const category = document.getElementById('category-select').value;
       const res = await fetch('/api/studio-generate', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body:    JSON.stringify({ garmentGcsUrl: garmentUrl, prompt }),
+        body:    JSON.stringify({ garmentGcsUrl: garmentUrl, prompt, category }),
       });
 
       const data = await res.json();
