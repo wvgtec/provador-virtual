@@ -397,12 +397,12 @@
           <span id="model-uploaded-badge" style="display:none;font-size:12px;font-weight:600;color:#48bb78;">✓ Modelo carregada</span>
         </div>
 
-        <div class="upload-zone" id="model-upload-zone" style="padding:20px 16px;">
-          <input type="file" id="model-file-input" accept="image/jpeg,image/jpg,image/png,image/webp">
+        <label for="model-file-input" class="upload-zone" id="model-upload-zone" style="padding:20px 16px;display:block;">
+          <input type="file" id="model-file-input" accept="image/jpeg,image/jpg,image/png,image/webp" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">
           <div class="icon" style="font-size:24px;">🧍</div>
           <p style="font-size:13px;"><strong>Arraste ou clique</strong> para enviar foto da modelo</p>
           <p style="font-size:11px;margin-top:3px;color:var(--gray3)">Se não enviar, o modelo será gerado por IA</p>
-        </div>
+        </label>
 
         <div class="garment-preview" id="model-preview" style="margin-bottom:12px;">
           <img id="model-thumb" src="" alt="Modelo selecionada">
