@@ -783,21 +783,6 @@
       garmentPreview.style.display = 'none';
       uploadZone.style.display     = 'block';
       garmentUrl = null;
-    } finally {
-      // Garante que o estado da modelo não foi afetado
-      refreshModelDisplay();
-    }
-  }
-
-  function refreshModelDisplay() {
-    const mp = document.getElementById('model-preview');
-    const mz = document.getElementById('model-upload-zone');
-    if (modelUrl) {
-      mp.style.display = 'block';
-      mz.style.display = 'none';
-    } else {
-      mp.style.display = 'none';
-      mz.style.display = 'block';
     }
   }
 
