@@ -14,7 +14,8 @@ const PORT   = process.env.PORT || 8080;
 const redis  = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN });
 const BUCKET = process.env.GCS_BUCKET || 'mirage-tryon';
 const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN });
-const APP_URL = process.env.APP_URL || 'https://app.mirageai.com.br';
+const APP_URL    = process.env.APP_URL    || 'https://app.mirageai.com.br';
+const WORKER_URL = process.env.WORKER_URL || 'https://mirage-worker-783972783230.us-central1.run.app/process';
 
 const receiver = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
