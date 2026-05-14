@@ -196,20 +196,22 @@ async function callVeo3Start({ imageBase64, prompt, accessToken }) {
 }
 
 // ─── Veo 3 — Verifica LRO uma vez (não bloqueia) ─────────────────────────────
+// O Veo usa UUID como operationName — o endpoint padrão /operations/{id}
+// espera um Long numérico e rejeita UUIDs. O endpoint correto é
+// fetchPredictOperation (POST no próprio modelo com operationName no body).
 async function checkVeo3LRO({ operationName, accessToken }) {
-  const LOCATION   = 'us-central1';
-  const PROJECT_ID = 'provador-virtual-494213';
+  const LOCATION = 'us-central1';
 
-  // operationName retornado pelo Veo:
-  //   projects/{p}/locations/{l}/publishers/google/models/{m}/operations/{id}
-  // O endpoint de polling requer o caminho sem /publishers/google/models/{m}:
-  //   projects/{p}/locations/{l}/operations/{id}
-  const opId         = operationName.split('/operations/')[1];
-  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/operations/${opId}`;
+  // operationName: projects/{p}/locations/{l}/publishers/google/models/{m}/operations/{uuid}
+  // modelPath:     projects/{p}/locations/{l}/publishers/google/models/{m}
+  const modelPath    = operationName.split('/operations/')[0];
+  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${modelPath}:fetchPredictOperation`;
   log('veo3_lro_poll_attempt', { pollEndpoint });
 
   const pollRes = await fetch(pollEndpoint, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    method:  'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ operationName }),
   });
 
   if (!pollRes.ok) {
