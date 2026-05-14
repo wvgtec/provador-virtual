@@ -969,13 +969,15 @@
   let videoElapsedTimer = null;
   let videoStartTs      = null;
 
+  // As primeiras etapas mostram ✓ quando o tempo passa; a última fica com ⏳
+  // enquanto o servidor não confirmar status: done.
   const VIDEO_STEPS = [
     { at:   0, label: '⏳ Job enfileirado no QStash' },
     { at:  15, label: '🚀 Worker Cloud Run iniciando' },
     { at:  30, label: '🎬 Veo 3 iniciando geração' },
     { at:  60, label: '⚙️ Renderizando frames do vídeo' },
-    { at: 120, label: '🎞️ Finalizando renderização' },
-    { at: 210, label: '📦 Salvando vídeo no GCS' },
+    { at: 150, label: '🎞️ Finalizando renderização' },
+    { at: 240, label: '⏳ Aguardando Veo 3 concluir…' },
   ];
 
   function startVideoElapsedTimer() {
@@ -994,12 +996,17 @@
       if (!stepsEl) return;
 
       const visible = VIDEO_STEPS.filter(s => s.at <= elapsed);
-      stepsEl.innerHTML = visible.map((s, i) =>
-        `<div style="display:flex;align-items:center;gap:8px;">
-          <span style="color:#48bb78;font-size:11px;">✓</span>
-          <span style="${i === visible.length - 1 ? 'color:var(--black);font-weight:600' : 'color:var(--gray3)'}">${s.label}</span>
-        </div>`
-      ).join('');
+      stepsEl.innerHTML = visible.map((s, i) => {
+        const isLast    = i === visible.length - 1;
+        // Etapas anteriores: ✓ verde. Última etapa: ⏳ amarelo (ainda em curso).
+        const icon      = isLast ? '⏳' : '✓';
+        const iconColor = isLast ? '#d97706' : '#48bb78';
+        const textStyle = isLast ? 'color:var(--black);font-weight:600' : 'color:var(--gray3)';
+        return `<div style="display:flex;align-items:center;gap:8px;">
+          <span style="color:${iconColor};font-size:11px;">${icon}</span>
+          <span style="${textStyle}">${s.label}</span>
+        </div>`;
+      }).join('');
 
       if (stepLabelEl) {
         const current = visible[visible.length - 1];

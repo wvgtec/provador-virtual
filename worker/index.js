@@ -151,7 +151,7 @@ app.use(express.json());
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ ok: true, service: 'mirage-worker', ts: new Date().toISOString() }));
 
-// ─── Veo 3 — Long Running Operation ──────────────────────────────────────────
+// ─── GCS helper — baixa arquivo por URI gs:// ────────────────────────────────
 async function fetchGcsFile(gcsUri, accessToken) {
   const withoutScheme = gcsUri.replace('gs://', '');
   const slashIdx      = withoutScheme.indexOf('/');
@@ -164,25 +164,18 @@ async function fetchGcsFile(gcsUri, accessToken) {
   return Buffer.from(await res.arrayBuffer());
 }
 
-async function callVeo3({ imageBase64, prompt, accessToken }) {
+// ─── Veo 3 — Inicia LRO (retorna operationName imediatamente) ────────────────
+async function callVeo3Start({ imageBase64, prompt, accessToken }) {
   const PROJECT_ID = 'provador-virtual-494213';
   const LOCATION   = 'us-central1';
-  const MODEL      = 'veo-3.0-generate-preview';
-  const endpoint   = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:predictLongRunning`;
+  const endpoint   = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/veo-3.0-generate-preview:predictLongRunning`;
 
   const startRes = await fetch(endpoint, {
     method:  'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      instances: [{
-        prompt,
-        image: { bytesBase64Encoded: imageBase64 },
-      }],
-      parameters: {
-        aspectRatio:     '9:16',
-        sampleCount:     1,
-        durationSeconds: 8,
-      },
+      instances: [{ prompt, image: { bytesBase64Encoded: imageBase64 } }],
+      parameters: { aspectRatio: '9:16', sampleCount: 1, durationSeconds: 8 },
     }),
   });
 
@@ -194,78 +187,102 @@ async function callVeo3({ imageBase64, prompt, accessToken }) {
   const lro = await startRes.json();
   const operationName = lro.name;
   if (!operationName) throw new Error('Veo 3 não retornou operationName: ' + JSON.stringify(lro));
-
   log('veo3_lro_started', { operationName });
-
-  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${operationName}`;
-  const maxAttempts  = 120; // 120 × 5s = 10 minutos
-  const pollInterval = 5000;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    await new Promise(r => setTimeout(r, pollInterval));
-
-    const pollRes = await fetch(pollEndpoint, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!pollRes.ok) continue;
-
-    const status = await pollRes.json();
-
-    if (status.done) {
-      if (status.error) throw new Error('Veo 3 erro: ' + JSON.stringify(status.error));
-
-      const gcsUri = status.response?.videos?.[0]?.gcsUri
-                  || status.response?.predictions?.[0]?.gcsUri
-                  || status.response?.generatedSamples?.[0]?.video?.uri;
-
-      // Loga o response completo na primeira execução para inspeção do formato real
-      log('veo3_done_response', { response: JSON.stringify(status.response) });
-
-      if (!gcsUri) throw new Error('Veo 3 done mas sem gcsUri: ' + JSON.stringify(status));
-      return gcsUri;
-    }
-  }
-
-  throw new Error('Veo 3 timeout após 10 minutos');
+  return operationName;
 }
 
+// ─── Veo 3 — Verifica LRO uma vez (não bloqueia) ─────────────────────────────
+async function checkVeo3LRO({ operationName, accessToken }) {
+  const LOCATION    = 'us-central1';
+  const pollEndpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/${operationName}`;
+
+  const pollRes = await fetch(pollEndpoint, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!pollRes.ok) {
+    // Erro transitório — não lança, apenas re-enfileira
+    log('veo3_lro_poll_warn', { operationName, httpStatus: pollRes.status });
+    return { done: false };
+  }
+
+  const status = await pollRes.json();
+  if (!status.done) return { done: false };
+  if (status.error) throw new Error('Veo 3 erro: ' + JSON.stringify(status.error));
+
+  const gcsUri = status.response?.videos?.[0]?.gcsUri
+              || status.response?.predictions?.[0]?.gcsUri
+              || status.response?.generatedSamples?.[0]?.video?.uri;
+
+  log('veo3_done_response', { response: JSON.stringify(status.response) });
+  if (!gcsUri) throw new Error('Veo 3 done mas sem gcsUri: ' + JSON.stringify(status));
+  return { done: true, gcsUri };
+}
+
+// ─── Studio Video — padrão re-enqueue assíncrono ─────────────────────────────
+// Cada chamada do worker faz no máximo 1 poll do LRO e retorna rapidamente,
+// evitando o timeout do QStash (30 s). O job re-enfileira a si mesmo a cada
+// 30 s até o Veo 3 concluir (máx 40 tentativas ≈ 20 min).
 async function processStudioVideo(job) {
   const { jobId, resultImage, videoPrompt } = job;
+  const operationName = job.operationName || null;
+  const pollAttempts  = job.pollAttempts  || 0;
+  const MAX_POLLS     = 40; // 40 × 30s ≈ 20 min máximo
 
-  await redis.set(`studio:job:${jobId}`, JSON.stringify({
-    ...job, status: 'processing', startedAt: Date.now(),
-  }), { ex: 172800 });
+  const accessToken = await getGoogleAccessToken();
 
-  try {
-    const accessToken = await getGoogleAccessToken();
-
-    // Busca imagem gerada pelo Imagen 3 do GCS como base64
-    const imgRes = await fetch(resultImage);
-    if (!imgRes.ok) throw new Error(`Falha ao buscar imagem: ${imgRes.status}`);
-    const imgB64 = Buffer.from(await imgRes.arrayBuffer()).toString('base64');
-
-    const gcsUri = await callVeo3({ imageBase64: imgB64, prompt: videoPrompt, accessToken });
-
-    const videoBuffer = await fetchGcsFile(gcsUri, accessToken);
-
-    const outputPath = `studio/videos/${jobId}.mp4`;
-    const finalUrl   = await uploadToGCS(accessToken, outputPath, videoBuffer, 'video/mp4');
-    const completedAt = Date.now();
-
+  // ── Etapa 1: Sem LRO ainda — inicia Veo 3 ──────────────────────────────
+  if (!operationName) {
     await redis.set(`studio:job:${jobId}`, JSON.stringify({
-      ...job, status: 'done', resultVideo: finalUrl, completedAt,
+      ...job, status: 'processing', startedAt: Date.now(),
     }), { ex: 172800 });
 
-    log('studio_video_done', { jobId, durationMs: completedAt - (job.startedAt || job.createdAt) });
+    const imgRes = await fetch(resultImage);
+    if (!imgRes.ok) throw new Error(`Falha ao buscar imagem base: ${imgRes.status}`);
+    const imgB64 = Buffer.from(await imgRes.arrayBuffer()).toString('base64');
 
-  } catch (err) {
-    log('studio_video_error', { jobId, error: err.message });
+    const newOpName = await callVeo3Start({ imageBase64: imgB64, prompt: videoPrompt, accessToken });
+
     await redis.set(`studio:job:${jobId}`, JSON.stringify({
-      ...job, status: 'error', error: err.message,
-    }), { ex: 3600 });
-    throw err;
+      ...job, status: 'processing', startedAt: job.startedAt || Date.now(),
+      operationName: newOpName, pollAttempts: 0,
+    }), { ex: 172800 });
+
+    // Re-enfileira para checar status em 30s
+    await qstash.publishJSON({ url: WORKER_URL, body: { jobId }, delay: 30 });
+    log('veo3_lro_enqueued_poll', { jobId, operationName: newOpName });
+    return;
   }
+
+  // ── Etapa 2: Timeout — muitas tentativas sem conclusão ─────────────────
+  if (pollAttempts >= MAX_POLLS) {
+    throw new Error(`Veo 3 timeout após ${MAX_POLLS} tentativas (~${Math.round(MAX_POLLS * 30 / 60)} min)`);
+  }
+
+  // ── Etapa 3: Verifica LRO uma vez ──────────────────────────────────────
+  const result = await checkVeo3LRO({ operationName, accessToken });
+
+  if (!result.done) {
+    // Ainda processando — atualiza contador e re-enfileira
+    await redis.set(`studio:job:${jobId}`, JSON.stringify({
+      ...job, pollAttempts: pollAttempts + 1,
+    }), { ex: 172800 });
+    await qstash.publishJSON({ url: WORKER_URL, body: { jobId }, delay: 30 });
+    log('veo3_lro_polling', { jobId, operationName, pollAttempts: pollAttempts + 1 });
+    return;
+  }
+
+  // ── Etapa 4: LRO concluído — baixa e salva vídeo ───────────────────────
+  const videoBuffer = await fetchGcsFile(result.gcsUri, accessToken);
+  const outputPath  = `studio/videos/${jobId}.mp4`;
+  const finalUrl    = await uploadToGCS(accessToken, outputPath, videoBuffer, 'video/mp4');
+  const completedAt = Date.now();
+
+  await redis.set(`studio:job:${jobId}`, JSON.stringify({
+    ...job, status: 'done', resultVideo: finalUrl, completedAt,
+  }), { ex: 172800 });
+
+  log('studio_video_done', { jobId, durationMs: completedAt - (job.startedAt || job.createdAt) });
 }
 
 // ─── Endpoint principal ───────────────────────────────────────────────────────
@@ -291,14 +308,27 @@ app.post('/process', async (req, res) => {
   const studioRaw = await redis.get(`studio:job:${jobId}`);
   if (studioRaw) {
     const studioJob = typeof studioRaw === 'string' ? JSON.parse(studioRaw) : studioRaw;
+
+    // Idempotência — job já finalizado (sucesso ou erro permanente)
     if (studioJob.status === 'done') {
       log('studio_video_idempotent', { jobId });
       return res.status(200).json({ jobId, status: 'done', idempotent: true });
     }
+    if (studioJob.status === 'error') {
+      log('studio_video_idempotent_error', { jobId });
+      return res.status(200).json({ jobId, status: 'error', idempotent: true });
+    }
+
     try {
       await processStudioVideo(studioJob);
       return res.status(200).json({ ok: true });
     } catch (err) {
+      log('studio_video_error', { jobId, error: err.message });
+      // Salva erro no Redis para o cliente exibir
+      await redis.set(`studio:job:${jobId}`, JSON.stringify({
+        ...studioJob, status: 'error', error: err.message,
+      }), { ex: 3600 });
+      // Retorna 200 para o QStash não retentar (erro já tratado)
       return res.status(200).json({ ok: false, error: err.message });
     }
   }
