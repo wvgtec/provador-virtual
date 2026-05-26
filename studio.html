@@ -351,17 +351,6 @@
 </head>
 <body>
 
-<!-- ═══════════════════ TELA DE SENHA ═══════════════════ -->
-<div id="auth-screen">
-  <div class="auth-card">
-    <div class="logo">Mirage <span>Studio</span></div>
-    <p>Ferramenta interna — uso exclusivo</p>
-    <input type="password" id="password-input" placeholder="Senha de acesso" autocomplete="current-password">
-    <div class="auth-error" id="auth-error"></div>
-    <button class="btn btn-primary" id="login-btn">Entrar</button>
-  </div>
-</div>
-
 <!-- ═══════════════════ APP ═══════════════════ -->
 <div id="app">
   <header>
@@ -556,60 +545,10 @@
     btn.textContent = loading ? label : btn.dataset.label || btn.textContent;
   }
 
-  // ─── Auth ─────────────────────────────────────────────────────────────────
-  const authScreen = document.getElementById('auth-screen');
-  const appEl      = document.getElementById('app');
-
-  function showApp() {
-    authScreen.style.display = 'none';
-    appEl.style.display = 'block';
-  }
-
-  if (token) {
-    // Valida token salvo antes de exibir a UI
-    fetch('/api/studio-auth', {
-      method:  'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => {
-      if (r.ok) { showApp(); }
-      else { sessionStorage.removeItem('studio_token'); token = ''; }
-    }).catch(() => {});
-  }
-
-  document.getElementById('login-btn').addEventListener('click', async () => {
-    const pwd = document.getElementById('password-input').value.trim();
-    const err = document.getElementById('auth-error');
-    if (!pwd) { err.textContent = 'Digite a senha.'; return; }
-
-    const btn = document.getElementById('login-btn');
-    btn.disabled = true; btn.textContent = 'Verificando...';
-
-    try {
-      const res = await fetch('/api/studio-auth', {
-        method:  'POST',
-        headers: { Authorization: `Bearer ${pwd}` },
-      });
-      if (res.ok) {
-        token = pwd;
-        sessionStorage.setItem('studio_token', token);
-        err.textContent = '';
-        showApp();
-      } else {
-        err.textContent = 'Senha incorreta.';
-      }
-    } catch {
-      err.textContent = 'Erro de conexão. Tente novamente.';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Entrar';
-    }
-  });
-
-  document.getElementById('password-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('login-btn').click();
-  });
+  // ─── App sempre visível (sem autenticação) ───────────────────────────────
+  document.getElementById('app').style.display = 'block';
 
   document.getElementById('logout-btn').addEventListener('click', () => {
-    sessionStorage.removeItem('studio_token');
     location.reload();
   });
 
