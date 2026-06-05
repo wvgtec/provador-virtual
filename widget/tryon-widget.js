@@ -112,9 +112,9 @@
       width: 100%; height: 100%; z-index: 1;
     }
     .nksw-camera-icon {
-      width: 54px; height: 54px; background: #F5C53F; border-radius: 50%;
+      width: 54px; height: 54px; background: #0A0A0A; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 14px; box-shadow: 0 4px 12px rgba(245,197,63,0.35);
+      margin: 0 auto 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
     .nksw-camera-icon svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .nksw-upload-title { font-size: 17px; font-weight: 700; color: #111; margin: 0 0 6px; letter-spacing: -0.01em; }
@@ -180,10 +180,10 @@
     }
     .nksw-render-result.visible { display: block; opacity: 1; }
 
-    /* Scanline amarelo */
+    /* Scanline branco */
     .nksw-scanline {
       position: absolute; left: 0; right: 0; height: 10%;
-      background: linear-gradient(180deg, transparent, rgba(255,227,78,0.9), transparent);
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,0.55), transparent);
       filter: blur(2px); pointer-events: none;
       display: none; z-index: 2;
     }
@@ -195,9 +195,9 @@
       100% { top: 110%; opacity: 0; }
     }
 
-    /* Cantos dourados */
+    /* Cantos brancos */
     .nksw-corners { position: absolute; inset: 12px; pointer-events: none; z-index: 3; }
-    .nksw-corners span { position: absolute; width: 16px; height: 16px; border: 2px solid #FFE34E; }
+    .nksw-corners span { position: absolute; width: 16px; height: 16px; border: 2px solid #ffffff; }
     .nksw-corners span:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; }
     .nksw-corners span:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; }
     .nksw-corners span:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; }
@@ -212,9 +212,9 @@
       padding: 4px 9px; border-radius: 5px;
       background: #111; color: #fff; border: 1px solid rgba(255,255,255,0.12);
     }
-    .nksw-hud-chip.yellow { background: #FFE34E; color: #0a0a0a; border-color: rgba(0,0,0,0.15); }
+    .nksw-hud-chip.yellow { background: #ffffff; color: #0a0a0a; border-color: rgba(0,0,0,0.15); }
     .nksw-hud-dot {
-      width: 5px; height: 5px; border-radius: 50%; background: #FFE34E;
+      width: 5px; height: 5px; border-radius: 50%; background: #ffffff;
       animation: nksw-pulse-dot 1.2s infinite; flex-shrink: 0;
     }
     .nksw-hud-chip.yellow .nksw-hud-dot { background: #0a0a0a; animation: none; }
@@ -465,12 +465,10 @@
       <div class="nksw-modal">
         <div class="nksw-header">
           <div class="nksw-title-wrap">
-            <img
-              class="nksw-title-logo"
-              src="https://www.mirageai.com.br/logo-mirage.png"
-              alt="Mirage"
-              onerror="this.style.display='none'"
-            />
+            <svg class="nksw-title-logo" viewBox="0 0 28 28" width="28" height="28" style="flex-shrink:0">
+              <rect width="28" height="28" rx="5" fill="#0A0A0A"/>
+              <text x="14" y="20" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="700" fill="#ffffff">Z</text>
+            </svg>
             <h2 class="nksw-title">Provador Virtual</h2>
           </div>
           <button class="nksw-close" aria-label="Fechar">&times;</button>
@@ -578,8 +576,8 @@
             <p>
               Imagens processadas em sessão temporária e descartadas automaticamente,
               em conformidade com a <strong>LGPD</strong> e GDPR. Ao usar este serviço, você concorda
-              com a <a href="https://www.mirageai.com.br" target="_blank" rel="noopener">Política de Privacidade</a>
-              e os <a href="https://www.mirageai.com.br" target="_blank" rel="noopener">Termos de Uso</a> da Mirage.
+              com a <a href="https://www.zavemi.com/privacy" target="_blank" rel="noopener">Política de Privacidade</a>
+              e os <a href="https://www.zavemi.com/terms" target="_blank" rel="noopener">Termos de Uso</a> da Zavemi.
             </p>
           </div>
 
@@ -588,14 +586,13 @@
         <!-- Footer com powered by Mirage -->
         <div class="nksw-footer">
           <p class="nksw-disclaimer">🔒 Foto processada em tempo real, sem armazenamento.</p>
-          <a href="https://www.mirageai.com.br" target="_blank" rel="noopener" class="nksw-powered-by" title="Powered by Mirage">
+          <a href="https://www.zavemi.com" target="_blank" rel="noopener" class="nksw-powered-by" title="Powered by Zavemi">
             <span class="nksw-powered-by-label">powered by</span>
-            <img
-              src="https://www.mirageai.com.br/logo-mirage.png"
-              alt="Mirage"
-              onerror="this.style.display='none';this.nextElementSibling.style.display='block';"
-            />
-            <span class="nksw-powered-by-fallback">MIRAGE</span>
+            <svg viewBox="0 0 52 16" width="52" height="16" style="display:block">
+              <rect width="16" height="16" rx="3" fill="#0A0A0A"/>
+              <text x="8" y="12" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="700" fill="#ffffff">Z</text>
+              <text x="22" y="12" font-family="system-ui,sans-serif" font-size="9" font-weight="700" fill="#0A0A0A" letter-spacing="0.5">ZAVEMI</text>
+            </svg>
           </a>
         </div>
       </div>
@@ -921,7 +918,7 @@
 
       const a = document.createElement('a');
       a.href = blobUrl || src;
-      a.download = 'meu-look-mirage.jpg';
+      a.download = 'meu-look-zavemi.jpg';
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); if (blobUrl) URL.revokeObjectURL(blobUrl); }, 200);
